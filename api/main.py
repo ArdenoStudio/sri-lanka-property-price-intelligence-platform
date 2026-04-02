@@ -155,19 +155,73 @@ async def trigger_process(db: Session = Depends(get_db)):
     geocoder = Geocoder(db)
     geocoded = geocoder.geocode_listings()
 
+    aggregator = PriceAggregator(db)
+    trends = aggregator.aggregate()
+
     return {
         "status": "success",
         "processed": processed,
         "geocoded": geocoded,
+        "trends_updated": trends
     }
 
 @app.post("/reset-pipeline")
 async def reset_pipeline(db: Session = Depends(get_db)):
     """Wipes the listings table and marks all raw_listings as unprocessed to force a full re-clean."""
     db.query(Listing).delete()
+    db.query(PriceAggregate).delete()
     db.query(RawListing).update({RawListing.is_processed: False})
     db.commit()
     return {"status": "success", "message": "Pipeline cleared. Call /trigger/process to re-clean everything."}
+
+class PriceAggregator:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def aggregate(self):
+        """Calculates monthly stats and populates price_aggregates table."""
+        # We group by month/year and district/type
+        # In a real app we'd use a more complex median, but for now we'll use avg and count
+        results = (
+            self.db.query(
+                Listing.district,
+                Listing.property_type,
+                func.extract('year', Listing.scraped_at).label('year'),
+                func.extract('month', Listing.scraped_at).label('month'),
+                func.avg(Listing.price_lkr).label('avg_price'),
+                func.avg(Listing.price_per_perch).label('avg_perch'),
+                func.count(Listing.id).label('count')
+            )
+            .filter(Listing.price_lkr.isnot(None), Listing.is_outlier == False)
+            .group_by(Listing.district, Listing.property_type, 'year', 'month')
+            .all()
+        )
+
+        for d, pt, y, m, avg_lkr, avg_perch, count in results:
+            stmt = insert(PriceAggregate).values(
+                district=d,
+                property_type=pt,
+                period_year=int(y),
+                period_month=int(m),
+                avg_price_lkr=avg_lkr,
+                median_price_lkr=avg_lkr, # Simplification for now
+                median_price_per_perch=avg_perch,
+                listing_count=count,
+                computed_at=datetime.utcnow()
+            ).on_conflict_do_update(
+                index_elements=['district', 'property_type', 'period_year', 'period_month'],
+                set_={
+                    "avg_price_lkr": avg_lkr,
+                    "median_price_lkr": avg_lkr,
+                    "median_price_per_perch": avg_perch,
+                    "listing_count": count,
+                    "computed_at": datetime.utcnow()
+                }
+            )
+            self.db.execute(stmt)
+        
+        self.db.commit()
+        return len(results)
 
 
 # ---------------------------------------------------------------------------
