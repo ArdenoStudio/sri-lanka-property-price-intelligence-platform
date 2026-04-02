@@ -546,35 +546,60 @@ async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
     client = Groq(api_key=groq_key)
 
     try:
-        # Context extraction - get live market stats
+        # --- 1. Dynamic Search Detection (Internal Search) ---
+        search_results_context = ""
+        try:
+            # We use a fast model to extract search filters
+            filter_prompt = f"""Extract search filters from the user message: "{req.message}"
+            Return ONLY a comma-separated list of: district or city, property_type (land/house/apartment/commercial/other), listing_type (sale/rent), max_price, min_bedrooms.
+            If a filter is missing, use "None". 
+            Example: "Colombo, house, sale, 50000000, 3" """
+            
+            search_intent = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": filter_prompt}],
+                max_tokens=64
+            ).choices[0].message.content.strip()
+
+            filters = [f.strip() for f in search_intent.split(",")]
+            if len(filters) >= 3:
+                loc_f, type_f, list_f = filters[0], filters[1], filters[2]
+                
+                # Execute dynamic listing search
+                query = db.query(Listing).filter(Listing.is_outlier == False)
+                if loc_f != "None": query = query.filter(Listing.raw_location.ilike(f"%{loc_f}%"))
+                if type_f != "None": query = query.filter(Listing.property_type == type_f.lower())
+                if list_f != "None": query = query.filter(Listing.listing_type == list_f.lower())
+                
+                found = query.limit(5).all()
+                if found:
+                    avg_p = db.query(func.avg(Listing.price_lkr)).filter(Listing.raw_location.ilike(f"%{loc_f}%"), Listing.property_type == type_f.lower()).scalar() or 0
+                    search_results_context = f"INTERNAL DATABASE SEARCH for '{loc_f} {type_f}': Found {len(found)} matches. Avg Price LKR {avg_p:,.0f}."
+                    for f in found:
+                        search_results_context += f"\n- {f.property_type} in {f.raw_location}: LKR {float(f.price_lkr or 0):,.0f} ({f.source})"
+        except Exception:
+            pass
+
+        # --- 2. Final Data-Driven Response ---
         stats_raw = get_stats(db)
-        avg_price_overall = stats_raw.get('avg_price_lkr') or 0
-        total_listings = stats_raw.get('total_listings', 0)
+        system_prompt = f"""You are the Master Real Estate AI for Sri Lanka Property Price Intelligence.
+You serve the user by providing specific, data-driven insights. 
 
-        # District-aware context
-        context_data = ""
-        for district in DISTRICT_COORDS:
-            if district.lower() in req.message.lower():
-                try:
-                    dist_data = list_districts(db=db)
-                    d_stat = next((d for d in dist_data if d["district"] == district), None)
-                    if d_stat:
-                        avg_p = d_stat.get('avg_price') or 0
-                        context_data = f"Current stats for {district}: Average price LKR {avg_p:,.0f}, Total listings: {d_stat['count']}."
-                except Exception:
-                    pass
-                break
+INTERNAL DATABASE SEARCH RESULTS (USE THESE FIRST):
+{search_results_context}
 
-        system_prompt = f"""You are an expert real estate AI assistant for the Sri Lanka Property Price Intelligence Platform.
-Provide helpful, data-driven advice about property prices, areas, and market trends in Sri Lanka.
-Use the following market context if relevant:
-{context_data}
-Overall Market: {total_listings} total listings, average price: LKR {avg_price_overall:,.0f}.
-Be concise, professional, and friendly. If you don't know something, be honest."""
+GLOBAL MARKET STATUS:
+- Total Listings: {stats_raw['total_listings']}
+- Overall Market Average: LKR {stats_raw['avg_price_lkr']:,.0f}
+
+RULES:
+1. If internal search results are available, cite the specific listings found.
+2. Be professional and concise.
+3. If no specific listings match, use the global averages to provide general advice.
+"""
 
         messages = [{"role": "system", "content": system_prompt}]
-        if req.history:
-            messages.extend(req.history)
+        if req.history: messages.extend(req.history)
         messages.append({"role": "user", "content": req.message})
 
         completion = client.chat.completions.create(
@@ -585,7 +610,7 @@ Be concise, professional, and friendly. If you don't know something, be honest."
         )
         return {
             "response": completion.choices[0].message.content,
-            "context_used": bool(context_data)
+            "context_used": bool(search_results_context)
         }
     except Exception as e:
         return {"response": f"AI error: {str(e)}", "context_used": False}
