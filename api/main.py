@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, cast, Float, case
 from typing import List, Optional
-from db.connection import get_db
+from db.connection import get_db, SessionLocal
 from db.models import Listing, RawListing, ScrapeRun, PriceAggregate
 from scraper.ikman import scrape_ikman
 from scraper.lpw import scrape_lpw
@@ -146,31 +146,35 @@ async def trigger_scrape(source: str, location: str = "sri-lanka", db: Session =
         return {"error": "Invalid source"}
     return {"status": "success", "stats": stats, "location": location}
 
-async def run_mega_scrape_task(db: Session):
-    """Worker function to process all districts without timing out the API."""
-    districts = list(DISTRICT_COORDS.keys())
-    for d in districts:
+async def run_mega_scrape_task():
+    """Worker function to process all districts with its own DB session."""
+    db = SessionLocal()
+    try:
+        districts = list(DISTRICT_COORDS.keys())
+        for d in districts:
+            try:
+                await scrape_ikman(db, max_pages=8, location=d)
+            except Exception:
+                pass
+        
+        # Process and Aggregate
         try:
-            await scrape_ikman(db, max_pages=5, location=d)
+            from scraper.cleaner import DataCleaner
+            cleaner = DataCleaner(db)
+            cleaner.process_all()
+            
+            agg = PriceAggregator(db)
+            agg.aggregate()
         except Exception:
             pass
-    
-    # Process them all immediately after!
-    try:
-        from scraper.cleaner import DataCleaner
-        cleaner = DataCleaner(db)
-        cleaner.process_all()
-        
-        agg = PriceAggregator(db)
-        agg.aggregate()
-    except Exception:
-        pass
+    finally:
+        db.close()
 
 @app.post("/trigger/scrape-mega")
-async def trigger_mega_scrape(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    """The Deep Scraper: Starts a background job to scan all 25 districts."""
-    background_tasks.add_task(run_mega_scrape_task, db)
-    return {"status": "started", "message": "Mega Scraper is now crawling all 25 districts in the background. Please check back in 5-10 minutes."}
+async def trigger_mega_scrape(background_tasks: BackgroundTasks):
+    """The Deep Scraper: Starts a background job scanning all 25 districts."""
+    background_tasks.add_task(run_mega_scrape_task)
+    return {"status": "started", "message": "Mega Scraper is now crawling all 25 districts in the background."}
 
 
 @app.post("/trigger/process")
