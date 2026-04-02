@@ -2,7 +2,7 @@ import { MapPin, ExternalLink } from 'lucide-react';
 
 export function Header() {
   return (
-    <header className="border-b border-border bg-bg-secondary/50 backdrop-blur-xl sticky top-0 z-50">
+    <header className="border-b border-border bg-bg-secondary/50 backdrop-blur-xl sticky top-0 z-[1000]">
       {/* Beta banner */}
       <div className="bg-accent/10 border-b border-accent/20 py-1.5 px-4 text-center">
         <span className="text-xs text-accent-light font-medium tracking-wide">
