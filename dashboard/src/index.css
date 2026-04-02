@@ -2,15 +2,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;300;400;600;700;900&display=swap');
 
 @theme {
-  --color-bg-primary: #050303;
-  --color-bg-secondary: #080809;
-  --color-bg-card: #0c0c0e;
-  --color-bg-card-hover: #121215;
-  --color-border: #1a1a1c;
-  --color-border-hover: #2a2a2d;
-  --color-accent: #E50914;
-  --color-accent-light: #ff1420;
-  --color-accent-glow: rgba(229, 9, 20, 0.15);
+  --color-bg-primary: #09090b;
+  --color-bg-secondary: #0e0e11;
+  --color-bg-card: #141417;
+  --color-bg-card-hover: #1c1c21;
+  --color-border: #27272a;
+  --color-border-hover: #3f3f46;
+  --color-accent: #6366f1;
+  --color-accent-light: #818cf8;
+  --color-accent-glow: rgba(99, 102, 241, 0.15);
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
