@@ -20,7 +20,18 @@ LOCATION_DISTRICT_MAP = {
     "Malabe": "Colombo",
     "Ratmalana": "Colombo",
     "Moratuwa": "Colombo",
+    "Piliyandala": "Colombo",
+    "Maharagama": "Colombo",
+    "Homagama": "Colombo",
+    "Kaduwela": "Colombo",
+    "Athurugiriya": "Colombo",
     "Wattegama": "Kandy",
+    "Peradeniya": "Kandy",
+    "Katugastota": "Kandy",
+    "Gampola": "Kandy",
+    "Digana": "Kandy",
+    "Kundasale": "Kandy",
+    "Katugastota": "Kandy",
     "Kandy": "Kandy",
     "Gampaha": "Gampaha",
     "Negombo": "Gampaha",
@@ -28,9 +39,16 @@ LOCATION_DISTRICT_MAP = {
     "Wattala": "Gampaha",
     "Ja-Ela": "Gampaha",
     "Kiribathgoda": "Gampaha",
+    "Kadawatha": "Gampaha",
+    "Ragama": "Gampaha",
+    "Biyagama": "Gampaha",
     "Galle": "Galle",
+    "Hikkaduwa": "Galle",
+    "Ambalangoda": "Galle",
     "Matara": "Matara",
+    "Weligama": "Matara",
     "Kurunegala": "Kurunegala",
+    "Kuliyapitiya": "Kurunegala",
     "Jaffna": "Jaffna",
     "Trincomalee": "Trincomalee",
     "Batticaloa": "Batticaloa",
@@ -38,8 +56,12 @@ LOCATION_DISTRICT_MAP = {
     "Polonnaruwa": "Polonnaruwa",
     "Ratnapura": "Ratnapura",
     "Badulla": "Badulla",
+    "Bandarawela": "Badulla",
     "Kalutara": "Kalutara",
+    "Panadura": "Kalutara",
+    "Horana": "Kalutara",
     "Puttalam": "Puttalam",
+    "Chilaw": "Puttalam",
     "Kegalle": "Kegalle",
     "Vavuniya": "Vavuniya",
     "Mannar": "Mannar",
@@ -48,8 +70,10 @@ LOCATION_DISTRICT_MAP = {
     "Ampara": "Ampara",
     "Moneragala": "Moneragala",
     "Hambantota": "Hambantota",
+    "Tangalle": "Hambantota",
     "Nuwara Eliya": "Nuwara Eliya",
     "Matale": "Matale",
+    "Dambulla": "Matale",
 }
 
 class DataCleaner:
@@ -89,46 +113,46 @@ class DataCleaner:
         
         return None, None
 
-    def parse_size(self, raw_size: str) -> Tuple[Optional[float], Optional[float]]:
-        """Parses raw_size to (perches, sqft)"""
-        if not raw_size:
+    def parse_size(self, raw_size: str, title: str = "") -> Tuple[Optional[float], Optional[float]]:
+        """Parses size from raw_size or title. Returns (perches, sqft)"""
+        text_to_search = (str(raw_size or "") + " " + str(title or "")).lower().strip()
+        if not text_to_search:
             return None, None
         
-        clean_str = raw_size.lower().strip()
-        
         # Acres to Perches (1 acre = 160 perches)
-        if "acre" in clean_str:
-            match = re.search(r"(\d+\.?\d*)", clean_str)
+        if "acre" in text_to_search:
+            match = re.search(r"(\d+\.?\d*)\s*acre", text_to_search)
             if match:
                 return float(match.group(1)) * 160.0, None
         
-        # Perches
-        if "perch" in clean_str:
-            match = re.search(r"(\d+\.?\d*)", clean_str)
-            if match:
-                return float(match.group(1)), None
+        # Perches (handle "perch", "perches", "p")
+        # Regex to find numbers followed by "perch", "perches", or just "p" at the end of a word
+        p_match = re.search(r"(\d+\.?\d*)\s*(?:perch|perches|p\b)", text_to_search)
+        if p_match:
+            return float(p_match.group(1)), None
         
         # Sqft
-        if "sq ft" in clean_str or "sqft" in clean_str:
-            match = re.search(r"(\d+\.?\d*)", clean_str)
+        if "sq ft" in text_to_search or "sqft" in text_to_search:
+            match = re.search(r"(\d+\.?\d*)", text_to_search)
             if match:
                 return None, float(match.group(1))
         
         return None, None
 
-    def parse_location(self, raw_location: str) -> Tuple[Optional[str], Optional[str], str]:
-        """Parses raw_location to (district, city, confidence)"""
-        if not raw_location:
+    def parse_location(self, raw_location: str, title: str = "") -> Tuple[Optional[str], Optional[str], str]:
+        """Parses location to (district, city, confidence)"""
+        text_to_search = (str(raw_location or "") + " " + str(title or "")).lower()
+        if not text_to_search:
             return None, None, 'low'
         
-        parts = [p.strip() for p in raw_location.split(',')]
-        city = parts[0]
+        parts = [p.strip() for p in (raw_location or "").split(',')]
+        city = parts[0] if parts else None
         district = None
         confidence = 'low'
 
         # Check in map
         for loc, dist in LOCATION_DISTRICT_MAP.items():
-            if loc.lower() in raw_location.lower():
+            if loc.lower() in text_to_search:
                 district = dist
                 confidence = 'high'
                 break
@@ -182,9 +206,9 @@ class DataCleaner:
             return True
         return False
 
-    def process_all(self):
-        """Processes all unprocessed raw_listings"""
-        raw_listings = self.db.query(RawListing).filter(RawListing.is_processed == False).all()
+    def process_all(self, limit: int = 500):
+        """Processes a batch of unprocessed raw_listings to avoid memory issues."""
+        raw_listings = self.db.query(RawListing).filter(RawListing.is_processed == False).limit(limit).all()
         
         stats = {"processed": 0, "passed": 0, "outliers": 0, "duplicates": 0}
         
@@ -192,8 +216,8 @@ class DataCleaner:
             try:
                 # 1. Basic Cleaning
                 price_lkr, price_per_perch = self.parse_price(raw.raw_price)
-                size_perches, size_sqft = self.parse_size(raw.raw_size)
-                district, city, confidence = self.parse_location(raw.raw_location)
+                size_perches, size_sqft = self.parse_size(raw.raw_size, raw.title)
+                district, city, confidence = self.parse_location(raw.raw_location, raw.title)
                 
                 # If we only got price_per_perch but have size, compute total
                 if not price_lkr and price_per_perch and size_perches:
@@ -210,7 +234,7 @@ class DataCleaner:
                     scraped_at=raw.scraped_at,
                     price_lkr=price_lkr,
                     price_per_perch=price_per_perch,
-                    price_per_sqft=None, # For now
+                    price_per_sqft=None,
                     raw_location=raw.raw_location,
                     district=district,
                     city=city,
@@ -221,17 +245,16 @@ class DataCleaner:
                     size_sqft=size_sqft
                 )
                 
-                # 3. Quality Flags
                 self.detect_outliers(listing)
-                if listing.is_outlier:
-                    stats["outliers"] += 1
+                if listing.is_outlier: stats["outliers"] += 1
                 
-                if self.detect_duplicates(listing):
+                if not self.detect_duplicates(listing):
+                    self.db.add(listing)
+                    stats["passed"] += 1
+                else:
                     stats["duplicates"] += 1
                 
-                self.db.add(listing)
                 raw.is_processed = True
-                stats["passed"] += 1
                 
             except Exception as e:
                 log.error("clean_error", raw_id=raw.id, error=str(e))
