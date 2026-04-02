@@ -54,20 +54,20 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 sm:px-6">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center w-screen h-screen">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/85 backdrop-blur-md"
+        className="absolute inset-0 bg-black/90 backdrop-blur-md"
       />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 30 }}
-        className="relative w-full max-w-5xl bg-bg-card border border-border rounded-[32px] shadow-[0_32px_120px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[92vh]"
+        className="relative w-full max-w-5xl bg-bg-card border border-border rounded-[32px] shadow-[0_32px_120px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[94vh] m-4"
       >
         {/* Header */}
         <div className="p-8 border-b border-border flex items-center justify-between bg-bg-card-hover/20">
