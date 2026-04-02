@@ -45,23 +45,38 @@ function App() {
     });
   };
 
-  // Initial data load
-  useEffect(() => {
-    Promise.all([
-      getStats().catch(() => null),
-      getDistricts().catch(() => []),
-      getHeatmap().catch(() => ({ points: [], total_districts: 0 })),
-    ]).then(([s, d, h]) => {
+  // Initial data load + Polling
+  const refreshStatsAndDistricts = useCallback(async () => {
+    try {
+      const [s, d, h] = await Promise.all([
+        getStats().catch(() => null),
+        getDistricts().catch(() => []),
+        getHeatmap().catch(() => ({ points: [], total_districts: 0 })),
+      ]);
       if (s) setStats(s);
       setDistricts(d);
       setHeatmap(h.points);
-      setLoading(false);
-    });
+    } catch (e) {
+      console.error("Data sync error:", e);
+    }
   }, []);
 
+  useEffect(() => {
+    // Initial Load
+    refreshStatsAndDistricts().then(() => setLoading(false));
+
+    // Polling every 30 seconds
+    const interval = setInterval(() => {
+      refreshStatsAndDistricts();
+      loadListings(true); // silent refresh
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [refreshStatsAndDistricts]);
+
   // Listings load (depends on filters)
-  const loadListings = useCallback(async () => {
-    setListingsLoading(true);
+  const loadListings = useCallback(async (isSilent = false) => {
+    if (!isSilent) setListingsLoading(true);
     try {
       const res = await getListings({
         district: selectedDistrict || undefined,
@@ -75,7 +90,7 @@ function App() {
     } catch {
       setListings([]);
     }
-    setListingsLoading(false);
+    if (!isSilent) setListingsLoading(false);
   }, [selectedDistrict, selectedType, sortBy, page]);
 
   useEffect(() => {
