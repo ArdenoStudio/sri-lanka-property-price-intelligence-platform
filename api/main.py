@@ -12,7 +12,6 @@ from scraper.geocoder import Geocoder
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 import os
-from groq import Groq
 
 app = FastAPI(title="Sri Lanka Property Price Intelligence Platform")
 
@@ -525,87 +524,58 @@ class ChatRequest(BaseModel):
     history: Optional[List[dict]] = []
 
 @app.post("/chat")
+@app.post("/api/chat")
 async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    try:
+        from groq import Groq
+    except ImportError:
+        return {"response": "Groq package not installed on this server.", "context_used": False}
+
+    groq_key = os.getenv("GROQ_API_KEY")
+    if not groq_key:
+        return {"response": "System Error: GROQ_API_KEY is not configured.", "context_used": False}
+
+    client = Groq(api_key=groq_key)
     
-    # 1. Context extraction (simplified RAG)
-    # Get some market stats to provide context
+    # Context extraction - get live market stats
     stats_raw = get_stats(db)
     
-    # Try to find if user is asking about a specific district
+    # District-aware context
     context_data = ""
     for district in DISTRICT_COORDS:
         if district.lower() in req.message.lower():
-            # Get specific district stats
             dist_data = list_districts(db=db)
             d_stat = next((d for d in dist_data if d["district"] == district), None)
             if d_stat:
-                context_data = f"Current stats for {district}: Average price LKR {d_stat['avg_price']}, Total listings: {d_stat['count']}."
+                context_data = f"Current stats for {district}: Average price LKR {d_stat['avg_price']:,.0f}, Total listings: {d_stat['count']}."
             break
 
-    system_prompt = f"""
-    You are an expert real estate AI assistant for the Sri Lanka Property Price Intelligence Platform.
-    Provide helpful, data-driven advice about property prices, areas, and market trends in Sri Lanka.
-    Use the following market context if relevant:
-    {context_data}
-    Overall Market Status: {stats_raw['total_listings']} total listings, average price across all cleaned data: {stats_raw['avg_price_lkr']} LKR.
-    
-    Be concise, professional, and friendly. If you don't know something, be honest.
-    """
+    system_prompt = f"""You are an expert real estate AI assistant for the Sri Lanka Property Price Intelligence Platform.
+Provide helpful, data-driven advice about property prices, areas, and market trends in Sri Lanka.
+Use the following market context if relevant:
+{context_data}
+Overall Market: {stats_raw['total_listings']} total listings, average price: LKR {stats_raw['avg_price_lkr']:,.0f}.
+Be concise, professional, and friendly. If you don't know something, be honest."""
 
     messages = [{"role": "system", "content": system_prompt}]
     if req.history:
         messages.extend(req.history)
     messages.append({"role": "user", "content": req.message})
 
-    completion = client.chat.completions.create(
-        model="llama-3.1-70b-versatile",
-        messages=messages,
-        temperature=0.7,
-        max_tokens=1024,
-    )
-
-    return {
-        "response": completion.choices[0].message.content,
-        "context_used": bool(context_data)
-    }
-
-
-# ---------------------------------------------------------------------------
-# AI Assistant (Groq Chat)
-# ---------------------------------------------------------------------------
-
-class ChatRequest(BaseModel):
-    message: str
-    history: list = []
-
-@app.post("/chat")
-@app.post("/api/chat")
-async def chat_endpoint(request: ChatRequest):
-    import os
-    if not os.getenv("GROQ_API_KEY"):
-        return {"response": "System Error: GROQ_API_KEY missing from .env file.", "context_used": False}
-        
     try:
-        from api.services.groq_service import GroqService
-        groq = GroqService()
-        res = await groq.extract_search_params(request.message)
-        
-        if res and res.get("type") == "database_query":
-            filters = res.get("filters", {})
-            return {
-                "response": f"Got it! I am dynamically extracting your filters: {filters}. (Database query execution coming soon!)", 
-                "context_used": True
-            }
-        else:
-            return {
-                "response": res.get("message", "I didn't understand that."), 
-                "context_used": False
-            }
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=1024,
+        )
+        return {
+            "response": completion.choices[0].message.content,
+            "context_used": bool(context_data)
+        }
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {"response": str(e), "context_used": False}
+        return {"response": f"AI error: {str(e)}", "context_used": False}
+
 
 if __name__ == "__main__":
     import uvicorn
