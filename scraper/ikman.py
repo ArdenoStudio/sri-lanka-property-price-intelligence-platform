@@ -168,9 +168,20 @@ class IkmanScraper:
                     log.error("page_load_error", source=self.SOURCE, page=page_num, error=str(e))
                     await asyncio.sleep(1)  # brief pause before next page
 
-            await browser.close()
+            from db.models import ScrapeRun
+            # Record the successful run for the dashboard to show "Last Updated"
+            new_run = ScrapeRun(
+                source=self.SOURCE,
+                started_at=datetime.utcnow(), # Approximate
+                finished_at=datetime.utcnow(),
+                total_found=total_found,
+                new_listings=total_new
+            )
+            self.db.add(new_run)
+            self.db.commit()
+
             return total_found, total_new
 
-async def scrape_ikman(db: Session, max_pages: int = 20):
+async def scrape_ikman(db: Session, max_pages: int = 20, location: str = "sri-lanka"):
     scraper = IkmanScraper(db)
-    return await scraper.scrape(max_pages=max_pages)
+    return await scraper.scrape(max_pages=max_pages, location=location)

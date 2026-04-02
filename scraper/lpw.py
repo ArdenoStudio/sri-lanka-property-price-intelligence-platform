@@ -131,6 +131,18 @@ class LPWScraper:
                         log.error("lpw_page_error", url=full_url, error=str(e))
                         break
 
+            from db.models import ScrapeRun
+            # Record the successful run for the dashboard to show "Last Updated"
+            new_run = ScrapeRun(
+                source=self.SOURCE,
+                started_at=datetime.utcnow(),
+                finished_at=datetime.utcnow(),
+                total_found=total_found,
+                new_listings=total_new
+            )
+            self.db.add(new_run)
+            self.db.commit()
+
             await browser.close()
             return total_found, total_new
 
