@@ -536,33 +536,39 @@ async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
         return {"response": "System Error: GROQ_API_KEY is not configured.", "context_used": False}
 
     client = Groq(api_key=groq_key)
-    
-    # Context extraction - get live market stats
-    stats_raw = get_stats(db)
-    
-    # District-aware context
-    context_data = ""
-    for district in DISTRICT_COORDS:
-        if district.lower() in req.message.lower():
-            dist_data = list_districts(db=db)
-            d_stat = next((d for d in dist_data if d["district"] == district), None)
-            if d_stat:
-                context_data = f"Current stats for {district}: Average price LKR {d_stat['avg_price']:,.0f}, Total listings: {d_stat['count']}."
-            break
 
-    system_prompt = f"""You are an expert real estate AI assistant for the Sri Lanka Property Price Intelligence Platform.
+    try:
+        # Context extraction - get live market stats
+        stats_raw = get_stats(db)
+        avg_price_overall = stats_raw.get('avg_price_lkr') or 0
+        total_listings = stats_raw.get('total_listings', 0)
+
+        # District-aware context
+        context_data = ""
+        for district in DISTRICT_COORDS:
+            if district.lower() in req.message.lower():
+                try:
+                    dist_data = list_districts(db=db)
+                    d_stat = next((d for d in dist_data if d["district"] == district), None)
+                    if d_stat:
+                        avg_p = d_stat.get('avg_price') or 0
+                        context_data = f"Current stats for {district}: Average price LKR {avg_p:,.0f}, Total listings: {d_stat['count']}."
+                except Exception:
+                    pass
+                break
+
+        system_prompt = f"""You are an expert real estate AI assistant for the Sri Lanka Property Price Intelligence Platform.
 Provide helpful, data-driven advice about property prices, areas, and market trends in Sri Lanka.
 Use the following market context if relevant:
 {context_data}
-Overall Market: {stats_raw['total_listings']} total listings, average price: LKR {stats_raw['avg_price_lkr']:,.0f}.
+Overall Market: {total_listings} total listings, average price: LKR {avg_price_overall:,.0f}.
 Be concise, professional, and friendly. If you don't know something, be honest."""
 
-    messages = [{"role": "system", "content": system_prompt}]
-    if req.history:
-        messages.extend(req.history)
-    messages.append({"role": "user", "content": req.message})
+        messages = [{"role": "system", "content": system_prompt}]
+        if req.history:
+            messages.extend(req.history)
+        messages.append({"role": "user", "content": req.message})
 
-    try:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
