@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, cast, Float, case
@@ -146,23 +146,31 @@ async def trigger_scrape(source: str, location: str = "sri-lanka", db: Session =
         return {"error": "Invalid source"}
     return {"status": "success", "stats": stats, "location": location}
 
-@app.post("/trigger/scrape-mega")
-async def trigger_mega_scrape(db: Session = Depends(get_db)):
-    """The Deep Scraper: Visits every district specifically to pull hidden local data."""
+async def run_mega_scrape_task(db: Session):
+    """Worker function to process all districts without timing out the API."""
     districts = list(DISTRICT_COORDS.keys())
-    results = []
     for d in districts:
         try:
-            stats = await scrape_ikman(db, max_pages=5, location=d)
-            results.append({"district": d, "found": stats[0], "new": stats[1]})
-        except Exception as e:
-            results.append({"district": d, "error": str(e)})
+            await scrape_ikman(db, max_pages=5, location=d)
+        except Exception:
+            pass
     
     # Process them all immediately after!
-    agg = PriceAggregator(db)
-    agg.aggregate()
-    
-    return {"status": "success", "districts_scanned": len(districts), "results": results}
+    try:
+        from scraper.cleaner import DataCleaner
+        cleaner = DataCleaner(db)
+        cleaner.process_all()
+        
+        agg = PriceAggregator(db)
+        agg.aggregate()
+    except Exception:
+        pass
+
+@app.post("/trigger/scrape-mega")
+async def trigger_mega_scrape(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """The Deep Scraper: Starts a background job to scan all 25 districts."""
+    background_tasks.add_task(run_mega_scrape_task, db)
+    return {"status": "started", "message": "Mega Scraper is now crawling all 25 districts in the background. Please check back in 5-10 minutes."}
 
 
 @app.post("/trigger/process")
