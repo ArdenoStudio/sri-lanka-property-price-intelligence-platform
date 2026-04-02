@@ -20,70 +20,87 @@ USER_AGENTS = [
 
 class LPWScraper:
     SOURCE = "lpw"
-    SALES_URL = "https://www.lankapropertyweb.com/property-for-sale/?sort=latest&page="
-    LAND_URL = "https://www.lankapropertyweb.com/land-for-sale/?sort=latest&page="
-
+    
     def __init__(self, db: Session):
         self.db = db
 
-    async def scrape(self, max_pages: int = 20):
+    async def scrape(self, max_pages: int = 15, location: str = "sri-lanka"):
         import os
-        headers = {"User-Agent": random.choice(USER_AGENTS)}
-        total_found = 0
-        total_new = 0
-
+        from urllib.parse import urlparse
+        from playwright.async_api import async_playwright
+        
         proxy_url = os.getenv("PROXY_URL")
-        proxies = {"http://": proxy_url, "https://": proxy_url} if proxy_url else None
+        proxy_settings = None
+        if proxy_url:
+            parsed = urlparse(proxy_url)
+            proxy_settings = {"server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}"}
+            if parsed.username: proxy_settings["username"] = parsed.username
+            if parsed.password: proxy_settings["password"] = parsed.password
 
-        async with httpx.AsyncClient(headers=headers, timeout=30.0, proxies=proxies) as client:
-            for base_url in [self.SALES_URL, self.LAND_URL]:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True, proxy=proxy_settings)
+            context = await browser.new_context(user_agent=random.choice(USER_AGENTS))
+            page = await context.new_page()
+
+            # Speed optimization: block images, media, etc.
+            await page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["image", "media", "font"] else route.continue_())
+
+            total_found = 0
+            total_new = 0
+
+            # LPW has different base URLs for types
+            base_urls = [
+                "https://www.lankapropertyweb.com/property-for-sale/",
+                "https://www.lankapropertyweb.com/land-for-sale/"
+            ]
+
+            for base in base_urls:
+                # Adjust for location if any (LPW uses slug in path)
+                loc_slug = location.lower().replace(" ", "-")
+                if loc_slug != "sri-lanka":
+                    target_url = f"{base}{loc_slug}/?sort=latest&page="
+                else:
+                    target_url = f"{base}?sort=latest&page="
+
                 for page_num in range(1, max_pages + 1):
-                    url = f"{base_url}{page_num}"
-                    log.info("scraping_page", source=self.SOURCE, url=url)
+                    full_url = f"{target_url}{page_num}"
+                    log.info("scraping_lpw_page", page=page_num, url=full_url)
 
                     try:
-                        resp = await client.get(url)
-                        if resp.status_code != 200:
-                            log.warning("http_blocked", status=resp.status_code, url=url)
-                            # Fallback to playwright could be added here
-                            break
+                        await page.goto(full_url, wait_until="domcontentloaded", timeout=30000)
                         
-                        soup = BeautifulSoup(resp.text, "html.parser")
-                        cards = soup.select(".cl-listing-ads, .property-listing-row")
+                        # Wait for cards
+                        await page.wait_for_selector(".cl-listing-ads, .property-listing-row", timeout=10000)
+                        cards = await page.query_selector_all(".cl-listing-ads, .property-listing-row")
                         
                         if not cards:
-                            log.warning("no_cards_found", source=self.SOURCE, url=url)
+                            log.warning("no_lpw_cards_found", url=full_url)
                             break
-                        
-                        new_on_page = 0
+
                         for card in cards:
                             try:
-                                # Extract data from card
-                                title_elem = card.select_one(".cl-listing-desc-title, .listing-title")
-                                title = title_elem.text.strip() if title_elem else ""
+                                title_elem = await card.query_selector("h3, .cl-listing-desc-title")
+                                title = (await title_elem.inner_text()).strip() if title_elem else ""
                                 
-                                anchor = card.select_one("a")
-                                url_path = anchor['href'] if anchor else ""
-                                listing_url = url_path if url_path.startswith("http") else f"https://www.lankapropertyweb.com{url_path}"
+                                url_elem = await card.query_selector("a")
+                                href = await url_elem.get_attribute("href") if url_elem else ""
+                                listing_url = href if href.startswith("http") else f"https://www.lankapropertyweb.com{href}"
                                 
-                                source_id_match = re.search(r"/(\d+)\.html", url_path)
-                                if not source_id_match:
-                                    source_id_match = re.search(r"-(\d+)$", url_path.rstrip("/"))
-                                
-                                source_id = source_id_match.group(1) if source_id_match else url_path.split("/")[-1]
+                                # Extract ID
+                                sid_match = re.search(r"(\d+)\.html$", listing_url)
+                                source_id = sid_match.group(1) if sid_match else listing_url.split("/")[-1]
 
-                                price_elem = card.select_one(".cl-listing-price, .price")
-                                raw_price = price_elem.text.strip() if price_elem else ""
+                                price_elem = await card.query_selector(".cl-listing-price, .price")
+                                raw_price = (await price_elem.inner_text()).strip() if price_elem else ""
 
-                                loc_elem = card.select_one(".cl-listing-location, .location")
-                                raw_location = loc_elem.text.strip() if loc_elem else ""
+                                loc_elem = await card.query_selector(".cl-listing-location, .location")
+                                raw_loc = (await loc_elem.inner_text()).strip() if loc_elem else ""
 
-                                size_elem = card.select_one(".cl-listing-land-size, .land-size")
-                                raw_size = size_elem.text.strip() if size_elem else ""
+                                meta_elem = await card.query_selector(".cl-listing-land-size, .land-size, .cl-listing-category")
+                                raw_meta = (await meta_elem.inner_text()).strip() if meta_elem else ""
 
-                                # Type inference
                                 property_type = 'house'
-                                if 'land' in base_url: property_type = 'land'
+                                if 'land' in base: property_type = 'land'
                                 elif 'apartment' in title.lower(): property_type = 'apartment'
 
                                 stmt = insert(RawListing).values(
@@ -92,37 +109,31 @@ class LPWScraper:
                                     url=listing_url,
                                     title=title,
                                     raw_price=raw_price,
-                                    raw_location=raw_location,
-                                    raw_size=raw_size,
+                                    raw_location=raw_loc,
+                                    raw_size=raw_meta,
                                     property_type=property_type,
-                                    listing_type='sale',
+                                    listing_type='sale', # Default for these URLs
                                     scraped_at=datetime.utcnow()
                                 ).on_conflict_do_nothing()
 
                                 res = self.db.execute(stmt)
                                 if res.rowcount > 0:
-                                    new_on_page += 1
                                     total_new += 1
                                 total_found += 1
 
                             except Exception as e:
-                                log.error("card_parse_error", source=self.SOURCE, error=str(e))
+                                log.error("lpw_card_error", error=str(e))
                         
-                        log.info("page_complete", source=self.SOURCE, page=page_num, new=new_on_page)
-                        
-                        # Stop if old (approximate for LPW)
-                        date_elem = soup.select_one(".cl-listing-date, .date")
-                        if date_elem and ("3 days" in date_elem.text or "ago" in date_elem.text and "3d" in date_elem.text):
-                             log.info("reached_date_limit", source=self.SOURCE)
-                             break
-
-                        await asyncio.sleep(random.uniform(3, 7))
+                        self.db.commit()
+                        await asyncio.sleep(random.uniform(1, 2))
 
                     except Exception as e:
-                        log.error("page_request_error", source=self.SOURCE, url=url, error=str(e))
-        
-        return total_found, total_new
+                        log.error("lpw_page_error", url=full_url, error=str(e))
+                        break
 
-async def scrape_lpw(db: Session):
+            await browser.close()
+            return total_found, total_new
+
+async def scrape_lpw(db: Session, max_pages: int = 15, location: str = "sri-lanka"):
     scraper = LPWScraper(db)
-    return await scraper.scrape(max_pages=20)
+    return await scraper.scrape(max_pages=max_pages, location=location)
