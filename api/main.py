@@ -571,6 +571,41 @@ async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
     }
 
 
+# ---------------------------------------------------------------------------
+# AI Assistant (Groq Chat)
+# ---------------------------------------------------------------------------
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list = []
+
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    import os
+    if not os.getenv("GROQ_API_KEY"):
+        return {"response": "System Error: GROQ_API_KEY missing from .env file.", "context_used": False}
+        
+    try:
+        from services.groq_service import GroqService
+        groq = GroqService()
+        res = await groq.extract_search_params(request.message)
+        
+        if res and res.get("type") == "database_query":
+            filters = res.get("filters", {})
+            return {
+                "response": f"Got it! I am dynamically extracting your filters: {filters}. (Database query execution coming soon!)", 
+                "context_used": True
+            }
+        else:
+            return {
+                "response": res.get("message", "I didn't understand that."), 
+                "context_used": False
+            }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"response": str(e), "context_used": False}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
