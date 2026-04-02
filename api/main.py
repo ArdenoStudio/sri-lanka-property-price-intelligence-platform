@@ -161,6 +161,14 @@ async def trigger_process(db: Session = Depends(get_db)):
         "geocoded": geocoded,
     }
 
+@app.post("/reset-pipeline")
+async def reset_pipeline(db: Session = Depends(get_db)):
+    """Wipes the listings table and marks all raw_listings as unprocessed to force a full re-clean."""
+    db.query(Listing).delete()
+    db.query(RawListing).update({RawListing.is_processed: False})
+    db.commit()
+    return {"status": "success", "message": "Pipeline cleared. Call /trigger/process to re-clean everything."}
+
 
 # ---------------------------------------------------------------------------
 # Stats
