@@ -580,13 +580,14 @@ class ChatRequest(BaseModel):
     history: list = []
 
 @app.post("/chat")
+@app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     import os
     if not os.getenv("GROQ_API_KEY"):
         return {"response": "System Error: GROQ_API_KEY missing from .env file.", "context_used": False}
         
     try:
-        from services.groq_service import GroqService
+        from api.services.groq_service import GroqService
         groq = GroqService()
         res = await groq.extract_search_params(request.message)
         
