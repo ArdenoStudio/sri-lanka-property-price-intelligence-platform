@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, ExternalLink, Sparkles, Scale, Info, Layers } from 'lucide-react';
 import type { Listing } from '../api';
@@ -9,6 +10,18 @@ interface Props {
 }
 
 export function ComparisonModal({ isOpen, onClose, listings }: Props) {
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const compareRows = [
@@ -41,30 +54,30 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 sm:px-6">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 sm:px-6">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/85 backdrop-blur-md"
       />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        initial={{ opacity: 0, scale: 0.9, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="relative w-full max-w-5xl bg-bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        exit={{ opacity: 0, scale: 0.9, y: 30 }}
+        className="relative w-full max-w-5xl bg-bg-card border border-border rounded-[32px] shadow-[0_32px_120px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[92vh]"
       >
         {/* Header */}
-        <div className="p-6 border-b border-border flex items-center justify-between bg-bg-card-hover/30">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-white shadow-lg shadow-accent/20">
-              <Scale className="w-6 h-6" />
+        <div className="p-8 border-b border-border flex items-center justify-between bg-bg-card-hover/20">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center text-white shadow-xl shadow-accent/20">
+              <Scale className="w-7 h-7" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-text-primary uppercase tracking-tight">Comparison Analysis</h2>
-              <p className="text-xs text-text-muted font-bold uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+              <h2 className="text-3xl font-black text-text-primary uppercase tracking-tight leading-none">Comparison Analysis</h2>
+              <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest flex items-center gap-2 mt-2">
                 <Sparkles className="w-3.5 h-3.5 text-accent-light" />
                 Side-by-side Market Intelligence
               </p>
@@ -72,21 +85,21 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-border/20 rounded-xl transition-colors cursor-pointer text-text-muted hover:text-text-primary border-none"
+            className="p-3 hover:bg-border/30 rounded-2xl transition-all cursor-pointer text-text-muted hover:text-text-primary border border-border group"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-x-auto p-6 scrollbar-hide">
-          <div className="min-w-[800px]">
-            <div className="grid grid-cols-[200px_repeat(3,1fr)] gap-6">
+        <div className="flex-1 overflow-x-auto p-8 scrollbar-hide">
+          <div className="min-w-[850px]">
+            <div className="grid grid-cols-[220px_repeat(3,1fr)] gap-8">
               {/* Labels Column */}
               <div className="pt-24 space-y-12">
                 {compareRows.map((row) => (
-                  <div key={row.label} className="h-12 flex items-center">
-                    <span className="text-xs font-bold text-text-muted uppercase tracking-widest border-l-2 border-accent pl-3">
+                  <div key={row.label} className="h-14 flex items-center">
+                    <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] border-l-3 border-accent pl-4">
                       {row.label}
                     </span>
                   </div>
@@ -95,16 +108,16 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
 
               {/* Data Columns */}
               {listings.map((listing) => (
-                <div key={listing.id} className="space-y-6">
+                <div key={listing.id} className="space-y-8">
                   {/* Card Header */}
                   <div className="h-20 flex flex-col justify-end">
-                    <h3 className="text-sm font-bold text-text-primary line-clamp-2 mb-2 leading-tight">
+                    <h3 className="text-base font-bold text-text-primary line-clamp-2 mb-3 leading-snug">
                       {listing.title}
                     </h3>
-                    <div className={`p-1.5 px-3 rounded-lg bg-bg-card-hover border border-border flex items-center gap-2 group hover:border-accent transition-colors`}>
-                      <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{listing.source}</span>
-                      <a href={listing.url || '#'} target="_blank" className="text-accent-light hover:text-white transition-colors">
-                        <ExternalLink className="w-3 h-3" />
+                    <div className={`p-2 px-4 rounded-xl bg-bg-card-hover border border-border flex items-center gap-2.5 group hover:border-accent transition-all duration-300`}>
+                      <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{listing.source}</span>
+                      <a href={listing.url || '#'} target="_blank" className="text-accent-light hover:text-white transition-colors ml-auto">
+                        <ExternalLink className="w-4 h-4" />
                       </a>
                     </div>
                   </div>
@@ -112,9 +125,9 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
                   {/* Feature Rows */}
                   <div className="space-y-12 pt-4">
                     {compareRows.map((row) => (
-                      <div key={row.label} className="h-12 flex items-center">
-                        <div className="w-full p-4 bg-bg-card-hover/50 border border-border/50 rounded-2xl group hover:border-accent/40 transition-all duration-300">
-                          <p className={`text-sm font-bold truncate ${row.key === 'price_lkr' || row.key === 'price_per_perch' ? 'text-accent-light' : 'text-text-primary'}`}>
+                      <div key={row.label} className="h-14 flex items-center">
+                        <div className="w-full p-5 bg-bg-card-hover/40 border border-border/40 rounded-2xl group hover:border-accent/40 hover:bg-accent/5 transition-all duration-300">
+                          <p className={`text-base font-black truncate ${row.key === 'price_lkr' || row.key === 'price_per_perch' ? 'text-accent-light' : 'text-text-primary'}`}>
                             {formatValue(listing, row.key)}
                           </p>
                         </div>
@@ -123,13 +136,13 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
                   </div>
                   
                   {/* Footer Action */}
-                  <div className="pt-4">
+                  <div className="pt-6">
                     <a 
                       href={listing.url || '#'} 
                       target="_blank" 
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-accent/10 border border-accent/20 text-accent-light rounded-2xl text-xs font-bold hover:bg-accent text-white transition-all shadow-lg hover:shadow-accent/20"
+                      className="w-full flex items-center justify-center gap-3 py-4 bg-accent/5 border border-accent/20 text-accent-light rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all shadow-lg hover:shadow-accent/40"
                     >
-                      View Original Listing
+                      View Original
                       <ExternalLink className="w-4 h-4" />
                     </a>
                   </div>
@@ -138,9 +151,9 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
               
               {/* Empty state columns */}
               {Array.from({ length: 3 - listings.length }).map((_, i) => (
-                <div key={i} className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-3xl opacity-20 mt-20">
-                  <Layers className="w-12 h-12 text-text-muted mb-4" />
-                  <p className="text-xs font-bold uppercase tracking-widest text-text-muted">Empty slot</p>
+                <div key={i} className="flex flex-col items-center justify-center border-2 border-dashed border-border/40 rounded-[32px] opacity-20 mt-20 min-h-[400px]">
+                  <Layers className="w-14 h-14 text-text-muted mb-6" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-text-muted">Empty Slot</p>
                 </div>
               ))}
             </div>
@@ -148,14 +161,14 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
         </div>
 
         {/* Action Footer */}
-        <div className="p-6 border-t border-border bg-bg-card-hover/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-text-muted text-[10px] font-bold uppercase tracking-widest">
-            <Info className="w-4 h-4 text-accent" />
+        <div className="p-8 border-t border-border bg-bg-card-hover/30 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3 text-text-muted text-[10px] font-black uppercase tracking-widest">
+            <Info className="w-5 h-5 text-accent" />
             Comparison limited to 3 items for optimal visualization
           </div>
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-8 py-3 bg-bg-card border border-border text-text-primary rounded-2xl text-xs font-bold hover:bg-bg-card-hover transition-all cursor-pointer"
+            className="w-full sm:w-auto px-10 py-4 bg-bg-card border border-border text-text-primary rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all cursor-pointer shadow-lg active:scale-95"
           >
             Close Comparison
           </button>
