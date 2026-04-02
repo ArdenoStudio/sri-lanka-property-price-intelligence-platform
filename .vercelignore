@@ -1,0 +1,18 @@
+# Ignore Python backend files — Vercel only builds /dashboard (React frontend)
+# The FastAPI backend runs on Railway, not Vercel.
+requirements.txt
+runtime.txt
+Dockerfile
+docker-compose.yml
+railway.json
+api/
+db/
+scraper/
+scheduler/
+scripts/
+tests/
+run_scraper.py
+*.py
+__pycache__/
+*.pyc
+.env
