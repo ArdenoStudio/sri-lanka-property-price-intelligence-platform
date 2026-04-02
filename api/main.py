@@ -137,14 +137,32 @@ def health_check(db: Session = Depends(get_db)):
 
 
 @app.post("/trigger/scrape/{source}")
-async def trigger_scrape(source: str, db: Session = Depends(get_db)):
+async def trigger_scrape(source: str, location: str = "sri-lanka", db: Session = Depends(get_db)):
     if source == "ikman":
-        stats = await scrape_ikman(db)
+        stats = await scrape_ikman(db, max_pages=15, location=location)
     elif source == "lpw":
         stats = await scrape_lpw(db)
     else:
         return {"error": "Invalid source"}
-    return {"status": "success", "stats": stats}
+    return {"status": "success", "stats": stats, "location": location}
+
+@app.post("/trigger/scrape-mega")
+async def trigger_mega_scrape(db: Session = Depends(get_db)):
+    """The Deep Scraper: Visits every district specifically to pull hidden local data."""
+    districts = list(DISTRICT_COORDS.keys())
+    results = []
+    for d in districts:
+        try:
+            stats = await scrape_ikman(db, max_pages=5, location=d)
+            results.append({"district": d, "found": stats[0], "new": stats[1]})
+        except Exception as e:
+            results.append({"district": d, "error": str(e)})
+    
+    # Process them all immediately after!
+    agg = PriceAggregator(db)
+    agg.aggregate()
+    
+    return {"status": "success", "districts_scanned": len(districts), "results": results}
 
 
 @app.post("/trigger/process")

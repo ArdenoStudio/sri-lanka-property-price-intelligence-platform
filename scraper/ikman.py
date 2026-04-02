@@ -25,11 +25,14 @@ class IkmanScraper:
     def __init__(self, db: Session):
         self.db = db
 
-    async def scrape(self, max_pages: int = 50):
+    async def scrape(self, max_pages: int = 50, location: str = "sri-lanka"):
         import os
         from urllib.parse import urlparse
 
         proxy_url = os.getenv("PROXY_URL")
+        # Ikman URL pattern: https://ikman.lk/en/ads/{location}/property
+        location_slug = location.lower().replace(" ", "-")
+        base_url = f"https://ikman.lk/en/ads/{location_slug}/property?sort=date&order=desc&buy_now=0&urgent=0&page="
         proxy_settings = None
         if proxy_url:
             parsed = urlparse(proxy_url)
@@ -51,7 +54,7 @@ class IkmanScraper:
             total_new = 0
 
             for page_num in range(1, max_pages + 1):
-                url = f"{self.BASE_URL}{page_num}"
+                url = f"{base_url}{page_num}"
                 log.info("scraping_page", source=self.SOURCE, page=page_num, url=url)
 
                 try:
