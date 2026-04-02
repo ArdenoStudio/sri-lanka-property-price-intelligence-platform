@@ -1,0 +1,576 @@
+from fastapi import FastAPI, Depends, Query
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from sqlalchemy import func, desc, cast, Float, case
+from typing import List, Optional
+from db.connection import get_db
+from db.models import Listing, RawListing, ScrapeRun, PriceAggregate
+from scraper.ikman import scrape_ikman
+from scraper.lpw import scrape_lpw
+from scraper.cleaner import DataCleaner
+from scraper.geocoder import Geocoder
+from datetime import datetime, timedelta
+from pydantic import BaseModel
+import os
+from groq import Groq
+
+app = FastAPI(title="Sri Lanka Property Price Intelligence Platform")
+
+# CORS - allow dashboard frontends
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ---------------------------------------------------------------------------
+# Pydantic response models
+# ---------------------------------------------------------------------------
+
+class ListingOut(BaseModel):
+    id: int
+    source: str
+    title: Optional[str] = None
+    price_lkr: Optional[float] = None
+    price_per_perch: Optional[float] = None
+    raw_price: Optional[str] = None
+    district: Optional[str] = None
+    city: Optional[str] = None
+    raw_location: Optional[str] = None
+    property_type: Optional[str] = None
+    listing_type: Optional[str] = None
+    size_perches: Optional[float] = None
+    bedrooms: Optional[int] = None
+    bathrooms: Optional[int] = None
+    url: Optional[str] = None
+    first_seen_at: Optional[datetime] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+
+class RawListingOut(BaseModel):
+    id: int
+    source: str
+    title: Optional[str] = None
+    raw_price: Optional[str] = None
+    raw_location: Optional[str] = None
+    property_type: Optional[str] = None
+    listing_type: Optional[str] = None
+    url: Optional[str] = None
+    scraped_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DistrictStat(BaseModel):
+    district: str
+    count: int
+    avg_price: Optional[float] = None
+    median_price: Optional[float] = None
+
+
+class HeatmapPoint(BaseModel):
+    district: str
+    lat: float
+    lng: float
+    count: int
+    avg_price: Optional[float] = None
+    median_price: Optional[float] = None
+    property_type: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Sri Lanka district center coordinates for map visualization
+# ---------------------------------------------------------------------------
+
+DISTRICT_COORDS = {
+    "Colombo": (6.9271, 79.8612),
+    "Gampaha": (7.0840, 80.0098),
+    "Kalutara": (6.5854, 79.9607),
+    "Kandy": (7.2906, 80.6337),
+    "Matale": (7.4675, 80.6234),
+    "Nuwara Eliya": (6.9497, 80.7891),
+    "Galle": (6.0535, 80.2210),
+    "Matara": (5.9549, 80.5550),
+    "Hambantota": (6.1243, 81.1185),
+    "Jaffna": (9.6615, 80.0255),
+    "Kilinochchi": (9.3803, 80.3770),
+    "Mannar": (8.9810, 79.9044),
+    "Vavuniya": (8.7514, 80.4971),
+    "Mullaitivu": (9.2671, 80.8142),
+    "Batticaloa": (7.7310, 81.6747),
+    "Ampara": (7.2964, 81.6747),
+    "Trincomalee": (8.5874, 81.2152),
+    "Kurunegala": (7.4863, 80.3647),
+    "Puttalam": (8.0362, 79.8283),
+    "Anuradhapura": (8.3114, 80.4037),
+    "Polonnaruwa": (7.9403, 81.0188),
+    "Badulla": (6.9934, 81.0550),
+    "Monaragala": (6.8728, 81.3507),
+    "Ratnapura": (6.6828, 80.3992),
+    "Kegalle": (7.2513, 80.3464),
+}
+
+
+# ---------------------------------------------------------------------------
+# Health & Admin
+# ---------------------------------------------------------------------------
+
+@app.get("/health")
+def health_check(db: Session = Depends(get_db)):
+    last_run = db.query(ScrapeRun).order_by(desc(ScrapeRun.finished_at)).first()
+    raw_count = db.query(func.count(RawListing.id)).scalar()
+    clean_count = db.query(func.count(Listing.id)).scalar()
+    return {
+        "status": "ok",
+        "db": "connected",
+        "raw_listings": raw_count,
+        "clean_listings": clean_count,
+        "last_scrape": last_run.finished_at if last_run else None,
+    }
+
+
+@app.post("/trigger/scrape/{source}")
+async def trigger_scrape(source: str, db: Session = Depends(get_db)):
+    if source == "ikman":
+        stats = await scrape_ikman(db)
+    elif source == "lpw":
+        stats = await scrape_lpw(db)
+    else:
+        return {"error": "Invalid source"}
+    return {"status": "success", "stats": stats}
+
+
+@app.post("/trigger/process")
+async def trigger_process(db: Session = Depends(get_db)):
+    cleaner = DataCleaner(db)
+    processed = cleaner.process_all()
+
+    geocoder = Geocoder(db)
+    geocoded = geocoder.geocode_listings()
+
+    return {
+        "status": "success",
+        "processed": processed,
+        "geocoded": geocoded,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Stats
+# ---------------------------------------------------------------------------
+
+@app.get("/stats")
+def get_stats(db: Session = Depends(get_db)):
+    total_clean = db.query(func.count(Listing.id)).scalar()
+    has_districts = db.query(func.count(Listing.id)).filter(Listing.district.isnot(None)).scalar() > 0
+
+    if total_clean > 0:
+        total_listings = total_clean
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        recent_listings = db.query(func.count(Listing.id)).filter(
+            Listing.first_seen_at >= seven_days_ago
+        ).scalar()
+        avg_price = db.query(func.avg(Listing.price_lkr)).filter(
+            Listing.price_lkr.isnot(None),
+            Listing.is_outlier == False,
+        ).scalar()
+        by_type = dict(
+            db.query(Listing.property_type, func.count(Listing.id))
+            .group_by(Listing.property_type)
+            .all()
+        )
+    else:
+        total_listings = db.query(func.count(RawListing.id)).scalar()
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        recent_listings = db.query(func.count(RawListing.id)).filter(
+            RawListing.scraped_at >= seven_days_ago
+        ).scalar()
+        avg_price = None
+        by_type = dict(
+            db.query(RawListing.property_type, func.count(RawListing.id))
+            .group_by(RawListing.property_type)
+            .all()
+        )
+
+    # Always scan titles for district count (more reliable than relying on cleaned district field)
+    districts_covered = (
+        db.query(func.count(func.distinct(Listing.district))).filter(Listing.district.isnot(None)).scalar()
+        if has_districts
+        else sum(
+            1 for d in DISTRICT_COORDS
+            if db.query(func.count(RawListing.id)).filter(RawListing.title.ilike(f"%{d}%")).scalar() > 0
+        )
+    )
+
+    last_run = db.query(ScrapeRun).order_by(desc(ScrapeRun.finished_at)).first()
+
+    return {
+        "total_listings": total_listings,
+        "listings_last_7_days": recent_listings,
+        "avg_price_lkr": float(avg_price) if avg_price else None,
+        "districts_covered": districts_covered,
+        "listings_by_type": by_type,
+        "last_updated": last_run.finished_at.isoformat() if last_run and last_run.finished_at else None,
+        "data_source": "cleaned" if total_clean > 0 else "raw",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Districts
+# ---------------------------------------------------------------------------
+
+@app.get("/districts")
+def list_districts(
+    property_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    has_districts = db.query(func.count(Listing.id)).filter(Listing.district.isnot(None)).scalar() > 0
+
+    if has_districts:
+        query = db.query(
+            Listing.district,
+            func.count(Listing.id).label("count"),
+            func.avg(Listing.price_lkr).label("avg_price"),
+        ).filter(Listing.district.isnot(None), Listing.is_outlier == False)
+
+        if property_type:
+            query = query.filter(Listing.property_type == property_type)
+
+        results = query.group_by(Listing.district).order_by(desc("count")).all()
+        return [
+            {
+                "district": d,
+                "count": c,
+                "avg_price": round(float(a), 2) if a else None,
+            }
+            for d, c, a in results
+        ]
+    else:
+        # Scan raw_listings titles for district names
+        results = []
+        for district in DISTRICT_COORDS:
+            dq = db.query(func.count(RawListing.id)).filter(
+                RawListing.title.ilike(f"%{district}%")
+            )
+            if property_type:
+                dq = dq.filter(RawListing.property_type == property_type)
+            count = dq.scalar()
+            if count and count > 0:
+                results.append({"district": district, "count": count, "avg_price": None})
+        results.sort(key=lambda x: x["count"], reverse=True)
+        return results
+
+
+# ---------------------------------------------------------------------------
+# Heatmap data
+# ---------------------------------------------------------------------------
+
+@app.get("/heatmap")
+def get_heatmap(
+    property_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    has_districts = db.query(func.count(Listing.id)).filter(Listing.district.isnot(None)).scalar() > 0
+
+    points = []
+
+    if has_districts:
+        query = db.query(
+            Listing.district,
+            func.count(Listing.id).label("count"),
+            func.avg(Listing.price_lkr).label("avg_price"),
+        ).filter(
+            Listing.district.isnot(None),
+            Listing.is_outlier == False,
+        )
+
+        if property_type:
+            query = query.filter(Listing.property_type == property_type)
+
+        results = query.group_by(Listing.district).all()
+
+        for district, count, avg_price in results:
+            coords = DISTRICT_COORDS.get(district)
+            if coords:
+                points.append({
+                    "district": district,
+                    "lat": coords[0],
+                    "lng": coords[1],
+                    "count": count,
+                    "avg_price": round(float(avg_price), 2) if avg_price else None,
+                })
+    else:
+        # Fallback: scan raw_listings titles for district names
+        for district, coords in DISTRICT_COORDS.items():
+            dq = db.query(func.count(RawListing.id)).filter(
+                RawListing.title.ilike(f"%{district}%")
+            )
+            if property_type:
+                dq = dq.filter(RawListing.property_type == property_type)
+            count = dq.scalar()
+            if count and count > 0:
+                points.append({
+                    "district": district,
+                    "lat": coords[0],
+                    "lng": coords[1],
+                    "count": count,
+                    "avg_price": None,
+                })
+
+    return {"points": points, "total_districts": len(points)}
+
+
+# ---------------------------------------------------------------------------
+# Listings (with filtering, sorting, pagination)
+# ---------------------------------------------------------------------------
+
+@app.get("/listings")
+def get_listings(
+    district: Optional[str] = None,
+    property_type: Optional[str] = None,
+    listing_type: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    sort: str = Query("newest", pattern="^(newest|price_asc|price_desc)$"),
+    limit: int = Query(30, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
+    total_clean = db.query(func.count(Listing.id)).scalar()
+
+    if total_clean > 0:
+        # Join with raw_listings to get title and URL
+        query = db.query(Listing, RawListing.title, RawListing.url, RawListing.raw_price).outerjoin(
+            RawListing, Listing.raw_id == RawListing.id
+        ).filter(Listing.is_outlier == False)
+
+        if district:
+            # Robust filter: check both clean district field and raw title
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    Listing.district == district,
+                    RawListing.title.ilike(f"%{district}%")
+                )
+            )
+        if property_type:
+            query = query.filter(Listing.property_type == property_type)
+        if listing_type:
+            query = query.filter(Listing.listing_type == listing_type)
+        if min_price is not None:
+            query = query.filter(Listing.price_lkr >= min_price)
+        if max_price is not None:
+            query = query.filter(Listing.price_lkr <= max_price)
+
+        total = query.count()
+
+        if sort == "newest":
+            query = query.order_by(desc(Listing.first_seen_at))
+        elif sort == "price_asc":
+            query = query.order_by(Listing.price_lkr.asc().nullslast())
+        elif sort == "price_desc":
+            query = query.order_by(Listing.price_lkr.desc().nullslast())
+
+        results = query.offset(offset).limit(limit).all()
+
+        return {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "listings": [
+                {
+                    "id": l.id,
+                    "source": l.source,
+                    "title": raw_title or l.source_id,
+                    "price_lkr": float(l.price_lkr) if l.price_lkr else None,
+                    "price_per_perch": float(l.price_per_perch) if l.price_per_perch else None,
+                    "raw_price": raw_price,
+                    "district": l.district,
+                    "city": l.city,
+                    "raw_location": l.raw_location,
+                    "property_type": l.property_type,
+                    "listing_type": l.listing_type,
+                    "size_perches": float(l.size_perches) if l.size_perches else None,
+                    "bedrooms": l.bedrooms,
+                    "bathrooms": l.bathrooms,
+                    "url": raw_url,
+                    "first_seen_at": l.first_seen_at.isoformat() if l.first_seen_at else None,
+                    "lat": float(l.lat) if l.lat else None,
+                    "lng": float(l.lng) if l.lng else None,
+                }
+                for l, raw_title, raw_url, raw_price in results
+            ],
+        }
+    else:
+        # Fallback: serve raw_listings
+        query = db.query(RawListing)
+
+        if property_type:
+            query = query.filter(RawListing.property_type == property_type)
+        if listing_type:
+            query = query.filter(RawListing.listing_type == listing_type)
+
+        total = query.count()
+
+        query = query.order_by(desc(RawListing.scraped_at))
+        results = query.offset(offset).limit(limit).all()
+
+        return {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "data_source": "raw",
+            "listings": [
+                {
+                    "id": r.id,
+                    "source": r.source,
+                    "title": r.title,
+                    "raw_price": r.raw_price,
+                    "price_lkr": None,
+                    "price_per_perch": None,
+                    "district": None,
+                    "city": None,
+                    "raw_location": r.raw_location,
+                    "property_type": r.property_type,
+                    "listing_type": r.listing_type,
+                    "size_perches": None,
+                    "bedrooms": None,
+                    "bathrooms": None,
+                    "url": r.url,
+                    "first_seen_at": r.scraped_at.isoformat() if r.scraped_at else None,
+                    "lat": None,
+                    "lng": None,
+                }
+                for r in results
+            ],
+        }
+
+
+# ---------------------------------------------------------------------------
+# Prices (time-series for charts)
+# ---------------------------------------------------------------------------
+
+@app.get("/prices")
+def get_prices(
+    district: str,
+    property_type: str = "land",
+    months: int = Query(9, ge=1, le=24),
+    db: Session = Depends(get_db),
+):
+    aggregates = (
+        db.query(PriceAggregate)
+        .filter(
+            PriceAggregate.district == district,
+            PriceAggregate.property_type == property_type,
+        )
+        .order_by(desc(PriceAggregate.period_year), desc(PriceAggregate.period_month))
+        .limit(months)
+        .all()
+    )
+
+    return [
+        {
+            "year": a.period_year,
+            "month": a.period_month,
+            "median_price_lkr": float(a.median_price_lkr) if a.median_price_lkr else None,
+            "median_price_per_perch": float(a.median_price_per_perch) if a.median_price_per_perch else None,
+            "avg_price_lkr": float(a.avg_price_lkr) if a.avg_price_lkr else None,
+            "count": a.listing_count,
+        }
+        for a in aggregates
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Recent listings (legacy endpoint, kept for compatibility)
+# ---------------------------------------------------------------------------
+
+@app.get("/listings/recent")
+def recent_listings(
+    district: Optional[str] = None,
+    property_type: Optional[str] = None,
+    limit: int = Query(50, le=100),
+    db: Session = Depends(get_db),
+):
+    total_clean = db.query(func.count(Listing.id)).scalar()
+
+    if total_clean > 0:
+        query = db.query(Listing)
+        if district:
+            query = query.filter(Listing.district == district)
+        if property_type:
+            query = query.filter(Listing.property_type == property_type)
+        return query.order_by(desc(Listing.first_seen_at)).limit(limit).all()
+    else:
+        query = db.query(RawListing)
+        if property_type:
+            query = query.filter(RawListing.property_type == property_type)
+        return query.order_by(desc(RawListing.scraped_at)).limit(limit).all()
+
+
+# ---------------------------------------------------------------------------
+# AI Chat (Groq)
+# ---------------------------------------------------------------------------
+
+class ChatRequest(BaseModel):
+    message: str
+    history: Optional[List[dict]] = []
+
+@app.post("/chat")
+async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    
+    # 1. Context extraction (simplified RAG)
+    # Get some market stats to provide context
+    stats_raw = get_stats(db)
+    
+    # Try to find if user is asking about a specific district
+    context_data = ""
+    for district in DISTRICT_COORDS:
+        if district.lower() in req.message.lower():
+            # Get specific district stats
+            dist_data = list_districts(db=db)
+            d_stat = next((d for d in dist_data if d["district"] == district), None)
+            if d_stat:
+                context_data = f"Current stats for {district}: Average price LKR {d_stat['avg_price']}, Total listings: {d_stat['count']}."
+            break
+
+    system_prompt = f"""
+    You are an expert real estate AI assistant for the Sri Lanka Property Price Intelligence Platform.
+    Provide helpful, data-driven advice about property prices, areas, and market trends in Sri Lanka.
+    Use the following market context if relevant:
+    {context_data}
+    Overall Market Status: {stats_raw['total_listings']} total listings, average price across all cleaned data: {stats_raw['avg_price_lkr']} LKR.
+    
+    Be concise, professional, and friendly. If you don't know something, be honest.
+    """
+
+    messages = [{"role": "system", "content": system_prompt}]
+    if req.history:
+        messages.extend(req.history)
+    messages.append({"role": "user", "content": req.message})
+
+    completion = client.chat.completions.create(
+        model="llama-3.1-70b-versatile",
+        messages=messages,
+        temperature=0.7,
+        max_tokens=1024,
+    )
+
+    return {
+        "response": completion.choices[0].message.content,
+        "context_used": bool(context_data)
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
