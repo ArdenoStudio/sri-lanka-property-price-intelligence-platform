@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, cast, Float, case
+from sqlalchemy.dialects.postgresql import insert
 from typing import List, Optional
 from db.connection import get_db, SessionLocal
 from db.models import Listing, RawListing, ScrapeRun, PriceAggregate
@@ -241,7 +242,11 @@ class PriceAggregator:
                 func.avg(Listing.price_per_perch).label('avg_perch'),
                 func.count(Listing.id).label('count')
             )
-            .filter(Listing.price_lkr.isnot(None), Listing.is_outlier == False)
+            .filter(
+                Listing.price_lkr.isnot(None),
+                Listing.district.isnot(None),
+                Listing.is_outlier == False
+            )
             .group_by(Listing.district, Listing.property_type, 'year', 'month')
             .all()
         )
