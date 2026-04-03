@@ -15,4 +15,4 @@ echo "Ardeno Studio: Scheduler started with PID $SCHEDULER_PID"
 
 # Start the API (This is the main process - must always run)
 echo "Ardeno Studio: Starting API Server on port ${PORT:-8000}..."
-exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}
+exec python -m uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}

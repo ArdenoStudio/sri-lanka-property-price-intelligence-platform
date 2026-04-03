@@ -23,4 +23,4 @@ ENV PYTHONPATH=/app
 RUN chmod +x start.sh
 
 # Default command: Unified start script
-CMD ["./start.sh"]
+CMD ["bash", "start.sh"]
