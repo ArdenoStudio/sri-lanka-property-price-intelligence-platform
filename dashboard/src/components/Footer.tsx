@@ -8,7 +8,7 @@ export function Footer() {
       <div
         className="w-full h-px opacity-20"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(229,9,20,0.5) 20%, rgba(255,255,255,0.2) 50%, rgba(229,9,20,0.5) 80%, transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.5) 20%, rgba(255,255,255,0.2) 50%, rgba(99,102,241,0.5) 80%, transparent)',
         }}
       />
       
@@ -22,7 +22,7 @@ export function Footer() {
       />
       
       <div className="py-8 flex flex-col items-center">
-        <ArdenoProductionCredit color="#E50914" />
+        <ArdenoProductionCredit color="#6366f1" />
         
         <motion.div 
           initial={{ opacity: 0 }}
