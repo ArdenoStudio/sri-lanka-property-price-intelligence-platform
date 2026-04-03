@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const ArdenoProductionCredit: React.FC<{ color?: string }> = ({ color = "#E50914" }) => {
+const ArdenoProductionCredit: React.FC<{ color?: string }> = ({ color = "#6366f1" }) => {
   const [isAutoShining, setIsAutoShining] = useState(false);
   const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

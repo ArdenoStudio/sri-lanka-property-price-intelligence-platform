@@ -18,8 +18,8 @@ const STYLES = `
     50%      { opacity:0.6;  transform:scale(1.15); filter: blur(30px); }
   }
   @keyframes avl-drawPath {
-    from { stroke-dashoffset: 2000; filter: drop-shadow(0 0 2px rgba(229,9,20,0)); }
-    to   { stroke-dashoffset: 0; filter: drop-shadow(0 0 12px rgba(229,9,20,0.6)); }
+    from { stroke-dashoffset: 2000; filter: drop-shadow(0 0 2px rgba(99,102,241,0)); }
+    to   { stroke-dashoffset: 0; filter: drop-shadow(0 0 12px rgba(99,102,241,0.6)); }
   }
   @keyframes avl-fillFade {
     from { opacity: 0; filter: blur(4px); transform: scale(0.95); }
@@ -33,7 +33,7 @@ const STYLES = `
     from { opacity:0; transform: translateY(15px) scale(0.9); filter:blur(8px); }
     to   { opacity:1; transform: translateY(0) scale(1); filter:blur(0); }
   }
-  @keyframes avl-flashRed {
+  @keyframes avl-flashBlue {
     0%   { opacity:0; }
     40%  { opacity:1; filter: blur(10px); }
     100% { opacity:0; filter: blur(0px); }
@@ -110,13 +110,13 @@ const StaggerWord = memo<{ text: string; baseDelay: number; charStyle: React.CSS
 const SvgDefs = memo(() => (
   <defs>
     <linearGradient id="avl-aGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#ff1420" />
-      <stop offset="50%" stopColor="#E50914" />
-      <stop offset="100%" stopColor="#cc0812" />
+      <stop offset="0%" stopColor="#818cf8" />
+      <stop offset="50%" stopColor="#6366f1" />
+      <stop offset="100%" stopColor="#4f46e5" />
     </linearGradient>
     <linearGradient id="avl-aStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#ff4d55" />
-      <stop offset="100%" stopColor="#E50914" />
+      <stop offset="0%" stopColor="#a5b4fc" />
+      <stop offset="100%" stopColor="#6366f1" />
     </linearGradient>
     <filter id="avl-aGlow">
       <feGaussianBlur stdDeviation="8" result="g" />
@@ -148,7 +148,7 @@ const ArdenoPhase = memo<{ exiting: boolean; flashRed: boolean; progress: number
       <div
         style={{
           ...FULL_COVER,
-          background: "radial-gradient(circle at 50% 45%, rgba(229,9,20,0.15) 0%, transparent 50%)",
+          background: "radial-gradient(circle at 50% 45%, rgba(99,102,241,0.15) 0%, transparent 50%)",
           animation: "avl-breathe 5s ease-in-out infinite",
           pointerEvents: "none",
         }}
@@ -203,9 +203,9 @@ const ArdenoPhase = memo<{ exiting: boolean; flashRed: boolean; progress: number
                 fontSize: "14px",
                 fontWeight: 300,
                 fontStyle: "italic",
-                color: "rgba(229,9,20,0.8)",
+                color: "rgba(99,102,241,0.8)",
                 letterSpacing: "0.5em",
-                textShadow: "0 0 12px rgba(229,9,20,0.4)"
+                textShadow: "0 0 12px rgba(99,102,241,0.4)"
               }}
               animName="avl-charInUp"
             />
@@ -219,7 +219,7 @@ const ArdenoPhase = memo<{ exiting: boolean; flashRed: boolean; progress: number
         </p>
         <div style={{ width: "100%", height: 1, background: "rgba(255,255,255,0.08)", overflow: "hidden", position: "relative" }}>
           <motion.div
-            style={{ width: "100%", height: "100%", background: "linear-gradient(90deg, transparent, #E50914)", transformOrigin: "left" }}
+            style={{ width: "100%", height: "100%", background: "linear-gradient(90deg, transparent, #6366f1)", transformOrigin: "left" }}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: progress / 100 }}
             transition={{ ease: "easeOut", duration: 0.1 }}
@@ -231,8 +231,8 @@ const ArdenoPhase = memo<{ exiting: boolean; flashRed: boolean; progress: number
         <div
           style={{
             ...FULL_COVER,
-            background: "radial-gradient(circle at 50% 50%, rgba(229,9,20,0.18) 0%, transparent 80%)",
-            animation: "avl-flashRed 0.6s cubic-bezier(0.16,1,0.3,1) forwards",
+            background: "radial-gradient(circle at 50% 50%, rgba(99,102,241,0.18) 0%, transparent 80%)",
+            animation: "avl-flashBlue 0.6s cubic-bezier(0.16,1,0.3,1) forwards",
             pointerEvents: "none",
             zIndex: 10,
           }}
