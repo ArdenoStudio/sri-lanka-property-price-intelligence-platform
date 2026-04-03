@@ -22,9 +22,5 @@ ENV PYTHONPATH=/app
 # Set permissions for the start script
 RUN chmod +x start.sh
 
-# Expose port 8000 for Railway proxy
-EXPOSE 8000
-EXPOSE 8080
-
 # Default command: App Server
 CMD ["python", "api/main.py"]
