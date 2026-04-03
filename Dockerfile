@@ -19,5 +19,8 @@ COPY . .
 # Set python path
 ENV PYTHONPATH=/app
 
-# Default command
-CMD ["python", "api/main.py"]
+# Set permissions for the start script
+RUN chmod +x start.sh
+
+# Default command: Unified start script
+CMD ["./start.sh"]

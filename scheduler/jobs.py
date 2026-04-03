@@ -11,6 +11,7 @@ from scraper.cleaner import DataCleaner
 from scraper.geocoder import Geocoder
 from datetime import datetime, timedelta
 import os
+import time
 
 log = structlog.get_logger()
 
