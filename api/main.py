@@ -740,4 +740,4 @@ if __name__ == "__main__":
     import uvicorn
     import os
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run("api.main:app", host="::", port=port, log_level="info")
+    uvicorn.run("api.main:app", host="0.0.0.0", port=port, log_level="info", proxy_headers=True, forwarded_allow_ips="*")
