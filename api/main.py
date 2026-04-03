@@ -10,11 +10,19 @@ from scraper.ikman import scrape_ikman
 from scraper.lpw import scrape_lpw
 from scraper.cleaner import DataCleaner
 from scraper.geocoder import Geocoder
+from scheduler.jobs import start_scheduler
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 import os
 
 app = FastAPI(title="Sri Lanka Property Price Intelligence Platform")
+
+@app.on_event("startup")
+def startup_event():
+    import structlog
+    log = structlog.get_logger()
+    log.info("fastapi_startup_starting_scheduler")
+    start_scheduler()
 
 # CORS - allow dashboard frontends
 app.add_middleware(
@@ -724,8 +732,12 @@ RULES:
         return {"response": f"AI error: {str(e)}", "context_used": False}
 
 
+@app.get("/")
+def root():
+    return {"message": "Ardeno Studio: Intelligence API is Alive and Running"}
+
 if __name__ == "__main__":
     import uvicorn
     import os
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run("api.main:app", host="0.0.0.0", port=port, log_level="info")
