@@ -16,7 +16,11 @@ import time
 log = structlog.get_logger()
 
 # APScheduler configuration
-db_url = os.getenv("DATABASE_URL")
+db_url = os.getenv("DATABASE_URL", "")
+# SQLAlchemy 2.x requires postgresql:// not postgres://
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
 try:
     if not db_url:
         raise ValueError("DATABASE_URL not set")
@@ -124,21 +128,26 @@ def compute_aggregates_job():
         db.close()
 
 def start_scheduler():
-    # 1. Scrape every 24 hours
-    scheduler.add_job(scrape_ikman_job, 'cron', hour=2, minute=0, id='scrape_ikman', replace_existing=True)
-    scheduler.add_job(scrape_lpw_job, 'cron', hour=2, minute=30, id='scrape_lpw', replace_existing=True)
-    
-    # 2. Clean every 24 hours
-    scheduler.add_job(clean_listings_job, 'cron', hour=4, minute=0, id='clean_listings', replace_existing=True)
-    
-    # 3. Geocode every 24 hours
-    scheduler.add_job(geocode_listings_job, 'cron', hour=5, minute=0, id='geocode_listings', replace_existing=True)
-    
-    # 4. Aggregates every Sunday
-    scheduler.add_job(compute_aggregates_job, 'cron', day_of_week='sun', hour=6, minute=0, id='compute_aggregates', replace_existing=True)
+    """Start the background scheduler. Failures here must never crash the API."""
+    try:
+        # 1. Scrape every 24 hours
+        scheduler.add_job(scrape_ikman_job, 'cron', hour=2, minute=0, id='scrape_ikman', replace_existing=True)
+        scheduler.add_job(scrape_lpw_job, 'cron', hour=2, minute=30, id='scrape_lpw', replace_existing=True)
 
-    scheduler.start()
-    log.info("scheduler_started")
+        # 2. Clean every 24 hours
+        scheduler.add_job(clean_listings_job, 'cron', hour=4, minute=0, id='clean_listings', replace_existing=True)
+
+        # 3. Geocode every 24 hours
+        scheduler.add_job(geocode_listings_job, 'cron', hour=5, minute=0, id='geocode_listings', replace_existing=True)
+
+        # 4. Aggregates every Sunday
+        scheduler.add_job(compute_aggregates_job, 'cron', day_of_week='sun', hour=6, minute=0, id='compute_aggregates', replace_existing=True)
+
+        scheduler.start()
+        log.info("scheduler_started")
+    except Exception as e:
+        log.error("scheduler_start_failed", error=str(e))
+        log.warning("scheduler_disabled_api_still_running")
 
 if __name__ == "__main__":
     start_scheduler()
