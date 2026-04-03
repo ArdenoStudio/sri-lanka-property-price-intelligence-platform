@@ -19,8 +19,5 @@ COPY . .
 # Set python path
 ENV PYTHONPATH=/app
 
-# Ensure start script is executable
-RUN chmod +x start.sh
-
-# Use start.sh so both the API and Scheduler run together
-CMD ["./start.sh"]
+# Use shell form so $PORT is expanded correctly at runtime by Railway
+CMD bash -c "exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8080} --proxy-headers --forwarded-allow-ips='*'"
