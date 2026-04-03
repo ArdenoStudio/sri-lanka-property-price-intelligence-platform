@@ -19,17 +19,23 @@ from scraper.geocoder import Geocoder
 
 async def main():
     source = sys.argv[1] if len(sys.argv) > 1 else "help"
+    max_pages = int(sys.argv[2]) if len(sys.argv) > 2 else None
     db = SessionLocal()
 
     try:
         if source == "ikman":
-            print("[*] Starting Ikman scraper...")
-            found, new = await scrape_ikman(db)
+            pages_text = f" ({max_pages} pages)" if max_pages else ""
+            print(f"[*] Starting Ikman scraper{pages_text}...")
+            # Use max_pages if provided, else let it use function defaults
+            kwargs = {"max_pages": max_pages} if max_pages else {}
+            found, new = await scrape_ikman(db, **kwargs)
             print(f"[OK] Done! Found: {found}, New: {new}")
 
         elif source == "lpw":
-            print("[*] Starting LankaPropertyWeb scraper...")
-            found, new = await scrape_lpw(db)
+            pages_text = f" ({max_pages} pages)" if max_pages else ""
+            print(f"[*] Starting LankaPropertyWeb scraper{pages_text}...")
+            kwargs = {"max_pages": max_pages} if max_pages else {}
+            found, new = await scrape_lpw(db, **kwargs)
             print(f"[OK] Done! Found: {found}, New: {new}")
 
         elif source == "process":
@@ -44,7 +50,7 @@ async def main():
             print(f"[OK] Geocoded: {geo_stats}")
 
         else:
-            print("Usage: python run_scraper.py [ikman | lpw | process]")
+            print("Usage: python run_scraper.py [ikman | lpw | process] [max_pages]")
 
     finally:
         db.close()
