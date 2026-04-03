@@ -27,6 +27,9 @@ function App() {
   // Filter state
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [listingType, setListingType] = useState('');
+  const [minPrice, setMinPrice] = useState<number | ''>('');
+  const [maxPrice, setMaxPrice] = useState<number | ''>('');
   const [sortBy, setSortBy] = useState('newest');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 24;
@@ -53,6 +56,9 @@ function App() {
       const res = await getListings({
         district: selectedDistrict || undefined,
         property_type: selectedType || undefined,
+        listing_type: listingType || undefined,
+        min_price: minPrice !== '' ? minPrice : undefined,
+        max_price: maxPrice !== '' ? maxPrice : undefined,
         sort: sortBy,
         limit: PAGE_SIZE,
         offset: page * PAGE_SIZE,
@@ -63,7 +69,7 @@ function App() {
       setListings([]);
     }
     if (!isSilent) setListingsLoading(false);
-  }, [selectedDistrict, selectedType, sortBy, page]);
+  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, sortBy, page]);
 
   // Initial data load + Polling
   const refreshStatsAndDistricts = useCallback(async () => {
@@ -97,7 +103,7 @@ function App() {
   // Reset page on filter change
   useEffect(() => {
     setPage(0);
-  }, [selectedDistrict, selectedType, sortBy]);
+  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, sortBy]);
 
   return (
     <>
@@ -132,6 +138,12 @@ function App() {
                 onDistrictChange={setSelectedDistrict}
                 selectedType={selectedType}
                 onTypeChange={setSelectedType}
+                listingType={listingType}
+                onListingTypeChange={setListingType}
+                minPrice={minPrice}
+                onMinPriceChange={setMinPrice}
+                maxPrice={maxPrice}
+                onMaxPriceChange={setMaxPrice}
                 sortBy={sortBy}
                 onSortChange={setSortBy}
                 totalResults={totalListings}

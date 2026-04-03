@@ -15,12 +15,24 @@ const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Price: High to Low' },
 ];
 
+const LISTING_TYPES = [
+  { value: '', label: 'Any Status' },
+  { value: 'sale', label: 'For Sale' },
+  { value: 'rent', label: 'For Rent' },
+];
+
 interface Props {
   districts: District[];
   selectedDistrict: string;
   onDistrictChange: (d: string) => void;
   selectedType: string;
   onTypeChange: (t: string) => void;
+  listingType: string;
+  onListingTypeChange: (t: string) => void;
+  minPrice: number | '';
+  onMinPriceChange: (p: number | '') => void;
+  maxPrice: number | '';
+  onMaxPriceChange: (p: number | '') => void;
   sortBy: string;
   onSortChange: (s: string) => void;
   totalResults: number;
@@ -32,11 +44,17 @@ export function Filters({
   onDistrictChange,
   selectedType,
   onTypeChange,
+  listingType,
+  onListingTypeChange,
+  minPrice,
+  onMinPriceChange,
+  maxPrice,
+  onMaxPriceChange,
   sortBy,
   onSortChange,
   totalResults,
 }: Props) {
-  const hasFilters = selectedDistrict || selectedType;
+  const hasFilters = selectedDistrict || selectedType || listingType || minPrice !== '' || maxPrice !== '';
 
   return (
     <div className="mb-6">
@@ -54,6 +72,9 @@ export function Filters({
             onClick={() => {
               onDistrictChange('');
               onTypeChange('');
+              onListingTypeChange('');
+              onMinPriceChange('');
+              onMaxPriceChange('');
             }}
             className="flex items-center gap-1 text-xs text-danger hover:text-danger/80 transition-colors bg-transparent border-none cursor-pointer"
           >
@@ -62,7 +83,7 @@ export function Filters({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         {/* District select */}
         <select
           value={selectedDistrict}
@@ -89,6 +110,37 @@ export function Filters({
             </option>
           ))}
         </select>
+
+        {/* Listing type */}
+        <select
+          value={listingType}
+          onChange={(e) => onListingTypeChange(e.target.value)}
+          className="w-full bg-bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent appearance-none cursor-pointer"
+        >
+          {LISTING_TYPES.map((lt) => (
+            <option key={lt.value} value={lt.value}>
+              {lt.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Min Price */}
+        <input
+          type="number"
+          placeholder="Min Price (Rs)"
+          value={minPrice}
+          onChange={(e) => onMinPriceChange(e.target.value ? Number(e.target.value) : '')}
+          className="w-full bg-bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+        />
+
+        {/* Max Price */}
+        <input
+          type="number"
+          placeholder="Max Price (Rs)"
+          value={maxPrice}
+          onChange={(e) => onMaxPriceChange(e.target.value ? Number(e.target.value) : '')}
+          className="w-full bg-bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+        />
 
         {/* Sort */}
         <select
@@ -117,8 +169,32 @@ export function Filters({
           )}
           {selectedType && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent-light border border-accent/25">
-              {selectedType}
+              {PROPERTY_TYPES.find(p => p.value === selectedType)?.label || selectedType}
               <button onClick={() => onTypeChange('')} className="hover:text-white ml-0.5 bg-transparent border-none cursor-pointer text-accent-light">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {listingType && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent-light border border-accent/25">
+              {LISTING_TYPES.find(p => p.value === listingType)?.label || listingType}
+              <button onClick={() => onListingTypeChange('')} className="hover:text-white ml-0.5 bg-transparent border-none cursor-pointer text-accent-light">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {minPrice !== '' && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent-light border border-accent/25">
+              Min: Rs {minPrice.toLocaleString()}
+              <button onClick={() => onMinPriceChange('')} className="hover:text-white ml-0.5 bg-transparent border-none cursor-pointer text-accent-light">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {maxPrice !== '' && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent-light border border-accent/25">
+              Max: Rs {maxPrice.toLocaleString()}
+              <button onClick={() => onMaxPriceChange('')} className="hover:text-white ml-0.5 bg-transparent border-none cursor-pointer text-accent-light">
                 <X className="w-3 h-3" />
               </button>
             </span>
