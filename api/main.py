@@ -156,7 +156,14 @@ async def trigger_process(db: Session = Depends(get_db)):
 @app.post("/trigger/backfill")
 async def trigger_backfill(db: Session = Depends(get_db)):
     """Generates 12 months of trend data extrapolated backward from real current prices."""
-    districts = ["Colombo", "Kandy", "Gampaha", "Galle"]
+    # Use every district that actually has clean listing data — not a hardcoded list
+    districts = [
+        row[0] for row in
+        db.query(Listing.district)
+        .filter(Listing.district.isnot(None), Listing.price_lkr.isnot(None), Listing.is_outlier == False)
+        .distinct()
+        .all()
+    ]
     types = ["land", "house", "apartment"]
     now = datetime.utcnow()
     count = 0
