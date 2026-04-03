@@ -6,7 +6,9 @@ from db.connection import SessionLocal
 from scraper.ikman import scrape_ikman
 from scraper.cleaner import DataCleaner
 from api.main import DISTRICT_COORDS, PriceAggregator
+from datetime import datetime
 import structlog
+from db.models import ScrapeRun
 
 log = structlog.get_logger()
 
@@ -43,6 +45,17 @@ async def run_mega_scrape_local():
         trends = agg.aggregate()
         
         log.info("mega_scrape_finished", processed=processed, trends_updated=trends)
+        
+        # Record final completion for dashboard "Last Updated"
+        mega_run = ScrapeRun(
+            source="mega_scrape",
+            started_at=datetime.utcnow(),
+            finished_at=datetime.utcnow(),
+            status="success",
+            listings_found=processed
+        )
+        db.add(mega_run)
+        db.commit()
         
     finally:
         db.close()

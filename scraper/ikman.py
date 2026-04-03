@@ -174,8 +174,8 @@ class IkmanScraper:
                 source=self.SOURCE,
                 started_at=datetime.utcnow(), # Approximate
                 finished_at=datetime.utcnow(),
-                total_found=total_found,
-                new_listings=total_new
+                listings_found=total_found,
+                listings_new=total_new
             )
             self.db.add(new_run)
             self.db.commit()
