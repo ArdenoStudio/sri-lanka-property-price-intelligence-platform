@@ -16,9 +16,18 @@ import time
 log = structlog.get_logger()
 
 # APScheduler configuration
-jobstores = {
-    'default': SQLAlchemyJobStore(url=os.getenv("DATABASE_URL"))
-}
+db_url = os.getenv("DATABASE_URL")
+try:
+    if not db_url:
+        raise ValueError("DATABASE_URL not set")
+    jobstores = {
+        'default': SQLAlchemyJobStore(url=db_url)
+    }
+    log.info("scheduler_using_db_jobstore")
+except Exception as e:
+    log.warning("scheduler_jobstore_fallback", reason=str(e), store="memory")
+    jobstores = {}  # APScheduler defaults to in-memory MemoryJobStore
+
 scheduler = BackgroundScheduler(jobstores=jobstores)
 
 def run_async(coro):
