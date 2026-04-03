@@ -155,29 +155,57 @@ async def trigger_process(db: Session = Depends(get_db)):
 
 @app.post("/trigger/backfill")
 async def trigger_backfill(db: Session = Depends(get_db)):
-    """Generates 12 months of mock trend data to make charts look great while real data grows."""
+    """Generates 12 months of trend data extrapolated backward from real current prices."""
     districts = ["Colombo", "Kandy", "Gampaha", "Galle"]
     types = ["land", "house", "apartment"]
     now = datetime.utcnow()
     count = 0
     import random
-    
+
     for d in districts:
         for pt in types:
-            base = 45_000_000 if d == "Colombo" else 22_000_000
+            # Use the real current average price for this district+type as the base.
+            # This ensures the historical trend lines up with actual data instead of
+            # jumping from a hardcoded fake value to reality.
+            real_avg = db.query(func.avg(Listing.price_lkr)).filter(
+                Listing.district == d,
+                Listing.property_type == pt,
+                Listing.price_lkr.isnot(None),
+                Listing.is_outlier == False,
+            ).scalar()
+
+            # Fall back to district-level average if no type-specific data
+            if not real_avg:
+                real_avg = db.query(func.avg(Listing.price_lkr)).filter(
+                    Listing.district == d,
+                    Listing.price_lkr.isnot(None),
+                    Listing.is_outlier == False,
+                ).scalar()
+
+            # If still no real data, skip — don't invent prices out of thin air
+            if not real_avg:
+                continue
+
+            base = float(real_avg)
+
             for i in range(1, 13):
                 m, y = now.month - i, now.year
                 if m <= 0: m += 12; y -= 1
-                
+
+                # Extrapolate backward: ~1.5% lower per month + small noise
                 trend = base * (1 - (i * 0.015)) * random.uniform(0.98, 1.02)
                 stmt = insert(PriceAggregate).values(
                     district=d, property_type=pt, period_year=y, period_month=m,
                     avg_price_lkr=trend, median_price_lkr=trend,
                     listing_count=random.randint(50, 400),
                     computed_at=datetime.utcnow()
-                ).on_conflict_do_nothing()
+                ).on_conflict_do_update(
+                    index_elements=['district', 'property_type', 'period_year', 'period_month'],
+                    set_={"avg_price_lkr": trend, "median_price_lkr": trend, "computed_at": datetime.utcnow()}
+                )
                 db.execute(stmt)
                 count += 1
+
     db.commit()
     return {"status": "success", "backfilled_points": count}
 
