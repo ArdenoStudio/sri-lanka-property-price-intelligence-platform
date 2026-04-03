@@ -171,29 +171,21 @@ async def trigger_backfill(db: Session = Depends(get_db)):
 
     for d in districts:
         for pt in types:
-            # Use the real current average price for this district+type as the base.
-            # This ensures the historical trend lines up with actual data instead of
-            # jumping from a hardcoded fake value to reality.
-            real_avg = db.query(func.avg(Listing.price_lkr)).filter(
-                Listing.district == d,
-                Listing.property_type == pt,
-                Listing.price_lkr.isnot(None),
-                Listing.is_outlier == False,
-            ).scalar()
+            # Use the most recent value already stored in price_aggregates as the base.
+            # This guarantees the historical trend connects seamlessly to the real
+            # aggregated data — no jump possible since we extrapolate backward from
+            # the exact same value the chart's current month already shows.
+            latest = (
+                db.query(PriceAggregate)
+                .filter(PriceAggregate.district == d, PriceAggregate.property_type == pt)
+                .order_by(desc(PriceAggregate.period_year), desc(PriceAggregate.period_month))
+                .first()
+            )
 
-            # Fall back to district-level average if no type-specific data
-            if not real_avg:
-                real_avg = db.query(func.avg(Listing.price_lkr)).filter(
-                    Listing.district == d,
-                    Listing.price_lkr.isnot(None),
-                    Listing.is_outlier == False,
-                ).scalar()
-
-            # If still no real data, skip — don't invent prices out of thin air
-            if not real_avg:
+            if not latest or not latest.avg_price_lkr:
                 continue
 
-            base = float(real_avg)
+            base = float(latest.avg_price_lkr)
 
             for i in range(1, 13):
                 m, y = now.month - i, now.year
