@@ -19,8 +19,8 @@ COPY . .
 # Set python path
 ENV PYTHONPATH=/app
 
-# Set permissions for the start script
+# Ensure start script is executable
 RUN chmod +x start.sh
 
-# Default command: App Server
-CMD ["python", "api/main.py"]
+# Use start.sh so both the API and Scheduler run together
+CMD ["./start.sh"]
