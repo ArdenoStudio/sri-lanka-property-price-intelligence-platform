@@ -19,5 +19,6 @@ COPY . .
 # Set python path
 ENV PYTHONPATH=/app
 
-# Start the API server
-CMD bash -c "exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8080} --proxy-headers --forwarded-allow-ips='*'"
+# Start the API server on a fixed port so Railway edge proxy knows exactly where to route
+EXPOSE 8080
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8080", "--proxy-headers", "--forwarded-allow-ips=*"]
