@@ -22,5 +22,5 @@ ENV PYTHONPATH=/app
 # Set permissions for the start script
 RUN chmod +x start.sh
 
-# Default command: Unified start script
-CMD ["bash", "start.sh"]
+# Default command: Python orchestrator
+CMD ["python", "orchestrator.py"]
