@@ -1,11 +1,12 @@
-import { Database, RefreshCw, Shield, MessageSquare } from 'lucide-react';
+import { RefreshCw, Shield, MessageSquare } from 'lucide-react';
 import type { Stats } from '../api';
+import { DataFlowBeam } from './DataFlowBeam';
 
 interface Props {
   stats: Stats | null;
 }
 
-export function About({ stats }: Props) {
+export function About({ stats: _stats }: Props) {
   return (
     <section className="mt-16 pt-12 border-t border-border">
       <div className="text-center mb-10">
@@ -15,16 +16,11 @@ export function About({ stats }: Props) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <div className="rounded-xl bg-bg-card border border-border p-5">
-          <Database className="w-6 h-6 text-accent-light mb-3" />
-          <h4 className="font-semibold text-sm mb-1">Data Sources</h4>
-          <p className="text-xs text-text-secondary leading-relaxed">
-            Listings scraped daily from ikman.lk and LankaPropertyWeb. Currently tracking{' '}
-            {stats?.total_listings?.toLocaleString() ?? '5,000+'} properties.
-          </p>
-        </div>
+      <div className="mb-6">
+        <DataFlowBeam />
+      </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         <div className="rounded-xl bg-bg-card border border-border p-5">
           <RefreshCw className="w-6 h-6 text-success mb-3" />
           <h4 className="font-semibold text-sm mb-1">Update Frequency</h4>

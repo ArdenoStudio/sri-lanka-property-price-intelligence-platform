@@ -1,5 +1,4 @@
 import { Activity, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import type { PipelineStatusResponse, PipelineJobStatus } from '../api';
 
 interface Props {
@@ -25,15 +24,15 @@ function statusIcon(status: PipelineJobStatus['status']) {
   return AlertTriangle;
 }
 
-function statusClass(status: PipelineJobStatus['status']) {
-  if (status === 'ok') return 'text-emerald-300';
-  if (status === 'running') return 'text-amber-300';
-  return 'text-rose-300';
+function statusColor(status: PipelineJobStatus['status']) {
+  if (status === 'ok') return '#10b981';
+  if (status === 'running') return '#f59e0b';
+  return '#ef4444';
 }
 
 const LABELS: Record<string, string> = {
-  scrape_ikman: 'Ikman Scrape',
-  scrape_lpw: 'LPW Scrape',
+  scrape_ikman: 'Ikman',
+  scrape_lpw: 'LPW',
   clean_listings: 'Cleaner',
   geocode_listings: 'Geocoder',
   compute_aggregates: 'Aggregates',
@@ -43,56 +42,55 @@ export function PipelineStatus({ status }: Props) {
   const jobs = status?.jobs ?? [];
   const overall = status?.overall_status ?? 'delayed';
 
+  const overallColor =
+    overall === 'ok' ? '#10b981' : overall === 'running' ? '#f59e0b' : '#ef4444';
+
   return (
     <section className="pt-6 pb-2">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-accent-light" />
-          <h3 className="text-sm font-black uppercase tracking-widest text-text-muted">
-            Pipeline Status
-          </h3>
-        </div>
-        <div
-          className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full border ${
-            overall === 'ok'
-              ? 'text-emerald-300 border-emerald-300/30 bg-emerald-500/10'
-              : overall === 'running'
-              ? 'text-amber-300 border-amber-300/30 bg-amber-500/10'
-              : 'text-rose-300 border-rose-300/30 bg-rose-500/10'
-          }`}
-        >
-          {overall}
-        </div>
-      </div>
+      <div className="rounded-xl border border-border bg-bg-card overflow-hidden">
+        {/* Single unified row */}
+        <div className="flex items-center divide-x divide-border">
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {jobs.map((job, idx) => {
-          const Icon = statusIcon(job.status);
-          return (
-            <motion.div
-              key={job.name}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * idx }}
-              className="rounded-xl p-4 border bg-bg-card border-border hover:border-border-hover transition-all"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Icon className={`w-4 h-4 ${statusClass(job.status)} ${job.status === 'running' ? 'animate-spin' : ''}`} />
-                <span className="text-[11px] font-bold uppercase tracking-widest text-text-muted">
-                  {LABELS[job.name] ?? job.name}
-                </span>
+          {/* Left label */}
+          <div className="flex items-center gap-2 px-4 py-3 shrink-0">
+            <Activity className="w-3 h-3 text-text-muted" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted whitespace-nowrap">
+              Pipeline
+            </span>
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ background: overallColor, boxShadow: `0 0 5px ${overallColor}` }}
+            />
+          </div>
+
+          {/* Jobs */}
+          {jobs.map((job) => {
+            const Icon = statusIcon(job.status);
+            const color = statusColor(job.status);
+            return (
+              <div
+                key={job.name}
+                className="flex-1 flex items-center gap-2 px-4 py-3 hover:bg-bg-card-hover transition-colors"
+              >
+                <Icon
+                  className="w-3 h-3 shrink-0"
+                  style={{
+                    color,
+                    animation: job.status === 'running' ? 'spin 1s linear infinite' : undefined,
+                  }}
+                />
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-text-primary leading-none truncate">
+                    {LABELS[job.name] ?? job.name}
+                  </p>
+                  <p className="text-[10px] text-text-muted mt-0.5 leading-none">
+                    {formatDate(job.last_success)}
+                  </p>
+                </div>
               </div>
-              <div className="text-lg font-black text-text-primary">
-                {job.status}
-              </div>
-              <div className="mt-2 pt-2 border-t border-border/50">
-                <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
-                  Last Success: {formatDate(job.last_success)}
-                </p>
-              </div>
-            </motion.div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </section>
   );
