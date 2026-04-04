@@ -18,8 +18,8 @@ BLOCK_KEYWORDS = [
     "captcha",
     "unusual traffic",
     "verify you are human",
-    "blocked",
-    "cloudflare",
+    "enable javascript and cookies",
+    "sorry, you have been blocked",
 ]
 
 USER_AGENTS = [
@@ -286,7 +286,7 @@ async def scrape_ikman(db: Session, max_pages: int = 20, location: str = "sri-la
     scraper = IkmanScraper(db)
     return await scraper.scrape(max_pages=max_pages, location=location)
 
-async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 20, extra_pages: int = 10):
+async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 20, extra_pages: int = 10, headless: bool = False):
     """
     Full scrape: main feed + thin districts + rent/commercial categories.
     Runs sequentially to avoid hammering the site.
@@ -308,7 +308,7 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
     grand_total_new = 0
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True, proxy=proxy_settings)
+        browser = await p.chromium.launch(headless=headless, proxy=proxy_settings)
         context = await browser.new_context(user_agent=random.choice(USER_AGENTS))
         page = await context.new_page()
         await page.route("**/*", lambda route: route.abort()
