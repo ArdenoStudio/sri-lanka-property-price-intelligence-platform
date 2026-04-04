@@ -820,31 +820,44 @@ async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
                 if type_f != "None": query = query.filter(Listing.property_type == type_f.lower())
                 if list_f != "None": query = query.filter(Listing.listing_type == list_f.lower())
                 
-                found = query.limit(5).all()
+                found = query.order_by(Listing.price_lkr.desc().nullslast()).limit(5).all()
                 if found:
-                    avg_p = db.query(func.avg(Listing.price_lkr)).filter(Listing.raw_location.ilike(f"%{loc_f}%"), Listing.property_type == type_f.lower()).scalar() or 0
-                    search_results_context = f"INTERNAL DATABASE SEARCH for '{loc_f} {type_f}': Found {len(found)} matches. Avg Price LKR {avg_p:,.0f}."
-                    for f in found:
-                        search_results_context += f"\n- {f.property_type} in {f.raw_location}: LKR {float(f.price_lkr or 0):,.0f} ({f.source})"
+                    avg_q = db.query(func.avg(Listing.price_lkr)).filter(
+                        Listing.price_lkr.isnot(None),
+                        Listing.price_lkr > 100000,
+                        Listing.is_outlier == False,
+                    )
+                    if loc_f != "None":
+                        avg_q = avg_q.filter(Listing.raw_location.ilike(f"%{loc_f}%"))
+                    if type_f != "None":
+                        avg_q = avg_q.filter(Listing.property_type == type_f.lower())
+                    avg_p = avg_q.scalar() or 0
+                    priced = [l for l in found if l.price_lkr and l.price_lkr > 0]
+                    avg_note = f"Avg Price LKR {avg_p:,.0f}" if avg_p > 0 else "No price average available"
+                    search_results_context = f"INTERNAL DATABASE SEARCH for '{loc_f} {type_f}': Found {len(found)} matches ({len(priced)} with prices). {avg_note}."
+                    for listing in found:
+                        price_str = f"LKR {float(listing.price_lkr):,.0f}" if listing.price_lkr and listing.price_lkr > 0 else "Price not listed"
+                        search_results_context += f"\n- {listing.property_type} in {listing.raw_location}: {price_str} ({listing.source})"
         except Exception:
             pass
 
         # --- 2. Final Data-Driven Response ---
         stats_raw = get_stats(db)
-        system_prompt = f"""You are the Master Real Estate AI for Sri Lanka Property Price Intelligence.
-You serve the user by providing specific, data-driven insights. 
+        system_prompt = f"""You are a Sri Lanka real estate data assistant for PropertyLK. Answer concisely using the data below.
 
-INTERNAL DATABASE SEARCH RESULTS (USE THESE FIRST):
-{search_results_context}
+LIVE DATABASE RESULTS:
+{search_results_context if search_results_context else "No matching listings found in the database for this query."}
 
-GLOBAL MARKET STATUS:
-- Total Listings: {stats_raw['total_listings']}
-- Overall Market Average: LKR {stats_raw['avg_price_lkr']:,.0f}
+MARKET CONTEXT:
+- Total active listings: {stats_raw['total_listings']}
+- Overall market avg: LKR {stats_raw['avg_price_lkr']:,.0f}
 
-RULES:
-1. If internal search results are available, cite the specific listings found.
-2. Be professional and concise.
-3. If no specific listings match, use the global averages to provide general advice.
+STRICT RULES:
+1. ALWAYS quote the actual prices shown in the database results above. Never invent or estimate prices.
+2. If a listing shows "Price not listed", say that listing has no price — do NOT make up a number for it.
+3. If the avg price shown is 0 or not available, say "price data is limited for this area" instead of guessing.
+4. Be concise. Give the numbers first, then a 1-line insight. Max 4 sentences total.
+5. Format all prices as "LKR X,XXX,XXX" (with commas).
 """
 
         messages = [{"role": "system", "content": system_prompt}]
