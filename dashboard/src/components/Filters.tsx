@@ -33,20 +33,39 @@ function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChan
   onMinPriceChange: (p: number | '') => void;
   onMaxPriceChange: (p: number | '') => void;
 }) {
-  const minSlider = minPrice === '' ? 0 : priceToSlider(minPrice as number);
-  const maxSlider = maxPrice === '' ? SLIDER_MAX : priceToSlider(maxPrice as number);
-  const minPct = (minSlider / SLIDER_MAX) * 100;
-  const maxPct = (maxSlider / SLIDER_MAX) * 100;
+  // Local state for immediate visual feedback while dragging
+  const [localMin, setLocalMin] = useState(() => minPrice === '' ? 0 : priceToSlider(minPrice as number));
+  const [localMax, setLocalMax] = useState(() => maxPrice === '' ? SLIDER_MAX : priceToSlider(maxPrice as number));
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync when parent resets (e.g. "Clear filters")
+  useEffect(() => { if (minPrice === '') setLocalMin(0); }, [minPrice]);
+  useEffect(() => { if (maxPrice === '') setLocalMax(SLIDER_MAX); }, [maxPrice]);
+
+  const commitMin = (v: number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => onMinPriceChange(v <= 0 ? '' : sliderToPrice(v)), 400);
+  };
+  const commitMax = (v: number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => onMaxPriceChange(v >= SLIDER_MAX ? '' : sliderToPrice(v)), 400);
+  };
+
+  const minPct = (localMin / SLIDER_MAX) * 100;
+  const maxPct = (localMax / SLIDER_MAX) * 100;
   const isActive = minPrice !== '' || maxPrice !== '';
+  const isDragging = (localMin !== (minPrice === '' ? 0 : priceToSlider(minPrice as number)))
+                  || (localMax !== (maxPrice === '' ? SLIDER_MAX : priceToSlider(maxPrice as number)));
+
+  const displayMin = localMin <= 0 ? 'Any' : fmtPriceLabel(sliderToPrice(localMin));
+  const displayMax = localMax >= SLIDER_MAX ? 'Any' : fmtPriceLabel(sliderToPrice(localMax));
 
   return (
     <div className={`col-span-2 rounded-xl border px-3 py-2.5 transition-all flex items-center gap-3 ${
-      isActive ? 'border-accent/40 bg-accent/10' : 'border-border bg-bg-card'
+      isActive || isDragging ? 'border-accent/40 bg-accent/10' : 'border-border bg-bg-card'
     }`}>
-      <span className={`text-sm font-medium whitespace-nowrap flex-shrink-0 ${isActive ? 'text-accent-light' : 'text-text-secondary'}`}>
-        {isActive
-          ? `${minPrice === '' ? 'Any' : fmtPriceLabel(minPrice as number)} — ${maxPrice === '' ? 'Any' : fmtPriceLabel(maxPrice as number)}`
-          : 'Price Range'}
+      <span className={`text-sm font-medium whitespace-nowrap flex-shrink-0 ${isActive || isDragging ? 'text-accent-light' : 'text-text-secondary'}`}>
+        {(isActive || isDragging) ? `${displayMin} — ${displayMax}` : 'Price Range'}
       </span>
 
       <div className="relative flex-1 h-5 flex items-center">
@@ -61,25 +80,27 @@ function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChan
         <input
           type="range"
           min={0} max={SLIDER_MAX} step={1}
-          value={minSlider}
+          value={localMin}
           onChange={e => {
-            const v = Math.min(Number(e.target.value), maxSlider - 10);
-            onMinPriceChange(v <= 0 ? '' : sliderToPrice(v));
+            const v = Math.min(Number(e.target.value), localMax - 10);
+            setLocalMin(v);
+            commitMin(v);
           }}
           className="price-range-input"
-          style={{ zIndex: minSlider > SLIDER_MAX - 50 ? 5 : 3 }}
+          style={{ zIndex: localMin > SLIDER_MAX - 50 ? 5 : 3 }}
         />
         {/* Max thumb */}
         <input
           type="range"
           min={0} max={SLIDER_MAX} step={1}
-          value={maxSlider}
+          value={localMax}
           onChange={e => {
-            const v = Math.max(Number(e.target.value), minSlider + 10);
-            onMaxPriceChange(v >= SLIDER_MAX ? '' : sliderToPrice(v));
+            const v = Math.max(Number(e.target.value), localMin + 10);
+            setLocalMax(v);
+            commitMax(v);
           }}
           className="price-range-input"
-          style={{ zIndex: maxSlider < 50 ? 5 : 4 }}
+          style={{ zIndex: localMax < 50 ? 5 : 4 }}
         />
       </div>
     </div>
