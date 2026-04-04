@@ -4,7 +4,8 @@ import { sendChatMessage } from '../api';
 // ─── Constants ───────────────────────────────────────────────────────────────
 const ACCENT      = "#6366f1";
 const ACCENT_RGB  = "99,102,241";
-const STORAGE_KEY = "propertylk_chat_v1";
+const STORAGE_KEY  = "propertylk_chat_v1";
+const TOOLTIP_KEY  = "propertylk_chat_tooltip_seen";
 const genId = () => Math.random().toString(36).slice(2, 10);
 
 type Message = { role: 'user' | 'assistant'; content: string; id: string };
@@ -79,6 +80,16 @@ const STYLES = `
     50%      { opacity: .68; transform: scale(1.06); }
   }
   @keyframes awRotateSlow { to { transform: rotate(360deg); } }
+  @keyframes awTooltipIn {
+    0%   { opacity: 0; transform: translateY(6px) scale(.97); }
+    100% { opacity: 1; transform: translateY(0)   scale(1); }
+  }
+  @keyframes awTooltipOut {
+    0%   { opacity: 1; transform: translateY(0)   scale(1); }
+    100% { opacity: 0; transform: translateY(4px) scale(.97); }
+  }
+  .aw-tooltip-in  { animation: awTooltipIn  280ms cubic-bezier(.22,.68,0,1.08) both; }
+  .aw-tooltip-out { animation: awTooltipOut 200ms ease both; }
 
   .aw-panel-in  { animation: awPanelIn  260ms cubic-bezier(.22,.68,0,1.08) both; }
   .aw-panel-out { animation: awPanelOut 220ms ease both; }
@@ -181,13 +192,15 @@ const QUICK_ACTIONS = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export function ChatWidget() {
-  const [open,     setOpen]     = useState(false);
-  const [animOut,  setAnimOut]  = useState(false);
-  const [mounted,  setMounted]  = useState(false);
-  const [input,    setInput]    = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading,  setLoading]  = useState(false);
-  const [focused,  setFocused]  = useState(false);
+  const [open,        setOpen]        = useState(false);
+  const [animOut,     setAnimOut]     = useState(false);
+  const [mounted,     setMounted]     = useState(false);
+  const [input,       setInput]       = useState('');
+  const [messages,    setMessages]    = useState<Message[]>([]);
+  const [loading,     setLoading]     = useState(false);
+  const [focused,     setFocused]     = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipOut,  setTooltipOut]  = useState(false);
 
   const panelRef    = useRef<HTMLDivElement>(null);
   const bottomRef   = useRef<HTMLDivElement>(null);
@@ -195,7 +208,7 @@ export function ChatWidget() {
 
   const isInputEmpty = useMemo(() => input.trim().length === 0, [input]);
 
-  // Persist messages
+  // Persist messages + show tooltip for new users
   useEffect(() => {
     setMounted(true);
     try {
@@ -205,6 +218,13 @@ export function ChatWidget() {
         if (Array.isArray(parsed)) setMessages(parsed.slice(-24));
       }
     } catch { /* ignore */ }
+
+    const seen = localStorage.getItem(TOOLTIP_KEY);
+    if (!seen) {
+      const show = setTimeout(() => setShowTooltip(true), 2200);
+      const hide = setTimeout(() => dismissTooltip(), 9000);
+      return () => { clearTimeout(show); clearTimeout(hide); };
+    }
   }, []);
 
   useEffect(() => {
@@ -251,14 +271,21 @@ export function ChatWidget() {
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, [input]);
 
+  const dismissTooltip = useCallback(() => {
+    setTooltipOut(true);
+    setTimeout(() => { setShowTooltip(false); setTooltipOut(false); }, 200);
+    try { localStorage.setItem(TOOLTIP_KEY, '1'); } catch { /* ignore */ }
+  }, []);
+
   const closePanel = useCallback(() => {
     setAnimOut(true);
     setTimeout(() => { setOpen(false); setAnimOut(false); setLoading(false); }, 220);
   }, []);
 
   const toggle = useCallback(() => {
+    if (showTooltip) dismissTooltip();
     if (open) closePanel(); else setOpen(true);
-  }, [open, closePanel]);
+  }, [open, closePanel, showTooltip, dismissTooltip]);
 
   const clearChat = () => {
     setLoading(false);
@@ -301,6 +328,70 @@ export function ChatWidget() {
       <style>{STYLES}</style>
 
       {open && <div className="aw-backdrop" />}
+
+      {/* ── Tooltip for new users ── */}
+      {showTooltip && !open && (
+        <div
+          className={tooltipOut ? 'aw-tooltip-out' : 'aw-tooltip-in'}
+          style={{
+            position: 'fixed', right: 100, bottom: 30, zIndex: 9998,
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 14px 10px 12px',
+            background: 'linear-gradient(135deg, rgba(20,20,28,.96), rgba(12,12,18,.98))',
+            border: `1px solid rgba(${ACCENT_RGB},.28)`,
+            borderRadius: '14px',
+            boxShadow: `0 8px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(${ACCENT_RGB},.08)`,
+            backdropFilter: 'blur(16px)',
+            maxWidth: 230,
+            cursor: 'default',
+          }}
+        >
+          {/* Arrow pointing right toward FAB */}
+          <span style={{
+            position: 'absolute', right: -7, top: '50%', transform: 'translateY(-50%)',
+            width: 12, height: 12,
+            background: 'linear-gradient(135deg, rgba(12,12,18,.98), rgba(12,12,18,.98))',
+            border: `1px solid rgba(${ACCENT_RGB},.28)`,
+            borderLeft: 'none', borderBottom: 'none',
+            transform: 'translateY(-50%) rotate(45deg)',
+          }} />
+
+          <span style={{
+            width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+            display: 'grid', placeItems: 'center',
+            background: `rgba(${ACCENT_RGB},.15)`, border: `1px solid rgba(${ACCENT_RGB},.25)`,
+            color: ACCENT,
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+            </svg>
+          </span>
+
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
+              Ask Property AI
+            </p>
+            <p style={{ margin: '3px 0 0', fontSize: '11px', color: 'rgba(255,255,255,.5)', lineHeight: 1.4 }}>
+              Get live prices for any district
+            </p>
+          </div>
+
+          <button
+            onClick={dismissTooltip}
+            style={{
+              background: 'none', border: 'none', padding: '2px', cursor: 'pointer',
+              color: 'rgba(255,255,255,.3)', flexShrink: 0, display: 'grid', placeItems: 'center',
+              borderRadius: 4, lineHeight: 1,
+            }}
+            aria-label="Dismiss"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* ── FAB ── */}
       <button
