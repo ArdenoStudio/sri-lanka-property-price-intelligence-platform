@@ -18,6 +18,19 @@ USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15"
 ]
 
+# Thin districts that need targeted scraping (< 30 listings each)
+THIN_DISTRICTS = [
+    "jaffna", "vavuniya", "batticaloa", "trincomalee",
+    "ampara", "mannar", "kilinochchi", "mullaitivu",
+    "polonnaruwa", "monaragala",
+]
+
+# Extra category URLs for data gaps
+EXTRA_TARGETS = [
+    {"url": "https://ikman.lk/en/ads/sri-lanka/property-for-rent?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "rent",       "property_type": "house"},
+    {"url": "https://ikman.lk/en/ads/sri-lanka/commercial-property?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "sale",     "property_type": "commercial"},
+]
+
 class IkmanScraper:
     SOURCE = "ikman"
     BASE_URL = "https://ikman.lk/en/ads/sri-lanka/property?sort=date&order=desc&buy_now=0&urgent=0&page="
@@ -185,3 +198,130 @@ class IkmanScraper:
 async def scrape_ikman(db: Session, max_pages: int = 20, location: str = "sri-lanka"):
     scraper = IkmanScraper(db)
     return await scraper.scrape(max_pages=max_pages, location=location)
+
+async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 20, extra_pages: int = 10):
+    """
+    Full scrape: main feed + thin districts + rent/commercial categories.
+    Runs sequentially to avoid hammering the site.
+    """
+    import os
+    from urllib.parse import urlparse
+    from playwright.async_api import async_playwright
+
+    proxy_url = os.getenv("PROXY_URL")
+    proxy_settings = None
+    if proxy_url:
+        parsed = urlparse(proxy_url)
+        proxy_settings = {"server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}"}
+        if parsed.username: proxy_settings["username"] = parsed.username
+        if parsed.password: proxy_settings["password"] = parsed.password
+
+    scraper = IkmanScraper(db)
+    grand_total_found = 0
+    grand_total_new = 0
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True, proxy=proxy_settings)
+        context = await browser.new_context(user_agent=random.choice(USER_AGENTS))
+        page = await context.new_page()
+        await page.route("**/*", lambda route: route.abort()
+            if route.request.resource_type in ["image", "media", "stylesheet", "font"]
+            else route.continue_())
+
+        async def _scrape_url(base_url, max_p, override_type=None, override_listing=None):
+            nonlocal grand_total_found, grand_total_new
+            total_found = 0
+            total_new = 0
+            for page_num in range(1, max_p + 1):
+                url = f"{base_url}{page_num}"
+                log.info("scraping_ikman_full", url=url)
+                try:
+                    await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                    try:
+                        close_btn = page.locator("button[aria-label='Close'], .close-button, [data-testid='close-button']")
+                        if await close_btn.count() > 0:
+                            await close_btn.first.click(timeout=3000)
+                    except Exception:
+                        pass
+                    await page.wait_for_selector("a.gtm-ad-item", timeout=15000)
+                    listings = await page.query_selector_all("a.gtm-ad-item")
+                    if not listings:
+                        break
+                    page_new = 0
+                    for listing in listings:
+                        try:
+                            listing_url = await listing.get_attribute("href") or ""
+                            if not listing_url.startswith("http"):
+                                listing_url = f"https://ikman.lk{listing_url}"
+                            id_match = re.search(r"-(\d+)$", listing_url.rstrip("/"))
+                            source_id = id_match.group(1) if id_match else listing_url.split("/")[-1]
+                            title_elem = await listing.query_selector("h2")
+                            title = (await title_elem.inner_text()).strip() if title_elem else ""
+                            price_elem = await listing.query_selector("[class*='price'], [class*='Price']")
+                            raw_price = (await price_elem.inner_text()).strip() if price_elem else ""
+                            loc_elems = await listing.query_selector_all("[class*='location'], [class*='Location']")
+                            raw_location = (await loc_elems[0].inner_text()).strip() if loc_elems else ""
+                            cat_elems = await listing.query_selector_all("[class*='category'], [class*='Category'], [class*='tag'], [class*='Tag']")
+                            raw_meta = (await cat_elems[0].inner_text()).strip() if cat_elems else ""
+                            combined = (title + " " + raw_meta).lower()
+                            if override_type:
+                                property_type = override_type
+                            else:
+                                property_type = 'land'
+                                if 'house' in combined: property_type = 'house'
+                                elif 'apartment' in combined or 'flat' in combined: property_type = 'apartment'
+                                elif 'commercial' in combined: property_type = 'commercial'
+                            if override_listing:
+                                listing_type = override_listing
+                            else:
+                                listing_type = 'rent' if ('rent' in combined or 'lease' in combined) else 'sale'
+                            if not title and not raw_price:
+                                continue
+                            stmt = insert(RawListing).values(
+                                source="ikman", source_id=source_id, url=listing_url,
+                                title=title, raw_price=raw_price, raw_location=raw_location,
+                                raw_size=raw_meta, property_type=property_type,
+                                listing_type=listing_type, raw_json={"full_meta": raw_meta},
+                                scraped_at=datetime.utcnow()
+                            ).on_conflict_do_nothing()
+                            res = db.execute(stmt)
+                            if res.rowcount > 0:
+                                page_new += 1
+                                total_new += 1
+                            total_found += 1
+                        except Exception as e:
+                            log.error("ikman_full_card_error", error=str(e))
+                    db.commit()
+                    log.info("ikman_full_page_done", url=url[:60], found=total_found, new=total_new)
+                    if page_new == 0:
+                        break
+                    await asyncio.sleep(random.uniform(1, 2.5))
+                except Exception as e:
+                    log.error("ikman_full_page_error", url=url, error=str(e))
+                    await asyncio.sleep(1)
+            grand_total_found += total_found
+            grand_total_new += total_new
+
+        # 1. Main feed
+        main_base = f"https://ikman.lk/en/ads/sri-lanka/property?sort=date&order=desc&buy_now=0&urgent=0&page="
+        await _scrape_url(main_base, main_pages)
+
+        # 2. Thin districts
+        for district in THIN_DISTRICTS:
+            district_base = f"https://ikman.lk/en/ads/{district}/property?sort=date&order=desc&buy_now=0&urgent=0&page="
+            await _scrape_url(district_base, district_pages)
+
+        # 3. Extra categories (rent, commercial)
+        for target in EXTRA_TARGETS:
+            await _scrape_url(target["url"], extra_pages,
+                              override_type=target["property_type"],
+                              override_listing=target["listing_type"])
+
+        from db.models import ScrapeRun
+        db.add(ScrapeRun(source="ikman", started_at=datetime.utcnow(),
+                         finished_at=datetime.utcnow(),
+                         listings_found=grand_total_found, listings_new=grand_total_new))
+        db.commit()
+        await browser.close()
+
+    return grand_total_found, grand_total_new

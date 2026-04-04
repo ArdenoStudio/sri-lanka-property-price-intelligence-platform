@@ -20,8 +20,10 @@ BASE = "https://www.lankapropertyweb.com"
 # Updated URL structure after LPW site redesign (Apr 2026)
 # Old: /property-for-sale/?page=N  →  New: /sale/index.php?page=N
 BASE_URLS = [
-    {"url": f"{BASE}/sale/index.php", "type": "house", "listing_type": "sale"},
-    {"url": f"{BASE}/land/index.php", "type": "land",  "listing_type": "sale"},
+    {"url": f"{BASE}/sale/index.php",                  "type": "house",     "listing_type": "sale"},
+    {"url": f"{BASE}/land/index.php",                  "type": "land",      "listing_type": "sale"},
+    {"url": f"{BASE}/rentals/index.php",               "type": "house",     "listing_type": "rent"},
+    {"url": f"{BASE}/forsale-all-Apartment.html",      "type": "apartment", "listing_type": "sale"},
 ]
 
 
