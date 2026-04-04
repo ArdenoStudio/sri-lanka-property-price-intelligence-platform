@@ -208,6 +208,20 @@ export function ChatWidget() {
 
   const isInputEmpty = useMemo(() => input.trim().length === 0, [input]);
 
+  // ── Callbacks defined first so effects can reference them ─────────────────
+  const dismissTooltip = useCallback(() => {
+    setTooltipOut(true);
+    setTimeout(() => { setShowTooltip(false); setTooltipOut(false); }, 200);
+    try { localStorage.setItem(TOOLTIP_KEY, '1'); } catch { /* ignore */ }
+  }, []);
+
+  const closePanel = useCallback(() => {
+    setAnimOut(true);
+    setTimeout(() => { setOpen(false); setAnimOut(false); setLoading(false); }, 220);
+  }, []);
+
+  // ── Effects ────────────────────────────────────────────────────────────────
+
   // Persist messages on mount
   useEffect(() => {
     setMounted(true);
@@ -277,17 +291,6 @@ export function ChatWidget() {
     el.style.height = '0px';
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, [input]);
-
-  const dismissTooltip = useCallback(() => {
-    setTooltipOut(true);
-    setTimeout(() => { setShowTooltip(false); setTooltipOut(false); }, 200);
-    try { localStorage.setItem(TOOLTIP_KEY, '1'); } catch { /* ignore */ }
-  }, []);
-
-  const closePanel = useCallback(() => {
-    setAnimOut(true);
-    setTimeout(() => { setOpen(false); setAnimOut(false); setLoading(false); }, 220);
-  }, []);
 
   const toggle = useCallback(() => {
     if (showTooltip) dismissTooltip();
