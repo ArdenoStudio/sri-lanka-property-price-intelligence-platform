@@ -30,6 +30,31 @@
   scroll-behavior: smooth;
 }
 
+/* Keyboard focus ring — visible only on keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Scroll offset for sticky header on anchor links */
+#trends, #listings {
+  scroll-margin-top: 100px;
+}
+
+/* Respect reduced motion — collapse all animations/transitions instantly */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 body {
   margin: 0;
   background: var(--color-bg-primary);

@@ -75,9 +75,10 @@ export function ChatWidget() {
                   <p className="text-[10px] text-text-muted uppercase tracking-wider font-bold">Powered by Groq • AI</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsOpen(false)}
                 className="p-1 hover:bg-border/20 rounded-lg transition-colors cursor-pointer text-text-muted hover:text-text-primary border-none"
+                aria-label="Close assistant"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -147,6 +148,7 @@ export function ChatWidget() {
                   type="submit"
                   disabled={!input.trim() || loading}
                   className="absolute right-2 top-1.5 p-1.5 bg-accent hover:bg-accent-light disabled:bg-border/50 rounded-lg text-white transition-all transform active:scale-95 border-none cursor-pointer"
+                  aria-label="Send message"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -163,6 +165,8 @@ export function ChatWidget() {
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Close assistant" : "Open property assistant"}
+        aria-expanded={isOpen}
         className={cn(
           "w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 group relative overflow-hidden border-none cursor-pointer",
           isOpen ? "bg-bg-card border border-border rotate-90" : "bg-accent text-white"

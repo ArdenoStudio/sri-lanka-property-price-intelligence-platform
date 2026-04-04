@@ -112,7 +112,7 @@ function App() {
   return (
     <>
       <PageLoader 
-        minDuration={3200} 
+        minDuration={2000} 
         onComplete={() => setLoading(false)} 
       />
       

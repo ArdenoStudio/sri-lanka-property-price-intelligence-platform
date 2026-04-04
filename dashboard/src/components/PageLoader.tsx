@@ -273,8 +273,12 @@ const ArdenoPhase = memo<{ exiting: boolean; flashRed: boolean; progress: number
 
 export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: number }> = ({
   onComplete,
-  minDuration = 3200,
+  minDuration = 2000,
 }) => {
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const [done, setDone] = useState(false);
   const [progress, setProgress] = useState(0);
   const [exiting, setExiting] = useState(false);
@@ -283,15 +287,24 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
   const rafRef = useRef(0);
   const lastProgressRef = useRef(0);
 
+  // Skip animation entirely for users who prefer reduced motion
   useEffect(() => {
+    if (!prefersReducedMotion) return;
+    setDone(true);
+    onComplete?.();
+  }, [prefersReducedMotion, onComplete]);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
     if (document.getElementById("avl-keyframes")) return;
     const style = document.createElement("style");
     style.id = "avl-keyframes";
     style.textContent = STYLES;
     document.head.appendChild(style);
-  }, []);
+  }, [prefersReducedMotion]);
 
   useEffect(() => {
+    if (prefersReducedMotion) return;
     const start = Date.now();
     const duration = minDuration * 0.85;
     const tick = () => {
@@ -307,9 +320,10 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [minDuration]);
+  }, [minDuration, prefersReducedMotion]);
 
   useEffect(() => {
+    if (prefersReducedMotion) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
     const t = (fn: () => void, ms: number) => timers.push(setTimeout(fn, ms));
 
@@ -321,7 +335,7 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
     }, minDuration + 450);
 
     return () => timers.forEach(clearTimeout);
-  }, [minDuration, onComplete]);
+  }, [minDuration, onComplete, prefersReducedMotion]);
 
   if (done) return null;
 

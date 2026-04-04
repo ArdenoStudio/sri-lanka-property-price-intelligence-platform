@@ -207,6 +207,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
           <button
             onClick={() => onPageChange(Math.max(0, page - 1))}
             disabled={page === 0}
+            aria-label="Previous page"
             className="p-2 rounded-lg bg-bg-card border border-border hover:border-border-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer text-text-primary"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -228,6 +229,8 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                 <button
                   key={pageNum}
                   onClick={() => onPageChange(pageNum)}
+                  aria-label={`Go to page ${pageNum + 1}`}
+                  aria-current={page === pageNum ? 'page' : undefined}
                   className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
                     page === pageNum
                       ? 'bg-accent text-white border-accent'
@@ -243,6 +246,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
           <button
             onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
+            aria-label="Next page"
             className="p-2 rounded-lg bg-bg-card border border-border hover:border-border-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer text-text-primary"
           >
             <ChevronRight className="w-4 h-4" />

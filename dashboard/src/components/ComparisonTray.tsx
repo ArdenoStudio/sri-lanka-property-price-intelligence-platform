@@ -47,7 +47,8 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
               </div>
               <button
                 onClick={() => onRemove(item.id)}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center shadow-lg border-2 border-bg-card hover:bg-danger/80 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                aria-label={`Remove ${item.title || 'listing'} from comparison`}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center shadow-lg border-2 border-bg-card hover:bg-danger/80 transition-colors cursor-pointer sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -65,7 +66,7 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
           <button
             onClick={onClear}
             className="flex-1 sm:flex-none p-2.5 rounded-xl border border-border text-text-muted hover:text-danger hover:border-danger/30 transition-all cursor-pointer bg-transparent"
-            title="Clear all"
+            aria-label="Clear all from comparison"
           >
             <Trash2 className="w-4 h-4" />
           </button>
