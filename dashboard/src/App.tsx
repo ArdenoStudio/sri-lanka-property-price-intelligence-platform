@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getStats, getDistricts, getHeatmap, getListings } from './api';
-import type { Stats, District, HeatmapPoint, Listing } from './api';
+import { getStats, getDistricts, getHeatmap, getListings, getPipelineStatus } from './api';
+import type { Stats, District, HeatmapPoint, Listing, PipelineStatusResponse } from './api';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
+import { PipelineStatus } from './components/PipelineStatus';
 import { MapSection } from './components/MapSection';
 import { Filters } from './components/Filters';
 import { ListingsGrid } from './components/ListingsGrid';
@@ -21,6 +22,7 @@ function App() {
   const [heatmap, setHeatmap] = useState<HeatmapPoint[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [totalListings, setTotalListings] = useState(0);
+  const [pipeline, setPipeline] = useState<PipelineStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(false);
 
@@ -74,14 +76,16 @@ function App() {
   // Initial data load + Polling
   const refreshStatsAndDistricts = useCallback(async () => {
     try {
-      const [s, d, h] = await Promise.all([
+      const [s, d, h, p] = await Promise.all([
         getStats().catch(() => null),
         getDistricts().catch(() => []),
         getHeatmap().catch(() => ({ points: [], total_districts: 0 })),
+        getPipelineStatus().catch(() => null),
       ]);
       if (s) setStats(s);
       setDistricts(d);
       setHeatmap(h.points);
+      if (p) setPipeline(p);
     } catch (e) {
       console.error("Data sync error:", e);
     }
@@ -118,6 +122,7 @@ function App() {
 
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
             <StatsBar stats={stats} />
+            <PipelineStatus status={pipeline} />
 
             <MapSection
               points={heatmap}

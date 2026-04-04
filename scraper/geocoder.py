@@ -1,10 +1,12 @@
 import time
 import os
 import structlog
+from datetime import datetime
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 from sqlalchemy.orm import Session
-from db.models import Listing
+from sqlalchemy import or_
+from db.models import Listing, Location
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,23 +22,68 @@ class Geocoder:
         self.geocode_service = RateLimiter(self.geolocator.geocode, min_delay_seconds=1.1)
         self.cache = {} # Local dict cache keyed by "city, district"
 
+    def _normalize_location_key(self, city, district):
+        def norm(value):
+            if not value:
+                return ""
+            return " ".join(str(value).strip().lower().split())
+        city_n = norm(city)
+        district_n = norm(district)
+        if not city_n and not district_n:
+            return None
+        return f"{city_n}|{district_n}"
+
+    def _ensure_location_for_listing(self, listing: Listing) -> Location:
+        key = self._normalize_location_key(listing.city, listing.district)
+        if not key:
+            return None
+        location = self.db.query(Location).filter(Location.normalized_key == key).first()
+        if not location:
+            location = Location(
+                normalized_key=key,
+                district=listing.district,
+                city=listing.city,
+                confidence=listing.geocode_confidence,
+                source="geocoder",
+            )
+            self.db.add(location)
+            self.db.flush()
+        listing.location_id = location.id
+        if location.lat and location.lng:
+            listing.lat = location.lat
+            listing.lng = location.lng
+        return location
+
     def geocode_listings(self):
         """Geocodes listings where lat IS NULL and geocode_confidence != 'low'"""
         listings = self.db.query(Listing).filter(
             Listing.lat == None,
-            Listing.geocode_confidence != 'low',
+            or_(Listing.geocode_confidence == None, Listing.geocode_confidence != 'low'),
             Listing.city != None
         ).all()
 
         stats = {"total": len(listings), "cache_hits": 0, "api_calls": 0, "failures": 0}
 
+        # Ensure listings are linked to normalized locations first
         for listing in listings:
+            self._ensure_location_for_listing(listing)
+        self.db.commit()
+
+        locations = self.db.query(Location).filter(
+            Location.lat == None,
+            or_(Location.confidence == None, Location.confidence != 'low')
+        ).all()
+
+        if locations:
+            stats["total"] = len(locations)
+
+        for loc in locations:
             query_parts = []
-            if listing.city: query_parts.append(listing.city)
-            if listing.district: query_parts.append(listing.district)
+            if loc.city: query_parts.append(loc.city)
+            if loc.district: query_parts.append(loc.district)
             query_parts.append("Sri Lanka")
             
-            cache_key = ", ".join([listing.city or "", listing.district or ""]).lower()
+            cache_key = ", ".join([loc.city or "", loc.district or ""]).lower()
             
             location = None
             if cache_key in self.cache:
@@ -55,11 +102,15 @@ class Geocoder:
                     continue
             
             if location:
-                listing.lat = location.latitude
-                listing.lng = location.longitude
-                # Keep confidence as 'high' or 'medium' as set by cleaner
+                loc.lat = location.latitude
+                loc.lng = location.longitude
+                loc.updated_at = datetime.utcnow()
+                # Update all listings linked to this location
+                for l in self.db.query(Listing).filter(Listing.location_id == loc.id).all():
+                    l.lat = loc.lat
+                    l.lng = loc.lng
             else:
-                listing.geocode_confidence = 'low'
+                loc.confidence = 'low'
                 stats["failures"] += 1
             
             # Commit every 10 for safety

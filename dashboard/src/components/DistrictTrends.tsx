@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { TrendingUp, Activity, Info } from 'lucide-react';
 import { getPrices, type PriceHistory } from '../api';
+import { motion } from 'framer-motion';
 
 interface Props {
   district: string;
@@ -65,8 +66,15 @@ export function DistrictTrends({ district, propertyType }: Props) {
     perch: d.median_price_per_perch ? Number(d.median_price_per_perch) : 0,
   }));
 
+  const chartKey = `${district}-${propertyType}-${chartData.length}`;
+
   return (
-    <div className="bg-bg-card border border-border rounded-2xl p-6 mb-8 overflow-hidden relative">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="bg-bg-card border border-border rounded-2xl p-6 mb-8 overflow-hidden relative"
+    >
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -96,7 +104,7 @@ export function DistrictTrends({ district, propertyType }: Props) {
         </div>
       </div>
 
-      <div className="h-[300px] w-full">
+      <div className="h-[300px] w-full relative overflow-hidden rounded-xl">
         {loading ? (
           <div className="h-full w-full flex items-center justify-center bg-bg-card-hover/20 rounded-xl border border-dashed border-border">
             <div className="flex flex-col items-center gap-3">
@@ -109,8 +117,16 @@ export function DistrictTrends({ district, propertyType }: Props) {
             Insufficient data for this district yet.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <>
+            <motion.div
+              key={chartKey}
+              initial={{ x: '-60%', opacity: 0 }}
+              animate={{ x: '60%', opacity: 0.35 }}
+              transition={{ duration: 1.6, ease: 'easeOut' }}
+              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-accent/10 to-transparent"
+            />
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart key={chartKey} data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3}/>
@@ -148,10 +164,14 @@ export function DistrictTrends({ district, propertyType }: Props) {
                 strokeWidth={3}
                 fillOpacity={1} 
                 fill="url(#colorPrice)" 
-                animationDuration={2000}
+                animationBegin={150}
+                animationDuration={1400}
+                animationEasing="ease-out"
+                activeDot={{ r: 4, strokeWidth: 2 }}
               />
-            </AreaChart>
-          </ResponsiveContainer>
+              </AreaChart>
+            </ResponsiveContainer>
+          </>
         )}
       </div>
       
@@ -160,6 +180,6 @@ export function DistrictTrends({ district, propertyType }: Props) {
         Prices are based on median advertised listings in that period. 
         Actual sale prices may vary from advertised prices.
       </div>
-    </div>
+    </motion.div>
   );
 }

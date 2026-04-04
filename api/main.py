@@ -1,12 +1,12 @@
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends, Query, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, cast, Float, case
+from sqlalchemy import func, desc, cast, Float, case, or_, and_
 from sqlalchemy.dialects.postgresql import insert
 from typing import List, Optional
 from db.connection import get_db, SessionLocal
-from db.models import Listing, RawListing, ScrapeRun, PriceAggregate
-from datetime import datetime, timedelta
+from db.models import Listing, RawListing, ScrapeRun, PriceAggregate, JobRun
+from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel
 import os
 
@@ -131,6 +131,140 @@ def health_check(db: Session = Depends(get_db)):
         "clean_listings": clean_count,
         "last_scrape": last_run.finished_at if last_run else None,
     }
+
+def _require_admin(req: Request):
+    admin_key = os.getenv("ADMIN_API_KEY")
+    if not admin_key:
+        raise HTTPException(status_code=503, detail="Admin access not configured")
+    if req.headers.get("x-admin-key") != admin_key:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+def _to_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    if not dt:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+def _status_for(now: datetime, last_success: Optional[datetime], last_running: Optional[datetime], expected_hours: int) -> str:
+    if last_running:
+        if now - last_running <= timedelta(hours=expected_hours * 2):
+            return "running"
+    if last_success:
+        if now - last_success <= timedelta(hours=int(expected_hours * 1.5)):
+            return "ok"
+    return "delayed"
+
+@app.get("/public/pipeline")
+def public_pipeline(db: Session = Depends(get_db)):
+    now = datetime.now(timezone.utc)
+    jobs = []
+
+    job_defs = [
+        {"name": "scrape_ikman", "type": "scrape", "source": "ikman", "expected_hours": 24},
+        {"name": "scrape_lpw", "type": "scrape", "source": "lpw", "expected_hours": 24},
+        {"name": "clean_listings", "type": "job", "expected_hours": 24},
+        {"name": "geocode_listings", "type": "job", "expected_hours": 24},
+        {"name": "compute_aggregates", "type": "job", "expected_hours": 168},
+    ]
+
+    for job in job_defs:
+        if job["type"] == "scrape":
+            source = job["source"]
+            last_success_run = (
+                db.query(ScrapeRun)
+                .filter(
+                    ScrapeRun.source == source,
+                    or_(
+                        ScrapeRun.status == "success",
+                        and_(ScrapeRun.status.is_(None), ScrapeRun.finished_at.isnot(None)),
+                    )
+                )
+                .order_by(desc(ScrapeRun.finished_at))
+                .first()
+            )
+            last_run = (
+                db.query(ScrapeRun)
+                .filter(ScrapeRun.source == source)
+                .order_by(desc(ScrapeRun.started_at))
+                .first()
+            )
+            last_running = (
+                db.query(ScrapeRun)
+                .filter(ScrapeRun.source == source, ScrapeRun.status == "running")
+                .order_by(desc(ScrapeRun.started_at))
+                .first()
+            )
+        else:
+            name = job["name"]
+            last_success_run = (
+                db.query(JobRun)
+                .filter(JobRun.job_name == name, JobRun.status == "success")
+                .order_by(desc(JobRun.finished_at))
+                .first()
+            )
+            last_run = (
+                db.query(JobRun)
+                .filter(JobRun.job_name == name)
+                .order_by(desc(JobRun.started_at))
+                .first()
+            )
+            last_running = (
+                db.query(JobRun)
+                .filter(JobRun.job_name == name, JobRun.status == "running")
+                .order_by(desc(JobRun.started_at))
+                .first()
+            )
+
+        last_success = _to_utc(last_success_run.finished_at) if last_success_run else None
+        last_started = _to_utc(last_run.started_at) if last_run else None
+        running_started = _to_utc(last_running.started_at) if last_running else None
+
+        status = _status_for(now, last_success, running_started, job["expected_hours"])
+        jobs.append({
+            "name": job["name"],
+            "status": status,
+            "last_success": last_success.isoformat() if last_success else None,
+            "last_run": last_started.isoformat() if last_started else None,
+            "expected_hours": job["expected_hours"],
+        })
+
+    overall = "ok"
+    if any(j["status"] == "delayed" for j in jobs):
+        overall = "delayed"
+    elif any(j["status"] == "running" for j in jobs):
+        overall = "running"
+
+    return {
+        "generated_at": now.isoformat(),
+        "overall_status": overall,
+        "jobs": jobs,
+    }
+
+@app.get("/admin/job-runs")
+def admin_job_runs(
+    req: Request,
+    job_name: Optional[str] = None,
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    _require_admin(req)
+    q = db.query(JobRun)
+    if job_name:
+        q = q.filter(JobRun.job_name == job_name)
+    runs = q.order_by(desc(JobRun.started_at)).limit(limit).all()
+    return [
+        {
+            "id": r.id,
+            "job_name": r.job_name,
+            "started_at": r.started_at.isoformat() if r.started_at else None,
+            "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+            "status": r.status,
+            "stats": r.stats,
+            "error_message": r.error_message,
+        }
+        for r in runs
+    ]
 
 
 @app.post("/trigger/process")

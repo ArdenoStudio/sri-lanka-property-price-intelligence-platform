@@ -49,6 +49,7 @@ class Listing(Base):
     lat = Column(Numeric(9, 6))
     lng = Column(Numeric(9, 6))
     geocode_confidence = Column(String(10))
+    location_id = Column(BigInteger, ForeignKey('locations.id'))
 
     property_type = Column(String(30))
     listing_type = Column(String(10))
@@ -101,3 +102,60 @@ class ScrapeRun(Base):
     listings_found = Column(Integer, default=0)
     listings_new = Column(Integer, default=0)
     error_message = Column(Text)
+
+class ListingSnapshot(Base):
+    __tablename__ = 'listing_snapshots'
+
+    id = Column(BigInteger, primary_key=True)
+    source = Column(String(20), nullable=False)
+    source_id = Column(String(100), nullable=False)
+    scraped_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    url = Column(Text)
+    title = Column(Text)
+    raw_price = Column(Text)
+    raw_location = Column(Text)
+    raw_size = Column(Text)
+    property_type = Column(String(30))
+    listing_type = Column(String(10))
+    raw_json = Column(JSON)
+    fingerprint = Column(String(40), nullable=False)
+
+    __table_args__ = (
+        Index('idx_listing_snapshots_source_source_id', 'source', 'source_id'),
+        Index('idx_listing_snapshots_scraped_at', 'scraped_at'),
+        Index('idx_listing_snapshots_fingerprint', 'fingerprint'),
+        Index('uq_listing_snapshots_fingerprint', 'source', 'source_id', 'fingerprint', unique=True),
+    )
+
+class JobRun(Base):
+    __tablename__ = 'job_runs'
+
+    id = Column(BigInteger, primary_key=True)
+    job_name = Column(String(50), nullable=False)
+    started_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    finished_at = Column(DateTime(timezone=True))
+    status = Column(String(10))
+    stats = Column(JSON)
+    error_message = Column(Text)
+
+    __table_args__ = (
+        Index('idx_job_runs_name_time', 'job_name', 'started_at'),
+    )
+
+class Location(Base):
+    __tablename__ = 'locations'
+
+    id = Column(BigInteger, primary_key=True)
+    normalized_key = Column(Text, unique=True, nullable=False)
+    district = Column(String(50))
+    city = Column(String(100))
+    gn_division = Column(String(100))
+    lat = Column(Numeric(9, 6))
+    lng = Column(Numeric(9, 6))
+    confidence = Column(String(10))
+    source = Column(Text)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index('idx_locations_normalized_key', 'normalized_key'),
+    )

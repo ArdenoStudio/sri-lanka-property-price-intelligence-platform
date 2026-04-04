@@ -50,6 +50,19 @@ const STYLES = `
     from { opacity:0; transform:translateY(-20px) scale(0.9); filter: blur(10px); }
     to   { opacity:1; transform:translateY(0) scale(1); filter: blur(0px); }
   }
+  @keyframes avl-phaseIn {
+    from { opacity:0; transform:translateY(6px); filter: blur(4px); }
+    to   { opacity:1; transform:translateY(0); filter: blur(0); }
+  }
+  @keyframes avl-phasePop {
+    from { opacity:0; transform:translateY(10px) scale(0.96); letter-spacing: 0.12em; text-shadow: 0 0 0 rgba(129,140,248,0); }
+    60%  { opacity:1; transform:translateY(0) scale(1); letter-spacing: 0.34em; text-shadow: 0 0 18px rgba(129,140,248,0.35); }
+    to   { opacity:1; transform:translateY(0) scale(1); letter-spacing: 0.28em; text-shadow: 0 0 8px rgba(129,140,248,0.25); }
+  }
+  @keyframes avl-phaseGlow {
+    from { text-shadow: 0 0 0 rgba(129,140,248,0); }
+    to   { text-shadow: 0 0 24px rgba(129,140,248,0.35); }
+  }
   .glass-overlay {
     backdrop-filter: blur(8px);
     background: radial-gradient(circle at 50% 50%, rgba(10,5,5,0.4) 0%, rgba(0,0,0,0.9) 100%);
@@ -213,10 +226,26 @@ const ArdenoPhase = memo<{ exiting: boolean; flashRed: boolean; progress: number
         </div>
       </div>
 
-      <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", width: 280, display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
-        <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 10, letterSpacing: "0.3em", color: "rgba(255,255,255,0.4)" }}>
+      <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", width: 320, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+        <p style={{
+          fontFamily: "'Sora', sans-serif",
+          fontSize: 10,
+          letterSpacing: "0.3em",
+          color: "rgba(255,255,255,0.45)",
+          transition: "opacity 0.3s ease",
+        }}>
           {progress < 100 ? "LOADING" : "INITIALIZING"}
         </p>
+        {progress >= 100 && (
+          <p style={{
+            fontFamily: "'Sora', sans-serif",
+            fontSize: 10,
+            color: "rgba(129,140,248,0.75)",
+            animation: "avl-phasePop 0.75s cubic-bezier(0.16,1,0.3,1) forwards, avl-phaseGlow 1.2s ease-out 0.2s forwards",
+          }}>
+            CONNECTING TO MARKET DATA
+          </p>
+        )}
         <div style={{ width: "100%", height: 1, background: "rgba(255,255,255,0.08)", overflow: "hidden", position: "relative" }}>
           <motion.div
             style={{ width: "100%", height: "100%", background: "linear-gradient(90deg, transparent, #6366f1)", transformOrigin: "left" }}

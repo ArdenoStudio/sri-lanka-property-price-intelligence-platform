@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from sqlalchemy import func
 from db.connection import SessionLocal, engine
-from db.models import ScrapeRun, Listing, PriceAggregate
+from db.models import ScrapeRun, Listing, PriceAggregate, JobRun
 from scraper.ikman import IkmanScraper
 from scraper.lpw import LPWScraper
 from scraper.cleaner import DataCleaner
@@ -33,6 +33,20 @@ except Exception as e:
     jobstores = {}  # APScheduler defaults to in-memory MemoryJobStore
 
 scheduler = BackgroundScheduler(jobstores=jobstores)
+
+def _start_job_run(db, name: str) -> JobRun:
+    run = JobRun(job_name=name, started_at=datetime.utcnow(), status="running")
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+    return run
+
+def _finish_job_run(db, run: JobRun, status: str, stats=None, error: str = None):
+    run.status = status
+    run.finished_at = datetime.utcnow()
+    run.stats = stats
+    run.error_message = error
+    db.commit()
 
 def run_async(coro):
     """Helper to run async code in sync APScheduler jobs"""
@@ -87,43 +101,51 @@ def scrape_lpw_job():
 
 def clean_listings_job():
     db = SessionLocal()
+    run = None
     try:
+        run = _start_job_run(db, "clean_listings")
         cleaner = DataCleaner(db)
         stats = cleaner.process_all()
         log.info("clean_job_complete", **stats)
+        _finish_job_run(db, run, "success", stats=stats)
     except Exception as e:
         log.error("clean_job_failed", error=str(e))
+        if run:
+            _finish_job_run(db, run, "failed", error=str(e))
     finally:
         db.close()
 
 def geocode_listings_job():
     db = SessionLocal()
+    run = None
     try:
+        run = _start_job_run(db, "geocode_listings")
         geocoder = Geocoder(db)
         stats = geocoder.geocode_listings()
         log.info("geocode_job_complete", **stats)
+        _finish_job_run(db, run, "success", stats=stats)
     except Exception as e:
         log.error("geocode_job_failed", error=str(e))
+        if run:
+            _finish_job_run(db, run, "failed", error=str(e))
     finally:
         db.close()
 
 def compute_aggregates_job():
     db = SessionLocal()
+    run = None
     try:
-        # Recompute price_aggregates table for all district/type/month combos
-        # This is a placeholder for complex logic
-        # For now, let's just log
+        run = _start_job_run(db, "compute_aggregates")
         log.info("compute_aggregates_job_started")
-        
-        # Simple aggregation logic (example)
-        # 1. Clear existing aggregates for current month? No, better overwrite.
-        # 2. Group by district, property_type, month
-        # 3. Calculate median etc.
-        # (Omitted full SQL logic for brevity, but table is ready)
-        
-        log.info("compute_aggregates_job_complete")
+        from api.main import PriceAggregator
+        aggregator = PriceAggregator(db)
+        count = aggregator.aggregate()
+        log.info("compute_aggregates_job_complete", aggregates=count)
+        _finish_job_run(db, run, "success", stats={"aggregates": count})
     except Exception as e:
         log.error("compute_aggregates_job_failed", error=str(e))
+        if run:
+            _finish_job_run(db, run, "failed", error=str(e))
     finally:
         db.close()
 

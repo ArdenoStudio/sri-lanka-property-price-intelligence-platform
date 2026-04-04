@@ -69,6 +69,20 @@ export interface PriceHistory {
   count: number;
 }
 
+export interface PipelineJobStatus {
+  name: string;
+  status: 'ok' | 'delayed' | 'running';
+  last_success: string | null;
+  last_run: string | null;
+  expected_hours: number;
+}
+
+export interface PipelineStatusResponse {
+  generated_at: string;
+  overall_status: 'ok' | 'delayed' | 'running';
+  jobs: PipelineJobStatus[];
+}
+
 // ---------- API calls ----------
 
 export const getStats = () => fetchJSON<Stats>('/stats');
@@ -95,6 +109,9 @@ export const getPrices = (district: string, propertyType: string = 'land') =>
 
 export const sendChatMessage = (message: string, history: any[] = []) =>
   fetchJSON<{ response: string; context_used: boolean }>('/chat', { message, history }, 'POST');
+
+export const getPipelineStatus = () =>
+  fetchJSON<PipelineStatusResponse>('/public/pipeline');
 
 async function fetchJSON<T>(
   path: string, 

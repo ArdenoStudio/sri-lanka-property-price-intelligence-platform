@@ -1,7 +1,7 @@
 import re
 import structlog
 from typing import Dict, Optional, Tuple
-from db.models import RawListing, Listing
+from db.models import RawListing, Listing, Location
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
@@ -467,6 +467,47 @@ class DataCleaner:
     def __init__(self, db: Session):
         self.db = db
 
+    def _normalize_location_key(self, city: Optional[str], district: Optional[str]) -> Optional[str]:
+        def norm(value: Optional[str]) -> str:
+            if not value:
+                return ""
+            return re.sub(r"\s+", " ", value.strip().lower())
+        city_n = norm(city)
+        district_n = norm(district)
+        if not city_n and not district_n:
+            return None
+        return f"{city_n}|{district_n}"
+
+    def _get_or_create_location(
+        self,
+        district: Optional[str],
+        city: Optional[str],
+        confidence: str,
+    ) -> Optional[Location]:
+        key = self._normalize_location_key(city, district)
+        if not key:
+            return None
+        location = self.db.query(Location).filter(Location.normalized_key == key).first()
+        if not location:
+            location = Location(
+                normalized_key=key,
+                district=district,
+                city=city,
+                confidence=confidence,
+                source="cleaner",
+            )
+            self.db.add(location)
+            self.db.flush()
+        else:
+            # Fill missing fields if we learned more
+            if not location.district and district:
+                location.district = district
+            if not location.city and city:
+                location.city = city
+            if not location.confidence and confidence:
+                location.confidence = confidence
+        return location
+
     def parse_price(self, raw_price: str) -> Tuple[Optional[float], Optional[float]]:
         """Parses raw_price string to numeric LKR. Returns (total_price, price_per_unit)"""
         if not raw_price or "Negotiable" in raw_price:
@@ -669,6 +710,13 @@ class DataCleaner:
                     size_perches=size_perches,
                     size_sqft=size_sqft
                 )
+
+                location = self._get_or_create_location(district, city, confidence)
+                if location:
+                    listing.location_id = location.id
+                    if location.lat and location.lng:
+                        listing.lat = location.lat
+                        listing.lng = location.lng
                 
                 self.detect_outliers(listing)
                 if listing.is_outlier: stats["outliers"] += 1
