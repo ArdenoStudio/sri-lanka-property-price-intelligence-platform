@@ -348,7 +348,7 @@ export function ChatWidget() {
         >
           {/* Arrow pointing right toward FAB */}
           <span style={{
-            position: 'absolute', right: -7, top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', right: -7, top: '50%',
             width: 12, height: 12,
             background: 'linear-gradient(135deg, rgba(12,12,18,.98), rgba(12,12,18,.98))',
             border: `1px solid rgba(${ACCENT_RGB},.28)`,
