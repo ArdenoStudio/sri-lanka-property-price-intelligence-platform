@@ -1,14 +1,26 @@
 import asyncio
 import random
 import re
+import os
 from datetime import datetime
 from playwright.async_api import async_playwright
 import structlog
-from db.models import RawListing
+from db.models import RawListing, ListingSnapshot
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
+from scraper.utils import build_snapshot_fingerprint
 
 log = structlog.get_logger()
+
+BLOCK_STATUSES = {403, 429, 503, 520, 521, 522, 524}
+BLOCK_KEYWORDS = [
+    "access denied",
+    "captcha",
+    "unusual traffic",
+    "verify you are human",
+    "blocked",
+    "cloudflare",
+]
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -20,9 +32,14 @@ USER_AGENTS = [
 
 # Thin districts that need targeted scraping (< 30 listings each)
 THIN_DISTRICTS = [
+    # Northern / Eastern — very low absolute counts
     "jaffna", "vavuniya", "batticaloa", "trincomalee",
-    "ampara", "mannar", "kilinochchi", "mullaitivu",
-    "polonnaruwa", "monaragala",
+    "ampara", "mannar", "kilinochchi",
+    "mullativu",           # Ikman slug is "mullativu" not "mullaitivu"
+    # Southern / Central — low % coverage despite decent Ikman volume
+    "hambantota", "kegalle", "anuradhapura",
+    "matara", "kurunegala", "polonnaruwa", "monaragala",
+    "ratnapura", "puttalam", "matale", "nuwara-eliya",
 ]
 
 # Extra category URLs for data gaps
@@ -37,11 +54,45 @@ class IkmanScraper:
 
     def __init__(self, db: Session):
         self.db = db
+        self.max_retries = int(os.getenv("SCRAPER_MAX_RETRIES", "3"))
+        self.backoff_base = float(os.getenv("SCRAPER_BACKOFF_BASE_SECONDS", "5"))
+        self.backoff_max = float(os.getenv("SCRAPER_BACKOFF_MAX_SECONDS", "60"))
+        self.stop_after_blocks = int(os.getenv("SCRAPER_STOP_AFTER_BLOCKS", "3"))
+
+    async def _is_blocked(self, page, response) -> bool:
+        try:
+            if response is not None and response.status in BLOCK_STATUSES:
+                return True
+        except Exception:
+            pass
+        try:
+            content = await page.content()
+            lowered = content.lower()
+            return any(token in lowered for token in BLOCK_KEYWORDS)
+        except Exception:
+            return False
+
+    async def _safe_goto(self, page, url: str) -> bool:
+        for attempt in range(self.max_retries):
+            try:
+                response = await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                if await self._is_blocked(page, response):
+                    raise RuntimeError("blocked")
+                if response is not None and response.status >= 400:
+                    raise RuntimeError(f"http_{response.status}")
+                return True
+            except Exception as e:
+                delay = min(self.backoff_base * (2 ** attempt), self.backoff_max)
+                delay += random.uniform(0, self.backoff_base * 0.2)
+                log.warning("page_retry", source=self.SOURCE, url=url, attempt=attempt + 1, delay=round(delay, 2), error=str(e))
+                await asyncio.sleep(delay)
+        return False
 
     async def scrape(self, max_pages: int = 50, location: str = "sri-lanka"):
         import os
         from urllib.parse import urlparse
 
+        consecutive_blocks = 0
         proxy_url = os.getenv("PROXY_URL")
         # Ikman URL pattern: https://ikman.lk/en/ads/{location}/property
         location_slug = location.lower().replace(" ", "-")
@@ -71,7 +122,14 @@ class IkmanScraper:
                 log.info("scraping_page", source=self.SOURCE, page=page_num, url=url)
 
                 try:
-                    await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                    ok = await self._safe_goto(page, url)
+                    if not ok:
+                        consecutive_blocks += 1
+                        log.error("page_blocked", source=self.SOURCE, page=page_num, url=url, blocks=consecutive_blocks)
+                        if consecutive_blocks >= self.stop_after_blocks:
+                            raise RuntimeError("blocked_by_site")
+                        continue
+                    consecutive_blocks = 0
 
                     # Close any overlay/ad popup if present
                     try:
@@ -159,6 +217,33 @@ class IkmanScraper:
                                 page_new_count += 1
                                 total_new += 1
 
+                            fingerprint = build_snapshot_fingerprint(
+                                title=title,
+                                raw_price=raw_price,
+                                raw_location=raw_location,
+                                raw_size=raw_meta,
+                                property_type=property_type,
+                                listing_type=listing_type,
+                                url=listing_url,
+                            )
+                            snap_stmt = insert(ListingSnapshot).values(
+                                source=self.SOURCE,
+                                source_id=source_id,
+                                url=listing_url,
+                                title=title,
+                                raw_price=raw_price,
+                                raw_location=raw_location,
+                                raw_size=raw_meta,
+                                property_type=property_type,
+                                listing_type=listing_type,
+                                raw_json={"full_meta": raw_meta},
+                                fingerprint=fingerprint,
+                                scraped_at=datetime.utcnow(),
+                            ).on_conflict_do_nothing(
+                                index_elements=['source', 'source_id', 'fingerprint']
+                            )
+                            self.db.execute(snap_stmt)
+
                             page_listings_count += 1
                             total_found += 1
 
@@ -178,6 +263,8 @@ class IkmanScraper:
                     await asyncio.sleep(random.uniform(1, 2.5))
 
                 except Exception as e:
+                    if str(e) == "blocked_by_site":
+                        raise
                     log.error("page_load_error", source=self.SOURCE, page=page_num, error=str(e))
                     await asyncio.sleep(1)  # brief pause before next page
 
@@ -232,11 +319,19 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
             nonlocal grand_total_found, grand_total_new
             total_found = 0
             total_new = 0
+            consecutive_blocks = 0
             for page_num in range(1, max_p + 1):
                 url = f"{base_url}{page_num}"
                 log.info("scraping_ikman_full", url=url)
                 try:
-                    await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                    ok = await scraper._safe_goto(page, url)
+                    if not ok:
+                        consecutive_blocks += 1
+                        log.error("page_blocked", source="ikman", page=page_num, url=url, blocks=consecutive_blocks)
+                        if consecutive_blocks >= scraper.stop_after_blocks:
+                            raise RuntimeError("blocked_by_site")
+                        continue
+                    consecutive_blocks = 0
                     try:
                         close_btn = page.locator("button[aria-label='Close'], .close-button, [data-testid='close-button']")
                         if await close_btn.count() > 0:
@@ -289,6 +384,33 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
                                 page_new += 1
                                 total_new += 1
                             total_found += 1
+
+                            fingerprint = build_snapshot_fingerprint(
+                                title=title,
+                                raw_price=raw_price,
+                                raw_location=raw_location,
+                                raw_size=raw_meta,
+                                property_type=property_type,
+                                listing_type=listing_type,
+                                url=listing_url,
+                            )
+                            snap_stmt = insert(ListingSnapshot).values(
+                                source="ikman",
+                                source_id=source_id,
+                                url=listing_url,
+                                title=title,
+                                raw_price=raw_price,
+                                raw_location=raw_location,
+                                raw_size=raw_meta,
+                                property_type=property_type,
+                                listing_type=listing_type,
+                                raw_json={"full_meta": raw_meta},
+                                fingerprint=fingerprint,
+                                scraped_at=datetime.utcnow(),
+                            ).on_conflict_do_nothing(
+                                index_elements=['source', 'source_id', 'fingerprint']
+                            )
+                            db.execute(snap_stmt)
                         except Exception as e:
                             log.error("ikman_full_card_error", error=str(e))
                     db.commit()
@@ -297,6 +419,8 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
                         break
                     await asyncio.sleep(random.uniform(1, 2.5))
                 except Exception as e:
+                    if str(e) == "blocked_by_site":
+                        raise
                     log.error("ikman_full_page_error", url=url, error=str(e))
                     await asyncio.sleep(1)
             grand_total_found += total_found
