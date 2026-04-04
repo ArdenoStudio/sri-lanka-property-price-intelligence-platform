@@ -52,7 +52,7 @@ export function PipelineStatus({ status }: Props) {
         <div className="flex items-center divide-x divide-border">
 
           {/* Left label */}
-          <div className="flex items-center gap-2 px-4 py-3 shrink-0">
+          <div className="flex items-center gap-2 px-5 py-4 shrink-0">
             <Activity className="w-3 h-3 text-text-muted" />
             <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted whitespace-nowrap">
               Pipeline
@@ -70,7 +70,7 @@ export function PipelineStatus({ status }: Props) {
             return (
               <div
                 key={job.name}
-                className="flex-1 flex items-center gap-2 px-4 py-3 hover:bg-bg-card-hover transition-colors"
+                className="flex-1 flex items-center gap-2.5 px-5 py-4 hover:bg-bg-card-hover transition-colors"
               >
                 <Icon
                   className="w-3 h-3 shrink-0"
