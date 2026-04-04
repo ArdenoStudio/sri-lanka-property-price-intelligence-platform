@@ -51,19 +51,21 @@ export function MapSection({ points, onDistrictSelect }: Props) {
             Circle size = listing volume. Click a district to filter.
           </p>
         </div>
-        <div className="flex items-center gap-3 text-[10px] text-text-muted">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#a29bfe]" /> Low
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#6c5ce7]" /> Med
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#fdcb6e]" /> High
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#e17055]" /> Hot
-          </span>
+        <div className="flex items-center gap-1.5">
+          {([
+            { label: 'Low',  color: '#a29bfe' },
+            { label: 'Med',  color: '#6c5ce7' },
+            { label: 'High', color: '#fdcb6e' },
+            { label: 'Hot',  color: '#e17055' },
+          ] as { label: string; color: string }[]).map(({ label, color }) => (
+            <span
+              key={label}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-bg-card border border-border text-text-muted"
+            >
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+              {label}
+            </span>
+          ))}
         </div>
       </div>
 
