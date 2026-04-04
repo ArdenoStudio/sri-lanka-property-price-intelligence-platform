@@ -273,7 +273,7 @@ const ArdenoPhase = memo<{ exiting: boolean; flashRed: boolean; progress: number
 
 export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: number }> = ({
   onComplete,
-  minDuration = 2000,
+  minDuration = 3200,
 }) => {
   const prefersReducedMotion =
     typeof window !== 'undefined' &&
