@@ -68,6 +68,14 @@ export function DistrictTrends({ district, propertyType }: Props) {
 
   const chartKey = `${district}-${propertyType}-${chartData.length}`;
 
+  const pctChange = (() => {
+    if (chartData.length < 2) return null;
+    const first = chartData[0].price;
+    const last = chartData[chartData.length - 1].price;
+    if (!first) return null;
+    return ((last - first) / first) * 100;
+  })();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -97,10 +105,16 @@ export function DistrictTrends({ district, propertyType }: Props) {
             </span>
           </div>
           <div className="w-px h-8 bg-border" />
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-success/15 text-success rounded-lg text-xs font-bold">
-            <TrendingUp className="w-3 h-3" />
-            +4.2%
-          </div>
+          {pctChange !== null && (
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold ${
+              pctChange >= 0
+                ? 'bg-success/15 text-success'
+                : 'bg-danger/15 text-danger'
+            }`}>
+              <TrendingUp className={`w-3 h-3 ${pctChange < 0 ? 'rotate-180' : ''}`} />
+              {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(1)}%
+            </div>
+          )}
         </div>
       </div>
 
