@@ -57,9 +57,7 @@ export function Header() {
             <div className={`absolute right-0 top-full mt-3 w-56 transition-all duration-200 pointer-events-none ${
               tooltipVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'
             }`}>
-              {/* Arrow */}
-              <div className="absolute -top-1.5 right-1.5 w-3 h-3 bg-bg-card border-l border-t border-border rotate-45" />
-              <div className="bg-bg-card border border-border rounded-xl p-3.5 shadow-2xl">
+              <div className="relative bg-bg-card border border-border rounded-xl p-3.5 shadow-2xl">
                 <p className="text-xs font-bold text-text-primary mb-1">Open Source</p>
                 <p className="text-[11px] text-text-secondary leading-relaxed mb-3">
                   This project is fully open source. Star it on GitHub if you find it useful!
@@ -69,6 +67,8 @@ export function Header() {
                   Star the repo
                 </div>
               </div>
+              {/* Arrow — rendered after box so it sits on top of the border */}
+              <div className="absolute -top-[7px] right-2 z-10 w-3.5 h-3.5 rotate-45 bg-bg-card border-l border-t border-border" />
             </div>
           </div>
         </div>
