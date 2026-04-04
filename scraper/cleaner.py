@@ -578,23 +578,35 @@ class DataCleaner:
         return district, city, confidence
 
     def detect_outliers(self, listing: Listing):
-        """Flags listing as outlier if price/size are suspicious"""
+        """Flags listing as outlier if price/size are suspicious.
+        Uses different thresholds for sale vs rent listings."""
         reasons = []
+        is_rent = (listing.listing_type == "rent")
+
         if listing.price_lkr:
-            if listing.price_lkr < 100_000:
-                reasons.append("Price too low (<100K LKR)")
-            if listing.price_lkr > 2_000_000_000:
-                reasons.append("Price too high (>2B LKR)")
-        
+            if is_rent:
+                # Rent: flag anything below 5K LKR/month (unrealistically cheap)
+                # or above 10M LKR/month (penthouse ceiling)
+                if listing.price_lkr < 5_000:
+                    reasons.append("Rent too low (<5K LKR/month)")
+                if listing.price_lkr > 10_000_000:
+                    reasons.append("Rent too high (>10M LKR/month)")
+            else:
+                # Sale: floor is 500K LKR (~$1,500 USD), ceiling is 2B LKR
+                if listing.price_lkr < 500_000:
+                    reasons.append("Sale price too low (<500K LKR)")
+                if listing.price_lkr > 2_000_000_000:
+                    reasons.append("Price too high (>2B LKR)")
+
         if listing.price_per_perch:
             if listing.price_per_perch > 50_000_000:
                 reasons.append("Price per perch too high (>50M)")
             if listing.price_per_perch < 10_000:
                 reasons.append("Price per perch too low (<10K)")
-        
+
         if listing.size_perches and listing.size_perches > 10_000:
             reasons.append("Size too large (>10000 perches)")
-            
+
         if reasons:
             listing.is_outlier = True
             listing.outlier_reason = "; ".join(reasons)
