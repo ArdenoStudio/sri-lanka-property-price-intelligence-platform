@@ -1,5 +1,95 @@
-import { SlidersHorizontal, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { SlidersHorizontal, X, ChevronDown, Check } from 'lucide-react';
 import type { District } from '../api';
+
+// ---- Price range slider (log scale: 100K – 500M LKR) ----
+const SLIDER_MAX = 1000;
+const P_MIN = 100_000;
+const P_MAX = 500_000_000;
+const LOG_MIN = Math.log(P_MIN);
+const LOG_MAX = Math.log(P_MAX);
+
+function sliderToPrice(v: number): number {
+  if (v <= 0) return 0;
+  if (v >= SLIDER_MAX) return P_MAX;
+  return Math.round(Math.exp(LOG_MIN + (v / SLIDER_MAX) * (LOG_MAX - LOG_MIN)));
+}
+
+function priceToSlider(p: number): number {
+  if (!p || p < P_MIN) return 0;
+  if (p >= P_MAX) return SLIDER_MAX;
+  return Math.round(((Math.log(p) - LOG_MIN) / (LOG_MAX - LOG_MIN)) * SLIDER_MAX);
+}
+
+function fmtPriceLabel(p: number): string {
+  if (p >= 1_000_000) return `Rs ${(p / 1_000_000 % 1 === 0 ? (p / 1_000_000).toFixed(0) : (p / 1_000_000).toFixed(1))}M`;
+  if (p >= 1_000) return `Rs ${(p / 1_000).toFixed(0)}K`;
+  return `Rs ${p}`;
+}
+
+function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChange }: {
+  minPrice: number | '';
+  maxPrice: number | '';
+  onMinPriceChange: (p: number | '') => void;
+  onMaxPriceChange: (p: number | '') => void;
+}) {
+  const minSlider = minPrice === '' ? 0 : priceToSlider(minPrice as number);
+  const maxSlider = maxPrice === '' ? SLIDER_MAX : priceToSlider(maxPrice as number);
+  const minPct = (minSlider / SLIDER_MAX) * 100;
+  const maxPct = (maxSlider / SLIDER_MAX) * 100;
+  const isActive = minPrice !== '' || maxPrice !== '';
+
+  return (
+    <div className={`col-span-2 rounded-xl border px-3 py-2.5 transition-all ${
+      isActive ? 'border-accent/40 bg-accent/10' : 'border-border bg-bg-card'
+    }`}>
+      <div className="flex justify-between items-center mb-3">
+        <span className={`text-xs font-medium ${isActive ? 'text-accent-light' : 'text-text-muted'}`}>
+          Price Range
+        </span>
+        <span className={`text-xs font-semibold tabular-nums ${isActive ? 'text-accent-light' : 'text-text-secondary'}`}>
+          {minPrice === '' ? 'Any' : fmtPriceLabel(minPrice as number)}
+          {' '}—{' '}
+          {maxPrice === '' ? 'Any' : fmtPriceLabel(maxPrice as number)}
+        </span>
+      </div>
+
+      <div className="relative h-4 flex items-center mx-1">
+        {/* Background track */}
+        <div className="absolute inset-x-0 h-[3px] rounded-full bg-border" />
+        {/* Filled range */}
+        <div
+          className="absolute h-[3px] rounded-full bg-accent"
+          style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }}
+        />
+        {/* Min thumb */}
+        <input
+          type="range"
+          min={0} max={SLIDER_MAX} step={1}
+          value={minSlider}
+          onChange={e => {
+            const v = Math.min(Number(e.target.value), maxSlider - 10);
+            onMinPriceChange(v <= 0 ? '' : sliderToPrice(v));
+          }}
+          className="price-range-input"
+          style={{ zIndex: minSlider > SLIDER_MAX - 50 ? 5 : 3 }}
+        />
+        {/* Max thumb */}
+        <input
+          type="range"
+          min={0} max={SLIDER_MAX} step={1}
+          value={maxSlider}
+          onChange={e => {
+            const v = Math.max(Number(e.target.value), minSlider + 10);
+            onMaxPriceChange(v >= SLIDER_MAX ? '' : sliderToPrice(v));
+          }}
+          className="price-range-input"
+          style={{ zIndex: maxSlider < 50 ? 5 : 4 }}
+        />
+      </div>
+    </div>
+  );
+}
 
 const PROPERTY_TYPES = [
   { value: '', label: 'All Types' },
@@ -11,8 +101,8 @@ const PROPERTY_TYPES = [
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
-  { value: 'price_asc', label: 'Price: Low to High' },
-  { value: 'price_desc', label: 'Price: High to Low' },
+  { value: 'price_asc', label: 'Price: Low → High' },
+  { value: 'price_desc', label: 'Price: High → Low' },
 ];
 
 const LISTING_TYPES = [
@@ -20,6 +110,76 @@ const LISTING_TYPES = [
   { value: 'sale', label: 'For Sale' },
   { value: 'rent', label: 'For Rent' },
 ];
+
+interface SelectOption { value: string; label: string }
+
+function CustomSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+}: {
+  options: SelectOption[];
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selected = options.find(o => o.value === value);
+  const label = selected?.value !== '' ? selected?.label : (placeholder ?? options[0]?.label);
+  const isActive = selected && selected.value !== '';
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all cursor-pointer
+          ${isActive
+            ? 'bg-accent/10 border-accent/40 text-accent-light'
+            : 'bg-bg-card border-border text-text-secondary hover:border-border-hover hover:text-text-primary'
+          }`}
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1.5 w-full min-w-[160px] bg-[#1a1a2e] border border-border rounded-xl shadow-2xl overflow-hidden">
+          <div className="max-h-56 overflow-y-auto py-1">
+            {options.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left transition-colors cursor-pointer
+                  ${opt.value === value
+                    ? 'text-accent-light bg-accent/10'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                  }`}
+              >
+                <span className="truncate">{opt.label}</span>
+                {opt.value === value && opt.value !== '' && (
+                  <Check className="w-3 h-3 flex-shrink-0 text-accent-light" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Props {
   districts: District[];
@@ -56,6 +216,11 @@ export function Filters({
 }: Props) {
   const hasFilters = selectedDistrict || selectedType || listingType || minPrice !== '' || maxPrice !== '';
 
+  const districtOptions: SelectOption[] = [
+    { value: '', label: 'All Districts' },
+    ...districts.map(d => ({ value: d.district, label: `${d.district} (${d.count})` })),
+  ];
+
   return (
     <div className="mb-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
@@ -66,7 +231,6 @@ export function Filters({
             {totalResults.toLocaleString()} results
           </span>
         </div>
-
         {hasFilters && (
           <button
             onClick={() => {
@@ -83,80 +247,21 @@ export function Filters({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-        {/* District select */}
-        <select
-          value={selectedDistrict}
-          onChange={(e) => onDistrictChange(e.target.value)}
-          className="w-full bg-bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent appearance-none cursor-pointer"
-        >
-          <option value="">All Districts</option>
-          {districts.map((d) => (
-            <option key={d.district} value={d.district}>
-              {d.district} ({d.count})
-            </option>
-          ))}
-        </select>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <CustomSelect options={districtOptions} value={selectedDistrict} onChange={onDistrictChange} placeholder="All Districts" />
+        <CustomSelect options={PROPERTY_TYPES} value={selectedType} onChange={onTypeChange} placeholder="All Types" />
+        <CustomSelect options={LISTING_TYPES} value={listingType} onChange={onListingTypeChange} placeholder="Any Status" />
 
-        {/* Property type */}
-        <select
-          value={selectedType}
-          onChange={(e) => onTypeChange(e.target.value)}
-          className="w-full bg-bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent appearance-none cursor-pointer"
-        >
-          {PROPERTY_TYPES.map((pt) => (
-            <option key={pt.value} value={pt.value}>
-              {pt.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Listing type */}
-        <select
-          value={listingType}
-          onChange={(e) => onListingTypeChange(e.target.value)}
-          className="w-full bg-bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent appearance-none cursor-pointer"
-        >
-          {LISTING_TYPES.map((lt) => (
-            <option key={lt.value} value={lt.value}>
-              {lt.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Min Price */}
-        <input
-          type="number"
-          placeholder="Min Price (Rs)"
-          value={minPrice}
-          onChange={(e) => onMinPriceChange(e.target.value ? Number(e.target.value) : '')}
-          className="w-full bg-bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+        <PriceRangeSlider
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          onMinPriceChange={onMinPriceChange}
+          onMaxPriceChange={onMaxPriceChange}
         />
 
-        {/* Max Price */}
-        <input
-          type="number"
-          placeholder="Max Price (Rs)"
-          value={maxPrice}
-          onChange={(e) => onMaxPriceChange(e.target.value ? Number(e.target.value) : '')}
-          className="w-full bg-bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent"
-        />
-
-        {/* Sort */}
-        <select
-          value={sortBy}
-          onChange={(e) => onSortChange(e.target.value)}
-          className="w-full bg-bg-card border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent appearance-none cursor-pointer"
-        >
-          {SORT_OPTIONS.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        <CustomSelect options={SORT_OPTIONS} value={sortBy} onChange={onSortChange} />
       </div>
 
-      {/* Active filter pills */}
       {hasFilters && (
         <div className="flex flex-wrap gap-2 mt-3">
           {selectedDistrict && (
