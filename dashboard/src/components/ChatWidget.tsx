@@ -208,7 +208,7 @@ export function ChatWidget() {
 
   const isInputEmpty = useMemo(() => input.trim().length === 0, [input]);
 
-  // Persist messages + show tooltip for new users
+  // Persist messages on mount
   useEffect(() => {
     setMounted(true);
     try {
@@ -219,13 +219,20 @@ export function ChatWidget() {
       }
     } catch { /* ignore */ }
 
+    // Show tooltip for new users after a short delay
     const seen = localStorage.getItem(TOOLTIP_KEY);
     if (!seen) {
-      const show = setTimeout(() => setShowTooltip(true), 2200);
-      const hide = setTimeout(() => dismissTooltip(), 9000);
-      return () => { clearTimeout(show); clearTimeout(hide); };
+      const t = setTimeout(() => setShowTooltip(true), 2000);
+      return () => clearTimeout(t);
     }
   }, []);
+
+  // Auto-dismiss tooltip after it appears
+  useEffect(() => {
+    if (!showTooltip) return;
+    const t = setTimeout(() => dismissTooltip(), 8000);
+    return () => clearTimeout(t);
+  }, [showTooltip, dismissTooltip]);
 
   useEffect(() => {
     if (!mounted) return;
