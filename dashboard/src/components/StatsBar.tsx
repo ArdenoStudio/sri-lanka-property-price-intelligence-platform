@@ -1,4 +1,5 @@
-import { Building2, MapPin, TrendingUp, Clock, Sparkles } from 'lucide-react';
+import React from 'react';
+import { Building2, MapPin, TrendingUp, TrendingDown, Clock, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Stats } from '../api';
 
@@ -27,7 +28,7 @@ interface Props {
 }
 
 export function StatsBar({ stats }: Props) {
-  const cards = [
+  const cards: { icon: React.ElementType; label: string; value: string; sub: string; accent: boolean; changePct?: number | null }[] = [
     {
       icon: Building2,
       label: 'Total Listings',
@@ -41,6 +42,7 @@ export function StatsBar({ stats }: Props) {
       value: formatPrice(stats?.avg_price_lkr ?? null),
       sub: stats?.data_source === 'raw' ? 'Processing...' : 'Across all types',
       accent: true,
+      changePct: stats?.price_change_pct ?? null,
     },
     {
       icon: MapPin,
@@ -116,9 +118,24 @@ export function StatsBar({ stats }: Props) {
                 {card.label}
               </span>
             </div>
-            <p className={`text-2xl sm:text-3xl font-black tracking-tight ${card.accent ? 'text-accent-light' : 'text-text-primary'}`}>
-              {card.value}
-            </p>
+            <div className="flex items-end gap-2">
+              <p className={`text-2xl sm:text-3xl font-black tracking-tight ${card.accent ? 'text-accent-light' : 'text-text-primary'}`}>
+                {card.value}
+              </p>
+              {card.changePct != null && (
+                <span className={`inline-flex items-center gap-0.5 mb-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                  card.changePct >= 0
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : 'bg-red-500/15 text-red-400'
+                }`}>
+                  {card.changePct >= 0
+                    ? <TrendingUp className="w-2.5 h-2.5" />
+                    : <TrendingDown className="w-2.5 h-2.5" />
+                  }
+                  {card.changePct >= 0 ? '+' : ''}{card.changePct}%
+                </span>
+              )}
+            </div>
             <div className="mt-3 pt-3 border-t border-border/50">
               <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">{card.sub}</p>
             </div>

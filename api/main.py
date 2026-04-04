@@ -445,10 +445,33 @@ def get_stats(db: Session = Depends(get_db)):
 
     last_run = db.query(ScrapeRun).order_by(desc(ScrapeRun.finished_at)).first()
 
+    # Month-over-month price change from price_aggregates
+    price_change_pct = None
+    try:
+        now = datetime.utcnow()
+        cur_y, cur_m = now.year, now.month
+        prev_m, prev_y = (cur_m - 1, cur_y) if cur_m > 1 else (12, cur_y - 1)
+
+        cur_avg = db.query(func.avg(PriceAggregate.avg_price_lkr)).filter(
+            PriceAggregate.period_year == cur_y,
+            PriceAggregate.period_month == cur_m,
+            PriceAggregate.avg_price_lkr.isnot(None),
+        ).scalar()
+        prev_avg = db.query(func.avg(PriceAggregate.avg_price_lkr)).filter(
+            PriceAggregate.period_year == prev_y,
+            PriceAggregate.period_month == prev_m,
+            PriceAggregate.avg_price_lkr.isnot(None),
+        ).scalar()
+        if cur_avg and prev_avg and prev_avg > 0:
+            price_change_pct = round(((float(cur_avg) - float(prev_avg)) / float(prev_avg)) * 100, 1)
+    except Exception:
+        pass
+
     return {
         "total_listings": total_listings,
         "listings_last_7_days": recent_listings,
         "avg_price_lkr": float(avg_price) if avg_price else None,
+        "price_change_pct": price_change_pct,
         "districts_covered": districts_covered,
         "listings_by_type": by_type,
         "last_updated": last_run.finished_at.isoformat() if last_run and last_run.finished_at else None,

@@ -6,6 +6,7 @@ export interface Stats {
   total_listings: number;
   listings_last_7_days: number;
   avg_price_lkr: number | null;
+  price_change_pct: number | null;
   districts_covered: number;
   listings_by_type: Record<string, number>;
   last_updated: string | null;
