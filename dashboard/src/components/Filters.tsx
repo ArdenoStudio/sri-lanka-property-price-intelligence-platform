@@ -40,21 +40,16 @@ function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChan
   const isActive = minPrice !== '' || maxPrice !== '';
 
   return (
-    <div className={`col-span-2 rounded-xl border px-3 py-2.5 transition-all ${
+    <div className={`col-span-2 rounded-xl border px-3 py-2.5 transition-all flex items-center gap-3 ${
       isActive ? 'border-accent/40 bg-accent/10' : 'border-border bg-bg-card'
     }`}>
-      <div className="flex justify-between items-center mb-3">
-        <span className={`text-xs font-medium ${isActive ? 'text-accent-light' : 'text-text-muted'}`}>
-          Price Range
-        </span>
-        <span className={`text-xs font-semibold tabular-nums ${isActive ? 'text-accent-light' : 'text-text-secondary'}`}>
-          {minPrice === '' ? 'Any' : fmtPriceLabel(minPrice as number)}
-          {' '}—{' '}
-          {maxPrice === '' ? 'Any' : fmtPriceLabel(maxPrice as number)}
-        </span>
-      </div>
+      <span className={`text-sm font-medium whitespace-nowrap flex-shrink-0 ${isActive ? 'text-accent-light' : 'text-text-secondary'}`}>
+        {isActive
+          ? `${minPrice === '' ? 'Any' : fmtPriceLabel(minPrice as number)} — ${maxPrice === '' ? 'Any' : fmtPriceLabel(maxPrice as number)}`
+          : 'Price Range'}
+      </span>
 
-      <div className="relative h-4 flex items-center mx-1">
+      <div className="relative flex-1 h-5 flex items-center">
         {/* Background track */}
         <div className="absolute inset-x-0 h-[3px] rounded-full bg-border" />
         {/* Filled range */}
