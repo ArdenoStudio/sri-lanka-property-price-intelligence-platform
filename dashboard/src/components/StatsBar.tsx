@@ -118,26 +118,22 @@ export function StatsBar({ stats }: Props) {
                 {card.label}
               </span>
             </div>
-            <div className="flex items-end gap-2">
-              <p className={`text-2xl sm:text-3xl font-black tracking-tight ${card.accent ? 'text-accent-light' : 'text-text-primary'}`}>
-                {card.value}
-              </p>
+            <p className={`text-2xl sm:text-3xl font-black tracking-tight ${card.accent ? 'text-accent-light' : 'text-text-primary'}`}>
+              {card.value}
+            </p>
+            <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between">
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">{card.sub}</p>
               {card.changePct != null && (
-                <span className={`inline-flex items-center gap-0.5 mb-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                  card.changePct >= 0
-                    ? 'bg-emerald-500/15 text-emerald-400'
-                    : 'bg-red-500/15 text-red-400'
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${
+                  card.changePct >= 0 ? 'text-emerald-400' : 'text-red-400'
                 }`}>
                   {card.changePct >= 0
-                    ? <TrendingUp className="w-2.5 h-2.5" />
-                    : <TrendingDown className="w-2.5 h-2.5" />
+                    ? <TrendingUp className="w-3 h-3" />
+                    : <TrendingDown className="w-3 h-3" />
                   }
-                  {card.changePct >= 0 ? '+' : ''}{card.changePct}%
+                  {card.changePct >= 0 ? '+' : ''}{card.changePct}% vs last month
                 </span>
               )}
-            </div>
-            <div className="mt-3 pt-3 border-t border-border/50">
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">{card.sub}</p>
             </div>
           </motion.div>
         ))}
