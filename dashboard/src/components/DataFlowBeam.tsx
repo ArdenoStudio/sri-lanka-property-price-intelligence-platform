@@ -220,16 +220,26 @@ export function DataFlowBeam() {
             </filter>
           </defs>
 
-          {/* Sources → Scraper */}
-          <Beam id="ikman-scraper"   from={p.ikman}   to={p.scraper} duration={2.2} delay={0}    />
-          <Beam id="lpw-scraper"     from={p.lpw}     to={p.scraper} duration={2.2} delay={0.8}  />
-          <Beam id="houseLk-scraper" from={p.houseLk} to={p.scraper} duration={2.2} delay={1.5}  />
-          {/* Scraper → Cleaner */}
-          <Beam id="scraper-cleaner" from={p.scraper} to={p.cleaner} duration={1.8} delay={0.3} />
-          {/* Cleaner → DB */}
-          <Beam id="cleaner-db"    from={p.cleaner} to={p.db}      duration={1.8} delay={0.9} />
-          {/* DB → You */}
-          <Beam id="db-you"        from={p.db}      to={p.you}     duration={1.8} delay={1.4} />
+          {/*
+            Relay wave: each segment fires as the previous one arrives.
+            Sources take ~2s to reach scraper (travel time ≈ dur * 0.5).
+            Each downstream segment starts ~1.0s after the previous fires.
+            All durations kept equal so waves stay in phase across cycles.
+          */}
+
+          {/* Sources → Scraper (staggered so 3 beams are always in flight) */}
+          <Beam id="ikman-scraper"   from={p.ikman}   to={p.scraper} duration={2.0} delay={0}   />
+          <Beam id="lpw-scraper"     from={p.lpw}     to={p.scraper} duration={2.0} delay={0}   />
+          <Beam id="houseLk-scraper" from={p.houseLk} to={p.scraper} duration={2.0} delay={0.5} />
+
+          {/* Scraper → Cleaner: fires as source beams arrive (~1s into their 2s journey) */}
+          <Beam id="scraper-cleaner" from={p.scraper} to={p.cleaner} duration={2.0} delay={1.0} />
+
+          {/* Cleaner → DB: fires as scraper→cleaner arrives */}
+          <Beam id="cleaner-db"      from={p.cleaner} to={p.db}      duration={2.0} delay={2.0} />
+
+          {/* DB → You: fires as cleaner→db arrives */}
+          <Beam id="db-you"          from={p.db}      to={p.you}     duration={2.0} delay={3.0} />
         </svg>
 
         {/* Left: sources stacked */}
