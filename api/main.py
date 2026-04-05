@@ -798,48 +798,71 @@ async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
         # --- 1. Dynamic Search Detection (Internal Search) ---
         search_results_context = ""
         try:
-            # We use a fast model to extract search filters
-            filter_prompt = f"""Extract search filters from the user message: "{req.message}"
-            Return ONLY a comma-separated list of: district or city, property_type (land/house/apartment/commercial/other), listing_type (sale/rent), max_price, min_bedrooms.
-            If a filter is missing, use "None". 
-            Example: "Colombo, house, sale, 50000000, 3" """
-            
+            # Build a summary of recent conversation so filter model has context
+            recent_history = ""
+            if req.history:
+                for m in req.history[-6:]:
+                    role = "User" if m.get("role") == "user" else "AI"
+                    recent_history += f"{role}: {m.get('content','')}\n"
+
+            filter_prompt = f"""You are a filter extractor. Given the conversation below, extract property search filters for the LATEST user message.
+
+Conversation:
+{recent_history}User: {req.message}
+
+Return ONLY a comma-separated list of exactly 5 values:
+  location (district or city in Sri Lanka), property_type (land/house/apartment/commercial), listing_type (sale/rent), min_bedrooms (number), min_price_lkr (number)
+Use "None" for any missing value. Do not explain. Just output the 5 values.
+Example: Colombo, apartment, sale, 2, None"""
+
             search_intent = client.chat.completions.create(
                 model="llama-3.1-8b-instant",
                 messages=[{"role": "user", "content": filter_prompt}],
-                max_tokens=64
+                max_tokens=32
             ).choices[0].message.content.strip()
 
             filters = [f.strip() for f in search_intent.split(",")]
-            if len(filters) >= 3:
-                loc_f, type_f, list_f = filters[0], filters[1], filters[2]
-                
-                # Execute dynamic listing search
-                query = db.query(Listing).filter(Listing.is_outlier == False)
-                if loc_f != "None": query = query.filter(Listing.raw_location.ilike(f"%{loc_f}%"))
-                if type_f != "None": query = query.filter(Listing.property_type == type_f.lower())
-                if list_f != "None": query = query.filter(Listing.listing_type == list_f.lower())
-                
-                found = query.order_by(Listing.price_lkr.desc().nullslast()).limit(5).all()
-                if found:
-                    avg_q = db.query(func.avg(Listing.price_lkr)).filter(
-                        Listing.price_lkr.isnot(None),
-                        Listing.price_lkr > 100000,
-                        Listing.is_outlier == False,
+            while len(filters) < 5:
+                filters.append("None")
+            loc_f, type_f, list_f, beds_f, minprice_f = filters[0], filters[1], filters[2], filters[3], filters[4]
+
+            def build_query(include_type=True, include_beds=True):
+                q = db.query(Listing).filter(Listing.is_outlier == False, Listing.price_lkr.isnot(None))
+                if loc_f != "None":
+                    q = q.filter(
+                        (Listing.raw_location.ilike(f"%{loc_f}%")) |
+                        (Listing.district.ilike(f"%{loc_f}%"))
                     )
-                    if loc_f != "None":
-                        avg_q = avg_q.filter(Listing.raw_location.ilike(f"%{loc_f}%"))
-                    if type_f != "None":
-                        avg_q = avg_q.filter(Listing.property_type == type_f.lower())
-                    avg_p = avg_q.scalar() or 0
-                    priced = [l for l in found if l.price_lkr and l.price_lkr > 0]
-                    avg_note = f"Avg Price LKR {avg_p:,.0f}" if avg_p > 0 else "No price average available"
-                    search_results_context = f"INTERNAL DATABASE SEARCH for '{loc_f} {type_f}': Found {len(found)} matches ({len(priced)} with prices). {avg_note}."
-                    for listing in found:
-                        price_str = f"LKR {float(listing.price_lkr):,.0f}" if listing.price_lkr and listing.price_lkr > 0 else "Price not listed"
-                        title = listing.title or "Property listing"
-                        url = listing.url or ""
-                        search_results_context += f"\n- {title} | {listing.property_type} in {listing.raw_location}: {price_str} | {url}"
+                if include_type and type_f != "None":
+                    q = q.filter(Listing.property_type == type_f.lower())
+                if list_f != "None":
+                    q = q.filter(Listing.listing_type == list_f.lower())
+                if include_beds and beds_f != "None" and beds_f.isdigit():
+                    q = q.filter(Listing.bedrooms >= int(beds_f))
+                if minprice_f != "None" and minprice_f.replace(".", "").isdigit():
+                    q = q.filter(Listing.price_lkr >= float(minprice_f))
+                return q
+
+            # Try strict search first, then progressively broaden
+            found = build_query(include_type=True,  include_beds=True ).order_by(Listing.price_lkr.desc()).limit(6).all()
+            if not found:
+                found = build_query(include_type=True,  include_beds=False).order_by(Listing.price_lkr.desc()).limit(6).all()
+            if not found:
+                found = build_query(include_type=False, include_beds=False).order_by(Listing.price_lkr.desc()).limit(6).all()
+
+            if found:
+                avg_q = build_query(include_type=True, include_beds=False)
+                avg_p = avg_q.with_entities(func.avg(Listing.price_lkr)).filter(Listing.price_lkr > 100000).scalar() or 0
+                priced = [l for l in found if l.price_lkr and l.price_lkr > 0]
+                avg_note = f"Avg Price LKR {avg_p:,.0f}" if avg_p > 0 else "No price average available"
+                label = f"{loc_f} {type_f}".replace("None", "").strip()
+                search_results_context = f"LIVE DB RESULTS for '{label}': {len(found)} listings shown ({len(priced)} with prices). {avg_note}."
+                for listing in found:
+                    price_str = f"LKR {float(listing.price_lkr):,.0f}" if listing.price_lkr and listing.price_lkr > 0 else "Price not listed"
+                    beds_str = f"{int(listing.bedrooms)}BR " if listing.bedrooms else ""
+                    title = listing.title or "Property listing"
+                    url = listing.url or ""
+                    search_results_context += f"\n- {title} | {beds_str}{listing.property_type} in {listing.raw_location}: {price_str} | {url}"
         except Exception:
             pass
 
