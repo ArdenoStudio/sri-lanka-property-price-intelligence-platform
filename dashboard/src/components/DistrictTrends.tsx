@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
-  AreaChart,
-  Area
+  ComposedChart,
+  Area,
+  Line,
 } from 'recharts';
 import { TrendingUp, Activity, Info } from 'lucide-react';
 import { getPrices, type PriceHistory } from '../api';
@@ -59,12 +60,66 @@ export function DistrictTrends({ district, propertyType }: Props) {
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  const chartData = data.map(d => ({
+  // Linear regression over last N historical points → project 3 months forward
+  function linearRegression(values: number[]): { slope: number; intercept: number; rmse: number } {
+    const n = values.length;
+    if (n < 2) return { slope: 0, intercept: values[0] ?? 0, rmse: 0 };
+    const sumX = (n * (n - 1)) / 2;
+    const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6;
+    const sumY = values.reduce((a, v) => a + v, 0);
+    const sumXY = values.reduce((a, v, i) => a + i * v, 0);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    const residuals = values.map((v, i) => (v - (intercept + slope * i)) ** 2);
+    const rmse = Math.sqrt(residuals.reduce((a, v) => a + v, 0) / n);
+    return { slope, intercept, rmse };
+  }
+
+  const historicalPoints = data.map(d => ({
     ...d,
     name: `${monthNames[d.month - 1]} ${d.year}`,
     price: d.median_price_lkr ? Number(d.median_price_lkr) : 0,
     perch: d.median_price_per_perch ? Number(d.median_price_per_perch) : 0,
   }));
+
+  // Build prediction points for next 3 months
+  const PREDICT_MONTHS = 3;
+  const prices = historicalPoints.map(d => d.price).filter(v => v > 0);
+  const reg = prices.length >= 3 ? linearRegression(prices) : null;
+
+  const predPoints = reg ? (() => {
+    const lastPt = historicalPoints[historicalPoints.length - 1];
+    const points = [];
+    for (let i = 1; i <= PREDICT_MONTHS; i++) {
+      let m = lastPt.month + i;
+      let y = lastPt.year;
+      if (m > 12) { m -= 12; y++; }
+      const predVal = reg.intercept + reg.slope * (prices.length - 1 + i);
+      const ci = reg.rmse * 1.5;
+      points.push({
+        name: `${monthNames[m - 1]} ${y}`,
+        month: m, year: y,
+        price: undefined as number | undefined,
+        pred: Math.max(0, predVal),
+        predLow: Math.max(0, predVal - ci),
+        predHigh: Math.max(0, predVal + ci),
+        isPrediction: true,
+      });
+    }
+    return points;
+  })() : [];
+
+  // Connect the last historical point to the prediction line
+  const chartData = [
+    ...historicalPoints.map((d, i) => ({
+      ...d,
+      pred: i === historicalPoints.length - 1 && reg ? d.price : undefined as number | undefined,
+      predLow: undefined as number | undefined,
+      predHigh: undefined as number | undefined,
+      isPrediction: false,
+    })),
+    ...predPoints,
+  ];
 
   const chartKey = `${district}-${propertyType}-${chartData.length}`;
 
@@ -140,59 +195,113 @@ export function DistrictTrends({ district, propertyType }: Props) {
               className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-accent/10 to-transparent"
             />
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart key={chartKey} data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#818cf8" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: '#9ca3af', fontSize: 10 }}
-                dy={10}
-              />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: '#9ca3af', fontSize: 10 }}
-                tickFormatter={formatCurrency}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#111827', 
-                  borderColor: '#374151',
-                  borderRadius: '12px',
-                  color: '#fff',
-                  fontSize: '12px'
-                }}
-                formatter={(val: any) => [formatCurrency(Number(val)), 'Median Price']}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="price" 
-                stroke="#818cf8" 
-                strokeWidth={3}
-                fillOpacity={1} 
-                fill="url(#colorPrice)" 
-                animationBegin={150}
-                animationDuration={1400}
-                animationEasing="ease-out"
-                activeDot={{ r: 4, strokeWidth: 2 }}
-              />
-              </AreaChart>
+              <ComposedChart key={chartKey} data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#818cf8" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorCI" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.18}/>
+                    <stop offset="95%" stopColor="#a78bfa" stopOpacity={0.04}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#9ca3af', fontSize: 10 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#9ca3af', fontSize: 10 }}
+                  tickFormatter={formatCurrency}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#111827',
+                    borderColor: '#374151',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '12px',
+                  }}
+                  formatter={(val: any, name: string) => {
+                    if (name === 'price') return [formatCurrency(Number(val)), 'Median Price'];
+                    if (name === 'pred') return [formatCurrency(Number(val)), 'Forecast'];
+                    return null;
+                  }}
+                  itemSorter={(a: any) => a.name === 'price' ? 0 : 1}
+                />
+                {/* Confidence band (prediction only) */}
+                <Area
+                  type="monotone"
+                  dataKey="predHigh"
+                  stroke="none"
+                  fill="url(#colorCI)"
+                  fillOpacity={1}
+                  legendType="none"
+                  isAnimationActive={false}
+                  connectNulls
+                />
+                <Area
+                  type="monotone"
+                  dataKey="predLow"
+                  stroke="none"
+                  fill="#0f172a"
+                  fillOpacity={1}
+                  legendType="none"
+                  isAnimationActive={false}
+                  connectNulls
+                />
+                {/* Historical price area */}
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke="#818cf8"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorPrice)"
+                  animationBegin={150}
+                  animationDuration={1400}
+                  animationEasing="ease-out"
+                  activeDot={{ r: 4, strokeWidth: 2 }}
+                  connectNulls={false}
+                />
+                {/* Prediction line */}
+                {reg && (
+                  <Line
+                    type="monotone"
+                    dataKey="pred"
+                    stroke="#a78bfa"
+                    strokeWidth={2}
+                    strokeDasharray="5 4"
+                    dot={false}
+                    activeDot={{ r: 3, stroke: '#a78bfa', strokeWidth: 2 }}
+                    animationBegin={1200}
+                    animationDuration={800}
+                    connectNulls
+                  />
+                )}
+              </ComposedChart>
             </ResponsiveContainer>
           </>
         )}
       </div>
       
-      <div className="mt-6 flex items-center gap-2 text-[10px] text-text-muted bg-bg-card-hover/50 p-3 rounded-xl border border-border/50">
-        <Info className="w-3.5 h-3.5 text-accent-light" />
-        Prices are based on median advertised listings in that period. 
-        Actual sale prices may vary from advertised prices.
+      <div className="mt-6 flex flex-wrap items-center gap-4 text-[10px] text-text-muted bg-bg-card-hover/50 p-3 rounded-xl border border-border/50">
+        <span className="flex items-center gap-1.5">
+          <Info className="w-3.5 h-3.5 text-accent-light" />
+          Based on median advertised prices. Actual sale prices may vary.
+        </span>
+        {reg && (
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-6 border-t-2 border-dashed border-[#a78bfa]" />
+            Forecast (linear regression ±1.5σ) — indicative only
+          </span>
+        )}
       </div>
     </motion.div>
   );

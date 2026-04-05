@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, Query, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, cast, Float, case, or_, and_
 from sqlalchemy.dialects.postgresql import insert
@@ -393,7 +394,92 @@ class PriceAggregator:
             self.db.execute(stmt)
         
         self.db.commit()
+        self._update_deal_scores()
         return len(results)
+
+    def _update_deal_scores(self):
+        """Stamps deal_score and market_median_lkr on each non-outlier listing.
+
+        deal_score = 100 * (1 - price_lkr / market_median_lkr)
+        Positive = below median (good deal), negative = above median.
+        Clamped to [-100, 100].
+        """
+        # Pull the latest aggregate median per (district, property_type)
+        now = datetime.utcnow()
+        latest_medians = (
+            self.db.query(
+                PriceAggregate.district,
+                PriceAggregate.property_type,
+                PriceAggregate.median_price_lkr,
+            )
+            .filter(
+                PriceAggregate.period_year == now.year,
+                PriceAggregate.period_month == now.month,
+                PriceAggregate.median_price_lkr.isnot(None),
+            )
+            .all()
+        )
+
+        # Fall back to the most recent available month if current month has no data
+        if not latest_medians:
+            subq = (
+                self.db.query(
+                    PriceAggregate.district,
+                    PriceAggregate.property_type,
+                    func.max(
+                        PriceAggregate.period_year * 100 + PriceAggregate.period_month
+                    ).label("ym"),
+                )
+                .filter(PriceAggregate.median_price_lkr.isnot(None))
+                .group_by(PriceAggregate.district, PriceAggregate.property_type)
+                .subquery()
+            )
+            latest_medians = (
+                self.db.query(
+                    PriceAggregate.district,
+                    PriceAggregate.property_type,
+                    PriceAggregate.median_price_lkr,
+                )
+                .join(
+                    subq,
+                    (PriceAggregate.district == subq.c.district)
+                    & (PriceAggregate.property_type == subq.c.property_type)
+                    & (
+                        PriceAggregate.period_year * 100 + PriceAggregate.period_month
+                        == subq.c.ym
+                    ),
+                )
+                .all()
+            )
+
+        median_map: dict = {
+            (d, pt): float(med) for d, pt, med in latest_medians if med
+        }
+
+        if not median_map:
+            return
+
+        listings = (
+            self.db.query(Listing)
+            .filter(
+                Listing.is_outlier == False,
+                Listing.price_lkr.isnot(None),
+                Listing.district.isnot(None),
+                Listing.property_type.isnot(None),
+            )
+            .all()
+        )
+
+        for listing in listings:
+            key = (listing.district, listing.property_type)
+            median = median_map.get(key)
+            if not median or median <= 0:
+                continue
+            listing.market_median_lkr = median
+            raw_score = (1.0 - float(listing.price_lkr) / median) * 100.0
+            listing.deal_score = max(-100.0, min(100.0, round(raw_score, 1)))
+
+        self.db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -637,6 +723,7 @@ def get_listings(
 
         results = query.offset(offset).limit(limit).all()
 
+        now_utc = datetime.utcnow()
         return {
             "total": total,
             "limit": limit,
@@ -647,6 +734,19 @@ def get_listings(
                     "source": l.source,
                     "title": raw_title or l.source_id,
                     "price_lkr": float(l.price_lkr) if l.price_lkr else None,
+                    "original_price_lkr": float(l.original_price_lkr) if l.original_price_lkr else None,
+                    "price_drop_pct": (
+                        round((1 - float(l.price_lkr) / float(l.original_price_lkr)) * 100, 1)
+                        if l.price_lkr and l.original_price_lkr and float(l.original_price_lkr) > 0
+                           and float(l.price_lkr) < float(l.original_price_lkr)
+                        else None
+                    ),
+                    "deal_score": float(l.deal_score) if l.deal_score is not None else None,
+                    "market_median_lkr": float(l.market_median_lkr) if l.market_median_lkr else None,
+                    "days_on_market": (
+                        (now_utc - l.first_seen_at.replace(tzinfo=None)).days
+                        if l.first_seen_at else None
+                    ),
                     "price_per_perch": float(l.price_per_perch) if l.price_per_perch else None,
                     "raw_price": raw_price,
                     "district": l.district,
@@ -912,6 +1012,33 @@ RULES FOR NON-PROPERTY MESSAGES:
         }
     except Exception as e:
         return {"response": f"AI error: {str(e)}", "context_used": False}
+
+
+@app.get("/sitemap.xml", response_class=Response)
+def sitemap(db: Session = Depends(get_db)):
+    base = "https://propertylk.vercel.app"
+    districts = [
+        row[0] for row in
+        db.query(Listing.district)
+        .filter(Listing.district.isnot(None))
+        .distinct()
+        .all()
+    ]
+    urls = [
+        f"  <url><loc>{base}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>"
+    ]
+    for d in sorted(districts):
+        enc = d.replace(" ", "%20")
+        urls.append(
+            f"  <url><loc>{base}/?district={enc}</loc><changefreq>daily</changefreq><priority>0.8</priority></url>"
+        )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(urls)
+        + "\n</urlset>"
+    )
+    return Response(content=xml, media_type="application/xml")
 
 
 @app.get("/")

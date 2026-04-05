@@ -699,6 +699,7 @@ class DataCleaner:
                     source_id=raw.source_id,
                     scraped_at=raw.scraped_at,
                     price_lkr=price_lkr,
+                    original_price_lkr=price_lkr,
                     price_per_perch=price_per_perch,
                     price_per_sqft=None,
                     raw_location=raw.raw_location,

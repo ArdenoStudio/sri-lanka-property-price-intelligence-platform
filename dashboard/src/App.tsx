@@ -15,6 +15,18 @@ import { ComparisonModal } from './components/ComparisonModal';
 import { PageLoader } from './components/PageLoader';
 import { ChatWidget } from './components/ChatWidget';
 
+function readURLFilters() {
+  const p = new URLSearchParams(window.location.search);
+  return {
+    district: p.get('district') || '',
+    type: p.get('type') || '',
+    listingType: p.get('listing_type') || '',
+    minPrice: p.get('min_price') ? Number(p.get('min_price')) : ('' as number | ''),
+    maxPrice: p.get('max_price') ? Number(p.get('max_price')) : ('' as number | ''),
+    sortBy: p.get('sort') || 'newest',
+  };
+}
+
 function App() {
   // Data state
   const [stats, setStats] = useState<Stats | null>(null);
@@ -26,14 +38,28 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(false);
 
-  // Filter state
-  const [selectedDistrict, setSelectedDistrict] = useState('');
-  const [selectedType, setSelectedType] = useState('');
-  const [listingType, setListingType] = useState('');
-  const [minPrice, setMinPrice] = useState<number | ''>('');
-  const [maxPrice, setMaxPrice] = useState<number | ''>('');
-  const [sortBy, setSortBy] = useState('newest');
+  // Filter state — seeded from URL on mount
+  const initialFilters = readURLFilters();
+  const [selectedDistrict, setSelectedDistrict] = useState(initialFilters.district);
+  const [selectedType, setSelectedType] = useState(initialFilters.type);
+  const [listingType, setListingType] = useState(initialFilters.listingType);
+  const [minPrice, setMinPrice] = useState<number | ''>(initialFilters.minPrice);
+  const [maxPrice, setMaxPrice] = useState<number | ''>(initialFilters.maxPrice);
+  const [sortBy, setSortBy] = useState(initialFilters.sortBy);
   const [page, setPage] = useState(0);
+
+  // Keep URL in sync with filters
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (selectedDistrict) p.set('district', selectedDistrict);
+    if (selectedType) p.set('type', selectedType);
+    if (listingType) p.set('listing_type', listingType);
+    if (minPrice !== '') p.set('min_price', String(minPrice));
+    if (maxPrice !== '') p.set('max_price', String(maxPrice));
+    if (sortBy && sortBy !== 'newest') p.set('sort', sortBy);
+    const qs = p.toString();
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, sortBy]);
   const PAGE_SIZE = 24;
 
   // Comparison state

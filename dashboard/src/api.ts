@@ -37,6 +37,11 @@ export interface Listing {
   source: string;
   title: string | null;
   price_lkr: number | null;
+  original_price_lkr: number | null;
+  price_drop_pct: number | null;
+  deal_score: number | null;
+  market_median_lkr: number | null;
+  days_on_market: number | null;
   price_per_perch: number | null;
   raw_price?: string | null;
   district: string | null;

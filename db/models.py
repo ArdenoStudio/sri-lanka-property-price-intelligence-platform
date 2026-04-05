@@ -58,6 +58,10 @@ class Listing(Base):
     bedrooms = Column(Integer)
     bathrooms = Column(Integer)
 
+    original_price_lkr = Column(Numeric(15, 2))
+    deal_score = Column(Numeric(5, 1))
+    market_median_lkr = Column(Numeric(15, 2))
+
     is_outlier = Column(Boolean, default=False)
     outlier_reason = Column(Text)
     is_duplicate = Column(Boolean, default=False)

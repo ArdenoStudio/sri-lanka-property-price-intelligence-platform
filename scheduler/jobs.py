@@ -7,6 +7,7 @@ from db.connection import SessionLocal, engine
 from db.models import ScrapeRun, Listing, PriceAggregate, JobRun
 from scraper.ikman import IkmanScraper
 from scraper.lpw import LPWScraper
+from scraper.lamudi import LamudiScraper
 from scraper.cleaner import DataCleaner
 from scraper.geocoder import Geocoder
 from datetime import datetime, timedelta
@@ -99,6 +100,28 @@ def scrape_lpw_job():
         db.commit()
         db.close()
 
+def scrape_lamudi_job():
+    db = SessionLocal()
+    run = ScrapeRun(source="lamudi", started_at=datetime.utcnow(), status="running")
+    db.add(run)
+    db.commit()
+
+    try:
+        scraper = LamudiScraper(db)
+        found, new = run_async(scraper.scrape())
+        run.listings_found = found
+        run.listings_new = new
+        run.status = "success"
+        run.finished_at = datetime.utcnow()
+    except Exception as e:
+        run.status = "failed"
+        run.error_message = str(e)
+        log.error("lamudi_job_failed", error=str(e))
+    finally:
+        db.commit()
+        db.close()
+
+
 def clean_listings_job():
     db = SessionLocal()
     run = None
@@ -153,8 +176,9 @@ def start_scheduler():
     """Start the background scheduler. Failures here must never crash the API."""
     try:
         # 1. Scrape every 24 hours
-        scheduler.add_job(scrape_ikman_job, 'cron', hour=2, minute=0, id='scrape_ikman', replace_existing=True)
-        scheduler.add_job(scrape_lpw_job, 'cron', hour=2, minute=30, id='scrape_lpw', replace_existing=True)
+        scheduler.add_job(scrape_ikman_job,  'cron', hour=2, minute=0,  id='scrape_ikman',  replace_existing=True)
+        scheduler.add_job(scrape_lpw_job,    'cron', hour=2, minute=30, id='scrape_lpw',    replace_existing=True)
+        scheduler.add_job(scrape_lamudi_job, 'cron', hour=3, minute=0,  id='scrape_lamudi', replace_existing=True)
 
         # 2. Clean every 24 hours
         scheduler.add_job(clean_listings_job, 'cron', hour=4, minute=0, id='clean_listings', replace_existing=True)

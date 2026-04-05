@@ -1,4 +1,4 @@
-import { Home, MapPin, Maximize, ExternalLink, ChevronLeft, ChevronRight, Bed, Bath, Plus, Check } from 'lucide-react';
+import { Home, MapPin, Maximize, ExternalLink, ChevronLeft, ChevronRight, Bed, Bath, Plus, Check, TrendingDown, Clock, BarChart2 } from 'lucide-react';
 import type { Listing } from '../api';
 
 function formatNum(p: number): string {
@@ -137,18 +137,55 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                   {listing.title || 'Untitled Listing'}
                 </h4>
 
+                {/* Signal badges: deal score / price drop / days on market */}
+                {(listing.deal_score !== null || listing.price_drop_pct !== null || listing.days_on_market !== null) && (
+                  <div className="flex flex-wrap gap-1.5 mb-2.5">
+                    {listing.deal_score !== null && listing.deal_score >= 5 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-success/15 text-success border border-success/25">
+                        <BarChart2 className="w-2.5 h-2.5" />
+                        {listing.deal_score.toFixed(0)}% below market
+                      </span>
+                    )}
+                    {listing.deal_score !== null && listing.deal_score <= -10 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-danger/10 text-danger border border-danger/25">
+                        <BarChart2 className="w-2.5 h-2.5" />
+                        {Math.abs(listing.deal_score).toFixed(0)}% above market
+                      </span>
+                    )}
+                    {listing.price_drop_pct !== null && listing.price_drop_pct > 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-warning/15 text-warning border border-warning/25">
+                        <TrendingDown className="w-2.5 h-2.5" />
+                        {listing.price_drop_pct.toFixed(0)}% drop
+                      </span>
+                    )}
+                    {listing.days_on_market !== null && listing.days_on_market > 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium text-text-muted border border-border">
+                        <Clock className="w-2.5 h-2.5" />
+                        {listing.days_on_market}d on market
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {/* Price */}
                 {(() => {
                   const { text, suffix } = formatPrice(listing);
                   return (
-                    <p className="text-xl font-bold text-accent-light mb-3">
-                      {text}
-                      {suffix && (
-                        <span className="text-xs font-normal text-text-muted ml-1.5">
-                          {suffix}
-                        </span>
+                    <div className="mb-3">
+                      <p className="text-xl font-bold text-accent-light">
+                        {text}
+                        {suffix && (
+                          <span className="text-xs font-normal text-text-muted ml-1.5">
+                            {suffix}
+                          </span>
+                        )}
+                      </p>
+                      {listing.market_median_lkr && listing.price_lkr && (
+                        <p className="text-[10px] text-text-muted mt-0.5">
+                          Market median: {formatNum(listing.market_median_lkr)}
+                        </p>
                       )}
-                    </p>
+                    </div>
                   );
                 })()}
 
