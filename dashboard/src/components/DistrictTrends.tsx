@@ -127,7 +127,7 @@ export function DistrictTrends({ district, propertyType }: Props) {
     if (chartData.length < 2) return null;
     const first = chartData[0].price;
     const last = chartData[chartData.length - 1].price;
-    if (!first) return null;
+    if (!first || last == null) return null;
     return ((last - first) / first) * 100;
   })();
 
@@ -156,7 +156,7 @@ export function DistrictTrends({ district, propertyType }: Props) {
           <div>
             <span className="text-[10px] text-text-muted uppercase block font-bold">Avg Median</span>
             <span className="text-accent-light font-bold text-lg">
-              {data.length > 0 ? formatCurrency(chartData[chartData.length - 1].price) : 'N/A'}
+              {data.length > 0 ? formatCurrency(chartData[chartData.length - 1].price ?? 0) : 'N/A'}
             </span>
           </div>
           <div className="w-px h-8 bg-border" />
@@ -228,10 +228,10 @@ export function DistrictTrends({ district, propertyType }: Props) {
                     color: '#fff',
                     fontSize: '12px',
                   }}
-                  formatter={(val: any, name: string) => {
+                  formatter={(val: any, name: any) => {
                     if (name === 'price') return [formatCurrency(Number(val)), 'Median Price'];
                     if (name === 'pred') return [formatCurrency(Number(val)), 'Forecast'];
-                    return null;
+                    return [formatCurrency(Number(val)), String(name)];
                   }}
                   itemSorter={(a: any) => a.name === 'price' ? 0 : 1}
                 />
