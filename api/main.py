@@ -272,11 +272,21 @@ def admin_job_runs(
 async def trigger_process(db: Session = Depends(get_db)):
     from scraper.cleaner import DataCleaner
     from scraper.geocoder import Geocoder
+    from scraper.detail_enricher import DetailEnricher
+    import asyncio
+
     cleaner = DataCleaner(db)
     processed = cleaner.process_all()
 
     geocoder = Geocoder(db)
     geocoded = geocoder.geocode_listings()
+
+    enricher = DetailEnricher(db)
+    loop = asyncio.new_event_loop()
+    try:
+        enriched = loop.run_until_complete(enricher.enrich())
+    finally:
+        loop.close()
 
     aggregator = PriceAggregator(db)
     trends = aggregator.aggregate()
@@ -285,6 +295,7 @@ async def trigger_process(db: Session = Depends(get_db)):
         "status": "success",
         "processed": processed,
         "geocoded": geocoded,
+        "enriched": enriched,
         "trends_updated": trends
     }
 

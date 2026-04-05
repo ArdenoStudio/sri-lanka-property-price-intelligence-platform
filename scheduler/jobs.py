@@ -8,6 +8,7 @@ from db.models import ScrapeRun, Listing, PriceAggregate, JobRun
 from scraper.ikman import IkmanScraper
 from scraper.lpw import LPWScraper
 from scraper.lamudi import LamudiScraper
+from scraper.detail_enricher import DetailEnricher
 from scraper.cleaner import DataCleaner
 from scraper.geocoder import Geocoder
 from datetime import datetime, timedelta
@@ -154,6 +155,23 @@ def geocode_listings_job():
     finally:
         db.close()
 
+def enrich_details_job():
+    db = SessionLocal()
+    run = None
+    try:
+        run = _start_job_run(db, "enrich_details")
+        enricher = DetailEnricher(db)
+        stats = run_async(enricher.enrich())
+        log.info("enrich_details_job_complete", **stats)
+        _finish_job_run(db, run, "success", stats=stats)
+    except Exception as e:
+        log.error("enrich_details_job_failed", error=str(e))
+        if run:
+            _finish_job_run(db, run, "failed", error=str(e))
+    finally:
+        db.close()
+
+
 def compute_aggregates_job():
     db = SessionLocal()
     run = None
@@ -185,6 +203,9 @@ def start_scheduler():
 
         # 3. Geocode every 24 hours
         scheduler.add_job(geocode_listings_job, 'cron', hour=5, minute=0, id='geocode_listings', replace_existing=True)
+
+        # 3b. Enrich missing detail fields (size, beds, baths) from detail pages
+        scheduler.add_job(enrich_details_job, 'cron', hour=5, minute=30, id='enrich_details', replace_existing=True)
 
         # 4. Aggregates every Sunday
         scheduler.add_job(compute_aggregates_job, 'cron', day_of_week='sun', hour=6, minute=0, id='compute_aggregates', replace_existing=True)
