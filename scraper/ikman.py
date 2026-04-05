@@ -88,7 +88,7 @@ class IkmanScraper:
                 await asyncio.sleep(delay)
         return False
 
-    async def scrape(self, max_pages: int = 50, location: str = "sri-lanka"):
+    async def scrape(self, max_pages: int = 50, location: str = "sri-lanka", storage_state: str = None):
         import os
         from urllib.parse import urlparse
 
@@ -108,7 +108,10 @@ class IkmanScraper:
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True, proxy=proxy_settings)
-            context = await browser.new_context(user_agent=random.choice(USER_AGENTS))
+            ctx_kwargs = {"user_agent": random.choice(USER_AGENTS)}
+            if storage_state and os.path.exists(storage_state):
+                ctx_kwargs["storage_state"] = storage_state
+            context = await browser.new_context(**ctx_kwargs)
             page = await context.new_page()
 
             # Extreme performance boost: Block all images, videos, fonts, and CSS from loading

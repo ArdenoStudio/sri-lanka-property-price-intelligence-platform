@@ -12,14 +12,21 @@ from playwright.async_api import async_playwright
 
 log = structlog.get_logger()
 
+# lamudi.lk rebranded to house.lk in 2025
+# All selectors verified against live house.lk DOM as of 2026-04
+
 BLOCK_STATUSES = {403, 429, 503, 520, 521, 522, 524}
 BLOCK_KEYWORDS = [
     "access denied",
-    "captcha",
     "unusual traffic",
-    "verify you are human",
-    "blocked",
-    "cloudflare",
+    # Cloudflare challenge-specific phrases (NOT just "cloudflare" which appears on every CF-protected page)
+    "checking if the site connection is secure",
+    "just a moment",
+    "enable javascript and cookies to continue",
+    "ddos protection by cloudflare",
+    "please wait while we verify",
+    "ray id:",
+    "cf-challenge-running",
 ]
 
 USER_AGENTS = [
@@ -28,19 +35,26 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
 ]
 
-BASE = "https://www.lamudi.lk"
+BASE = "https://house.lk"
 
+# house.lk URL structure (formerly lamudi.lk)
+# Pagination: /sale/page/2/, /sale/page/3/ etc.
 BASE_URLS = [
-    {"url": f"{BASE}/buy/",           "listing_type": "sale", "property_type": "house"},
-    {"url": f"{BASE}/rent/",          "listing_type": "rent", "property_type": "house"},
-    {"url": f"{BASE}/buy/land/",      "listing_type": "sale", "property_type": "land"},
-    {"url": f"{BASE}/buy/apartment/", "listing_type": "sale", "property_type": "apartment"},
-    {"url": f"{BASE}/rent/apartment/","listing_type": "rent", "property_type": "apartment"},
-    {"url": f"{BASE}/buy/commercial/","listing_type": "sale", "property_type": "commercial"},
+    {"url": f"{BASE}/sale/",       "listing_type": "sale",  "property_type": "house"},
+    {"url": f"{BASE}/rent/",       "listing_type": "rent",  "property_type": "house"},
+    {"url": f"{BASE}/land/",       "listing_type": "sale",  "property_type": "land"},
 ]
+
+def _page_url(base_url: str, page_num: int) -> str:
+    """Build paginated URL: /sale/ -> /sale/page/2/ etc."""
+    if page_num == 1:
+        return base_url
+    # strip trailing slash, append /page/N/
+    return base_url.rstrip("/") + f"/page/{page_num}/"
 
 
 class LamudiScraper:
+    """Scraper for house.lk (formerly lamudi.lk)."""
     SOURCE = "lamudi"
 
     def __init__(self, db: Session):
@@ -81,91 +95,92 @@ class LamudiScraper:
         return False
 
     async def _parse_listings(self, page, listing_type: str, property_type: str) -> list[dict]:
+        """
+        Parse house.lk listing cards.
+        Card selector: div.property_listing
+        Verified selectors (2026-04):
+          - title/url : h4 > a[href*="/details/"]
+          - price     : .listing_unit_price_wrapper
+          - location  : .property_location_image
+          - type      : .action_tag_wrapper  (class includes type, e.g. "action_tag_wrapper Villa")
+          - bedrooms  : .inforoom
+          - bathrooms : .infobath
+          - size      : .infosize
+        """
         items = []
         try:
-            # Lamudi uses article cards or div cards — try multiple selectors
-            cards = await page.query_selector_all(
-                'article.ListingCell-content, div.ListingCell-content, '
-                '[data-cy="listing-card"], .js-listing-cards-container .ListingCell'
-            )
-            if not cards:
-                # fallback: any link that looks like a listing detail page
-                cards = await page.query_selector_all('li[data-index]')
-        except Exception:
+            cards = await page.query_selector_all("div.property_listing")
+        except Exception as e:
+            log.debug("houseLk_card_query_error", error=str(e))
+            return items
+
+        if not cards:
+            log.debug("houseLk_no_cards_found")
             return items
 
         for card in cards:
             try:
-                # Title
-                title_el = await card.query_selector(
-                    'h2.ListingCell-KeyInfo-title, .card-title, h3[itemprop="name"], [data-cy="listing-title"]'
-                )
-                title = (await title_el.inner_text()).strip() if title_el else None
-
-                # URL
-                link_el = await card.query_selector('a[href]')
-                href = await link_el.get_attribute('href') if link_el else None
-                if href and not href.startswith('http'):
-                    href = BASE + href
-
+                # URL + title
+                title_el = await card.query_selector("h4 > a[href*='/details/']")
+                if not title_el:
+                    continue
+                href = await title_el.get_attribute("href")
                 if not href:
                     continue
+                if not href.startswith("http"):
+                    href = BASE + href
+                title = (await title_el.inner_text()).strip()
 
-                # Source ID from URL slug
-                source_id = href.rstrip('/').split('/')[-1] or href
+                # source_id: numeric suffix at end of slug e.g. "-5712978"
+                slug = href.rstrip("/").split("/")[-1]
+                m = re.search(r"-(\d+)$", slug)
+                source_id = m.group(1) if m else slug
 
-                # Price
-                price_el = await card.query_selector(
-                    '.price, [itemprop="price"], .KeyInformation-attribute--price span, '
-                    'span[data-cy="listing-price"], .ListingCell-KeyInfo-price-value'
-                )
-                raw_price = (await price_el.inner_text()).strip() if price_el else None
+                # Price — strip "Negotiable"/"upwards" suffix captured in pricetype span
+                price_el = await card.query_selector(".listing_unit_price_wrapper")
+                raw_price = None
+                if price_el:
+                    # Remove the pricetype span text to get clean price
+                    pricetype_el = await card.query_selector(".pricetype")
+                    pricetype_text = (await pricetype_el.inner_text()).strip() if pricetype_el else ""
+                    full_price_text = (await price_el.inner_text()).strip()
+                    raw_price = full_price_text.replace(pricetype_text, "").strip()
 
                 # Location
-                loc_el = await card.query_selector(
-                    '.ListingCell-KeyInfo-address-text, [itemprop="addressLocality"], '
-                    'span[data-cy="listing-location"], .location'
-                )
+                loc_el = await card.query_selector(".property_location_image")
                 raw_location = (await loc_el.inner_text()).strip() if loc_el else None
 
+                # Property type — from action_tag_wrapper class e.g. "action_tag_wrapper Villa"
+                type_el = await card.query_selector("[class*='action_tag_wrapper']")
+                pt = property_type
+                if type_el:
+                    type_class = await type_el.get_attribute("class") or ""
+                    type_text = (await type_el.inner_text()).strip()
+                    # Prefer class-based detection (more reliable than text)
+                    for t in ("land", "villa", "apartment", "commercial", "hotel", "house"):
+                        if t in type_class.lower() or t in type_text.lower():
+                            pt = t
+                            break
+
                 # Size
-                size_el = await card.query_selector(
-                    '[data-cy="listing-floorarea"], .ListingCell-KeyInfo-details span:first-child, '
-                    '.KeyInformation-attribute--land_size span, .size'
-                )
+                size_el = await card.query_selector(".infosize")
                 raw_size = (await size_el.inner_text()).strip() if size_el else None
 
                 # Bedrooms
-                beds_el = await card.query_selector(
-                    '[data-cy="listing-bedrooms"], .KeyInformation-attribute--bedrooms span, '
-                    'span[title="bedrooms"]'
-                )
-                bedrooms_text = (await beds_el.inner_text()).strip() if beds_el else None
+                beds_el = await card.query_selector(".inforoom")
                 bedrooms = None
-                if bedrooms_text:
-                    m = re.search(r'(\d+)', bedrooms_text)
-                    bedrooms = int(m.group(1)) if m else None
+                if beds_el:
+                    beds_text = (await beds_el.inner_text()).strip()
+                    bm = re.search(r"(\d+)", beds_text)
+                    bedrooms = int(bm.group(1)) if bm else None
 
                 # Bathrooms
-                baths_el = await card.query_selector(
-                    '[data-cy="listing-bathrooms"], .KeyInformation-attribute--bathrooms span, '
-                    'span[title="bathrooms"]'
-                )
-                baths_text = (await baths_el.inner_text()).strip() if baths_el else None
+                baths_el = await card.query_selector(".infobath")
                 bathrooms = None
-                if baths_text:
-                    m = re.search(r'(\d+)', baths_text)
-                    bathrooms = int(m.group(1)) if m else None
-
-                # Infer property_type from URL if it looks more specific
-                pt = property_type
-                if href:
-                    if '/land/' in href:
-                        pt = 'land'
-                    elif '/apartment/' in href:
-                        pt = 'apartment'
-                    elif '/commercial/' in href:
-                        pt = 'commercial'
+                if baths_el:
+                    baths_text = (await baths_el.inner_text()).strip()
+                    bm = re.search(r"(\d+)", baths_text)
+                    bathrooms = int(bm.group(1)) if bm else None
 
                 items.append({
                     "source_id": source_id,
@@ -179,8 +194,9 @@ class LamudiScraper:
                     "bedrooms": bedrooms,
                     "bathrooms": bathrooms,
                 })
+
             except Exception as e:
-                log.debug("lamudi_card_parse_error", error=str(e))
+                log.debug("houseLk_card_parse_error", error=str(e))
 
         return items
 
@@ -192,7 +208,13 @@ class LamudiScraper:
         for item in items:
             try:
                 fingerprint = build_snapshot_fingerprint(
-                    item["source_id"], item.get("raw_price", ""), item.get("raw_location", "")
+                    title=item.get("title", ""),
+                    raw_price=item.get("raw_price", ""),
+                    raw_location=item.get("raw_location", ""),
+                    raw_size=item.get("raw_size", ""),
+                    property_type=item.get("property_type", ""),
+                    listing_type=item.get("listing_type", ""),
+                    url=item.get("url", ""),
                 )
                 snap_stmt = insert(ListingSnapshot).values(
                     source=self.SOURCE,
@@ -238,24 +260,39 @@ class LamudiScraper:
                 if result.rowcount and result.rowcount > 0:
                     new_count += 1
             except Exception as e:
-                log.error("lamudi_upsert_error", source_id=item.get("source_id"), error=str(e))
+                log.error("houseLk_upsert_error", source_id=item.get("source_id"), error=str(e))
 
         self.db.commit()
         return found, new_count
 
-    async def scrape(self, max_pages: int = 10) -> tuple[int, int]:
+    async def scrape(self, max_pages: int = 20) -> tuple[int, int]:
         total_found = 0
         total_new = 0
 
         async with async_playwright() as pw:
-            browser = await pw.chromium.launch(
-                headless=True,
-                args=[
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-blink-features=AutomationControlled",
-                ],
-            )
+            # Use installed Chrome (channel="chrome") rather than bundled Chromium.
+            # house.lk is behind Cloudflare which fingerprints the browser binary;
+            # real Chrome passes where Chromium is detected and blocked.
+            try:
+                browser = await pw.chromium.launch(
+                    channel="chrome",
+                    headless=True,
+                    args=[
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-blink-features=AutomationControlled",
+                    ],
+                )
+            except Exception:
+                # Fallback to bundled Chromium if Chrome isn't installed
+                browser = await pw.chromium.launch(
+                    headless=True,
+                    args=[
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-blink-features=AutomationControlled",
+                    ],
+                )
             ua = random.choice(USER_AGENTS)
             context = await browser.new_context(
                 user_agent=ua,
@@ -269,38 +306,49 @@ class LamudiScraper:
 
             consecutive_blocks = 0
 
+            # Warm up — visit homepage first so Cloudflare sees a natural session
+            try:
+                await page.goto(BASE, wait_until="domcontentloaded", timeout=30000)
+                await asyncio.sleep(random.uniform(2.0, 4.0))
+            except Exception:
+                pass
+
             for target in BASE_URLS:
                 if consecutive_blocks >= self.stop_after_blocks:
-                    log.warning("lamudi_too_many_blocks_stopping")
+                    log.warning("houseLk_too_many_blocks_stopping")
                     break
 
                 for page_num in range(1, max_pages + 1):
-                    sep = '&' if '?' in target["url"] else '?'
-                    url = f"{target['url']}{sep}page={page_num}"
-                    log.info("lamudi_scraping", url=url, page=page_num)
+                    url = _page_url(target["url"], page_num)
+                    log.info("houseLk_scraping", url=url, page=page_num)
 
                     ok = await self._safe_goto(page, url)
                     if not ok:
                         consecutive_blocks += 1
-                        log.warning("lamudi_skip_page", url=url)
+                        log.warning("houseLk_skip_page", url=url)
                         break
 
                     consecutive_blocks = 0
-                    await asyncio.sleep(random.uniform(1.5, 3.5))
+                    await asyncio.sleep(random.uniform(2.0, 4.0))
 
                     items = await self._parse_listings(page, target["listing_type"], target["property_type"])
                     if not items:
-                        log.info("lamudi_no_more_listings", url=url, page=page_num)
+                        log.info("houseLk_no_more_listings", url=url, page=page_num)
                         break
 
                     found, new = self._upsert(items)
                     total_found += found
                     total_new += new
-                    log.info("lamudi_page_done", url=url, found=found, new=new)
+                    log.info("houseLk_page_done", url=url, found=found, new=new)
 
-                    await asyncio.sleep(random.uniform(2.0, 5.0))
+                    # Stop paginating early if we're hitting all duplicates
+                    if new == 0 and page_num > 2:
+                        log.info("houseLk_all_duplicates_stopping", url=url, page=page_num)
+                        break
+
+                    await asyncio.sleep(random.uniform(1.5, 3.5))
 
             await browser.close()
 
-        log.info("lamudi_scrape_complete", total_found=total_found, total_new=total_new)
+        log.info("houseLk_scrape_complete", total_found=total_found, total_new=total_new)
         return total_found, total_new

@@ -152,13 +152,14 @@ export function DataFlowBeam() {
   const containerRef = useRef<HTMLDivElement>(null);
   const ikmanRef    = useRef<HTMLDivElement>(null);
   const lpwRef      = useRef<HTMLDivElement>(null);
+  const houseLkRef  = useRef<HTMLDivElement>(null);
   const scraperRef  = useRef<HTMLDivElement>(null);
   const cleanerRef  = useRef<HTMLDivElement>(null);
   const dbRef       = useRef<HTMLDivElement>(null);
   const youRef      = useRef<HTMLDivElement>(null);
 
   const [positions, setPositions] = useState<Record<string, Pos | null>>({
-    ikman: null, lpw: null, scraper: null, cleaner: null, db: null, you: null,
+    ikman: null, lpw: null, houseLk: null, scraper: null, cleaner: null, db: null, you: null,
   });
   const [svgSize, setSvgSize] = useState({ w: 0, h: 0 });
 
@@ -171,6 +172,7 @@ export function DataFlowBeam() {
     setPositions({
       ikman:   get(ikmanRef),
       lpw:     get(lpwRef),
+      houseLk: get(houseLkRef),
       scraper: get(scraperRef),
       cleaner: get(cleanerRef),
       db:      get(dbRef),
@@ -203,7 +205,7 @@ export function DataFlowBeam() {
       <div
         ref={containerRef}
         className="relative flex items-center justify-between px-8 py-8 gap-4"
-        style={{ minHeight: 160 }}
+        style={{ minHeight: 190 }}
       >
         {/* SVG beam layer */}
         <svg
@@ -219,8 +221,9 @@ export function DataFlowBeam() {
           </defs>
 
           {/* Sources → Scraper */}
-          <Beam id="ikman-scraper" from={p.ikman}   to={p.scraper} duration={2.2} delay={0}   />
-          <Beam id="lpw-scraper"   from={p.lpw}     to={p.scraper} duration={2.2} delay={0.8} />
+          <Beam id="ikman-scraper"   from={p.ikman}   to={p.scraper} duration={2.2} delay={0}    />
+          <Beam id="lpw-scraper"     from={p.lpw}     to={p.scraper} duration={2.2} delay={0.8}  />
+          <Beam id="houseLk-scraper" from={p.houseLk} to={p.scraper} duration={2.2} delay={1.5}  />
           {/* Scraper → Cleaner */}
           <Beam id="scraper-cleaner" from={p.scraper} to={p.cleaner} duration={1.8} delay={0.3} />
           {/* Cleaner → DB */}
@@ -230,11 +233,14 @@ export function DataFlowBeam() {
         </svg>
 
         {/* Left: sources stacked */}
-        <div className="flex flex-col gap-6 z-10">
+        <div className="flex flex-col gap-4 z-10">
           <Node ref={ikmanRef} label="ikman.lk" sub="source 1">
             <span className="text-text-muted"><GlobeIcon /></span>
           </Node>
           <Node ref={lpwRef} label="LPW" sub="source 2">
+            <span className="text-text-muted"><GlobeIcon /></span>
+          </Node>
+          <Node ref={houseLkRef} label="house.lk" sub="source 3">
             <span className="text-text-muted"><GlobeIcon /></span>
           </Node>
         </div>
@@ -284,7 +290,7 @@ export function DataFlowBeam() {
         </span>
         <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
           <span className="w-1.5 h-1.5 rounded-full bg-success/60" />
-          5,000+ listings
+          27,000+ listings
         </span>
       </div>
     </div>
