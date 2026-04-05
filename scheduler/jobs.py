@@ -172,6 +172,23 @@ def enrich_details_job():
         db.close()
 
 
+def check_price_changes_job():
+    db = SessionLocal()
+    run = None
+    try:
+        run = _start_job_run(db, "check_price_changes")
+        enricher = DetailEnricher(db)
+        stats = run_async(enricher.check_price_changes())
+        log.info("price_check_job_complete", **stats)
+        _finish_job_run(db, run, "success", stats=stats)
+    except Exception as e:
+        log.error("price_check_job_failed", error=str(e))
+        if run:
+            _finish_job_run(db, run, "failed", error=str(e))
+    finally:
+        db.close()
+
+
 def compute_aggregates_job():
     db = SessionLocal()
     run = None
@@ -206,6 +223,9 @@ def start_scheduler():
 
         # 3b. Enrich missing detail fields (size, beds, baths) from detail pages
         scheduler.add_job(enrich_details_job, 'cron', hour=5, minute=30, id='enrich_details', replace_existing=True)
+
+        # 3c. Check active listings for price changes daily
+        scheduler.add_job(check_price_changes_job, 'cron', hour=6, minute=0, id='check_price_changes', replace_existing=True)
 
         # 4. Aggregates every Sunday
         scheduler.add_job(compute_aggregates_job, 'cron', day_of_week='sun', hour=6, minute=0, id='compute_aggregates', replace_existing=True)

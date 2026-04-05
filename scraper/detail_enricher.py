@@ -315,3 +315,132 @@ class DetailEnricher:
         self.db.commit()
         log.info("detail_enricher_complete", **stats)
         return stats
+
+    async def check_price_changes(self) -> dict:
+        """
+        Visit listings that already have a price and check whether the current
+        advertised price has changed. Updates price_lkr and sets original_price_lkr
+        to the first-seen price if a drop is detected.
+        Only checks listings seen within the last 60 days (likely still active).
+        """
+        from datetime import timedelta
+        cutoff = datetime.utcnow() - timedelta(days=60)
+
+        rows = (
+            self.db.query(Listing, RawListing.url, RawListing.source)
+            .join(RawListing, Listing.raw_id == RawListing.id)
+            .filter(
+                Listing.is_outlier == False,
+                Listing.price_lkr.isnot(None),
+                Listing.last_seen_at >= cutoff,
+                RawListing.url.isnot(None),
+                RawListing.source.in_(["ikman", "lpw"]),
+            )
+            .order_by(Listing.last_seen_at.desc())
+            .limit(self.max_per_run)
+            .all()
+        )
+
+        if not rows:
+            return {"visited": 0, "price_drops": 0, "price_rises": 0}
+
+        stats: dict = {"visited": 0, "price_drops": 0, "price_rises": 0, "errors": 0}
+
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-setuid-sandbox",
+                      "--disable-blink-features=AutomationControlled"],
+            )
+            context = await browser.new_context(
+                user_agent=random.choice(USER_AGENTS),
+                viewport={"width": 1280, "height": 800},
+                locale="en-US",
+            )
+            await context.add_init_script(
+                "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})"
+            )
+            await context.route(
+                "**/*",
+                lambda route: route.abort()
+                if route.request.resource_type in ("image", "media", "font", "stylesheet")
+                else route.continue_(),
+            )
+            page = await context.new_page()
+
+            for listing, url, source in rows:
+                stats["visited"] += 1
+                try:
+                    resp = await page.goto(url, wait_until="domcontentloaded", timeout=25000)
+                    if resp and resp.status in (404, 410):
+                        # Listing removed — mark last_seen as-is, skip
+                        continue
+                    if resp and resp.status >= 400:
+                        continue
+
+                    await asyncio.sleep(random.uniform(0.5, 1.0))
+
+                    if source == "ikman":
+                        attrs = await _extract_ikman(page)
+                    elif source == "lpw":
+                        attrs = await _extract_lpw(page)
+                    else:
+                        attrs = {}
+
+                    # Parse a numeric price from whatever the page returned
+                    new_price = None
+                    if attrs.get("raw_price"):
+                        raw = str(attrs["raw_price"]).replace(",", "").replace("Rs", "").strip()
+                        # Handle "300,000 per perch" style — only use if we have size
+                        if "per perch" in raw.lower() and listing.size_perches:
+                            m = re.search(r"(\d+\.?\d*)", raw)
+                            if m:
+                                new_price = float(m.group(1)) * float(listing.size_perches)
+                        elif "million" in raw.lower() or "mn" in raw.lower():
+                            m = re.search(r"(\d+\.?\d*)", raw)
+                            if m:
+                                new_price = float(m.group(1)) * 1_000_000
+                        else:
+                            m = re.search(r"(\d[\d,]*\.?\d*)", raw)
+                            if m:
+                                new_price = float(m.group(1).replace(",", ""))
+
+                    if new_price and new_price > 10_000:  # sanity floor
+                        current = float(listing.price_lkr)
+                        diff_pct = (new_price - current) / current * 100
+
+                        if diff_pct < -1:  # >1% drop
+                            # Preserve original if not already set
+                            if listing.original_price_lkr is None:
+                                listing.original_price_lkr = listing.price_lkr
+                            listing.price_lkr = new_price
+                            listing.last_seen_at = datetime.utcnow()
+                            self.db.add(listing)
+                            stats["price_drops"] += 1
+                            log.info("price_drop_detected",
+                                     id=listing.id,
+                                     old=current,
+                                     new=new_price,
+                                     pct=round(diff_pct, 1))
+
+                        elif diff_pct > 1:  # >1% rise
+                            listing.price_lkr = new_price
+                            listing.last_seen_at = datetime.utcnow()
+                            self.db.add(listing)
+                            stats["price_rises"] += 1
+
+                except Exception as e:
+                    stats["errors"] += 1
+                    log.debug("price_check_error", url=url, error=str(e))
+
+                if stats["visited"] % 20 == 0:
+                    self.db.commit()
+                    log.info("price_check_progress", **stats)
+
+                await asyncio.sleep(random.uniform(self.delay_min, self.delay_max))
+
+            await browser.close()
+
+        self.db.commit()
+        log.info("price_check_complete", **stats)
+        return stats
