@@ -34,47 +34,58 @@ function Beam({
   if (!from || !to) return null;
   const d = cubicPath(from, to);
   const gradId = `beam-grad-${id}`;
-  const dashLen = Math.min(len * 0.18, 80);
+  // Larger segment (40% of path, min 50px) so the beam is visible most of the time
+  const dashLen = Math.max(Math.min(len * 0.4, 130), 50);
+  // Second echo beam offset by half a cycle so the path is never fully dark
+  const echoDelay = delay + duration * 0.5;
+
+  const animatedBeam = (beamId: string, startDelay: number) => (
+    <path
+      key={beamId}
+      d={d}
+      fill="none"
+      stroke={`url(#${gradId})`}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeDasharray={`${dashLen} ${len}`}
+      strokeDashoffset={reverse ? -len : len}
+      filter="url(#beam-glow)"
+    >
+      <animate
+        attributeName="stroke-dashoffset"
+        from={reverse ? String(-len) : String(len)}
+        to={reverse ? String(dashLen - len) : String(-dashLen)}
+        dur={`${duration}s`}
+        begin={`${startDelay}s`}
+        repeatCount="indefinite"
+        calcMode="linear"
+      />
+    </path>
+  );
 
   return (
     <g>
       {/* static track */}
-      <path d={d} stroke="rgba(255,255,255,0.05)" strokeWidth="1.5" fill="none" />
+      <path d={d} stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
       <defs>
         <linearGradient id={gradId} gradientUnits="userSpaceOnUse"
           x1={reverse ? to.x : from.x} y1={reverse ? to.y : from.y}
           x2={reverse ? from.x : to.x} y2={reverse ? from.y : to.y}>
           <stop offset="0%"   stopColor="#6366f1" stopOpacity="0" />
-          <stop offset="40%"  stopColor="#818cf8" stopOpacity="0.8" />
+          <stop offset="45%"  stopColor="#818cf8" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#a5b4fc" stopOpacity="0" />
         </linearGradient>
       </defs>
-      {len > 0 && (
-        <path
-          ref={pathRef}
-          d={d}
-          fill="none"
-          stroke={`url(#${gradId})`}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray={`${dashLen} ${len}`}
-          strokeDashoffset={reverse ? -len : len}
-          filter="url(#beam-glow)"
-        >
-          <animate
-            attributeName="stroke-dashoffset"
-            from={reverse ? String(-len) : String(len)}
-            to={reverse ? String(dashLen - len) : String(-dashLen)}
-            dur={`${duration}s`}
-            begin={`${delay}s`}
-            repeatCount="indefinite"
-            calcMode="linear"
-          />
-        </path>
-      )}
-      {/* measure path (hidden) */}
+      {/* measure path (hidden, must render first to get len) */}
       {len === 0 && (
         <path ref={pathRef} d={d} fill="none" stroke="none" strokeWidth="0" />
+      )}
+      {len > 0 && (
+        <>
+          <path ref={pathRef} d={d} fill="none" stroke="none" strokeWidth="0" />
+          {animatedBeam(`${id}-a`, delay)}
+          {animatedBeam(`${id}-b`, echoDelay)}
+        </>
       )}
     </g>
   );
