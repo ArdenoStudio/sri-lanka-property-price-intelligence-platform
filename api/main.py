@@ -837,7 +837,9 @@ async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
                     search_results_context = f"INTERNAL DATABASE SEARCH for '{loc_f} {type_f}': Found {len(found)} matches ({len(priced)} with prices). {avg_note}."
                     for listing in found:
                         price_str = f"LKR {float(listing.price_lkr):,.0f}" if listing.price_lkr and listing.price_lkr > 0 else "Price not listed"
-                        search_results_context += f"\n- {listing.property_type} in {listing.raw_location}: {price_str} ({listing.source})"
+                        title = listing.title or "Property listing"
+                        url = listing.url or ""
+                        search_results_context += f"\n- {title} | {listing.property_type} in {listing.raw_location}: {price_str} | {url}"
         except Exception:
             pass
 
@@ -858,11 +860,12 @@ MARKET CONTEXT (only mention if relevant):
 - Overall market avg: LKR {stats_raw['avg_price_lkr']:,.0f}
 
 RULES FOR PROPERTY QUESTIONS:
-1. Quote actual prices from the database results. Never invent numbers.
-2. If a listing shows "Price not listed", say so — don't make up a figure.
-3. If price data is limited for an area, say that honestly.
-4. Keep answers concise — prices first, brief insight after. Max 4 sentences.
-5. Format prices as "LKR X,XXX,XXX".
+1. ONLY reference listings explicitly shown in the database results above. NEVER invent specific prices, addresses, or listings that aren't in the results.
+2. For each listing you mention, include its link exactly as provided (e.g. "View listing: https://ikman.lk/...").
+3. If a listing shows "Price not listed", say so — don't make up a figure.
+4. If the DB returned no results or limited data, say so honestly — do not estimate or fabricate specific examples.
+5. Keep answers concise — show the real listings first with prices and links, then a brief market insight. Max 5 sentences.
+6. Format prices as "LKR X,XXX,XXX".
 
 RULES FOR NON-PROPERTY MESSAGES:
 - Greetings → respond warmly, introduce yourself briefly, invite a property question.
