@@ -8,6 +8,7 @@ import {
   ComposedChart,
   Area,
   Line,
+  ReferenceArea,
 } from 'recharts';
 import { TrendingUp, Activity, Info } from 'lucide-react';
 import { getPrices, type PriceHistory } from '../api';
@@ -24,12 +25,10 @@ export function DistrictTrends({ district, propertyType }: Props) {
 
   useEffect(() => {
     if (!district) return;
-    
     async function load() {
       setLoading(true);
       try {
         const history = await getPrices(district, propertyType || 'land');
-        // Reverse to show chronological order (backend returns desc)
         setData([...history].reverse());
       } catch (err) {
         console.error('Failed to load prices', err);
@@ -58,78 +57,78 @@ export function DistrictTrends({ district, propertyType }: Props) {
     return val.toString();
   };
 
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Linear regression over last N historical points → project 3 months forward
-  function linearRegression(values: number[]): { slope: number; intercept: number; rmse: number } {
+  // Simple linear regression
+  function linearRegression(values: number[]) {
     const n = values.length;
-    if (n < 2) return { slope: 0, intercept: values[0] ?? 0, rmse: 0 };
+    if (n < 2) return { slope: 0, intercept: values[0] ?? 0 };
     const sumX = (n * (n - 1)) / 2;
     const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6;
     const sumY = values.reduce((a, v) => a + v, 0);
     const sumXY = values.reduce((a, v, i) => a + i * v, 0);
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
-    const residuals = values.map((v, i) => (v - (intercept + slope * i)) ** 2);
-    const rmse = Math.sqrt(residuals.reduce((a, v) => a + v, 0) / n);
-    return { slope, intercept, rmse };
+    return { slope, intercept };
   }
 
   const historicalPoints = data.map(d => ({
     ...d,
     name: `${monthNames[d.month - 1]} ${d.year}`,
     price: d.median_price_lkr ? Number(d.median_price_lkr) : 0,
-    perch: d.median_price_per_perch ? Number(d.median_price_per_perch) : 0,
   }));
 
-  // Build prediction points for next 3 months
-  const PREDICT_MONTHS = 3;
-  const prices = historicalPoints.map(d => d.price).filter(v => v > 0);
-  const reg = prices.length >= 3 ? linearRegression(prices) : null;
+  // Use only the last 6 clean (non-zero) months for regression to avoid spike distortion
+  const cleanPrices = historicalPoints.map(d => d.price).filter(v => v > 0);
+  const regressionWindow = cleanPrices.slice(-6);
+  const reg = regressionWindow.length >= 3 ? linearRegression(regressionWindow) : null;
 
-  const predPoints = reg ? (() => {
-    const lastPt = historicalPoints[historicalPoints.length - 1];
+  const lastHistorical = historicalPoints[historicalPoints.length - 1];
+  const lastPrice = lastHistorical?.price ?? 0;
+
+  // Cap slope at ±5% of last price per month to prevent wild extrapolations
+  const maxSlope = lastPrice * 0.05;
+  const clampedSlope = reg ? Math.max(-maxSlope, Math.min(maxSlope, reg.slope)) : 0;
+
+  const PREDICT_MONTHS = 3;
+  const predPoints = reg && lastHistorical ? (() => {
     const points = [];
     for (let i = 1; i <= PREDICT_MONTHS; i++) {
-      let m = lastPt.month + i;
-      let y = lastPt.year;
+      let m = lastHistorical.month + i;
+      let y = lastHistorical.year;
       if (m > 12) { m -= 12; y++; }
-      const predVal = reg.intercept + reg.slope * (prices.length - 1 + i);
-      const ci = reg.rmse * 1.5;
+      // Project from last real price using clamped slope
+      const predVal = Math.max(0, lastPrice + clampedSlope * i);
       points.push({
         name: `${monthNames[m - 1]} ${y}`,
-        month: m, year: y,
+        month: m,
+        year: y,
         price: undefined as number | undefined,
-        pred: Math.max(0, predVal),
-        predLow: Math.max(0, predVal - ci),
-        predHigh: Math.max(0, predVal + ci),
-        isPrediction: true,
+        pred: predVal,
       });
     }
     return points;
   })() : [];
 
-  // Connect the last historical point to the prediction line
+  // Connect last historical point to prediction line
   const chartData = [
     ...historicalPoints.map((d, i) => ({
       ...d,
       pred: i === historicalPoints.length - 1 && reg ? d.price : undefined as number | undefined,
-      predLow: undefined as number | undefined,
-      predHigh: undefined as number | undefined,
-      isPrediction: false,
     })),
     ...predPoints,
   ];
 
   const chartKey = `${district}-${propertyType}-${chartData.length}`;
 
-  const pctChange = (() => {
-    if (chartData.length < 2) return null;
-    const first = chartData[0].price;
-    const last = chartData[chartData.length - 1].price;
-    if (!first || last == null) return null;
-    return ((last - first) / first) * 100;
-  })();
+  // Use historical points only for stat calculations
+  const firstHistPrice = historicalPoints[0]?.price ?? 0;
+  const pctChange = (firstHistPrice && lastPrice)
+    ? ((lastPrice - firstHistPrice) / firstHistPrice) * 100
+    : null;
+
+  const predZoneStart = predPoints[0]?.name;
+  const predZoneEnd = predPoints[predPoints.length - 1]?.name;
 
   return (
     <motion.div
@@ -156,19 +155,19 @@ export function DistrictTrends({ district, propertyType }: Props) {
           <div>
             <span className="text-[10px] text-text-muted uppercase block font-bold">Avg Median</span>
             <span className="text-accent-light font-bold text-lg">
-              {data.length > 0 ? formatCurrency(chartData[chartData.length - 1].price ?? 0) : 'N/A'}
+              {lastPrice > 0 ? formatCurrency(lastPrice) : 'N/A'}
             </span>
           </div>
-          <div className="w-px h-8 bg-border" />
           {pctChange !== null && (
-            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold ${
-              pctChange >= 0
-                ? 'bg-success/15 text-success'
-                : 'bg-danger/15 text-danger'
-            }`}>
-              <TrendingUp className={`w-3 h-3 ${pctChange < 0 ? 'rotate-180' : ''}`} />
-              {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(1)}%
-            </div>
+            <>
+              <div className="w-px h-8 bg-border" />
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold ${
+                pctChange >= 0 ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'
+              }`}>
+                <TrendingUp className={`w-3 h-3 ${pctChange < 0 ? 'rotate-180' : ''}`} />
+                {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(1)}%
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -198,14 +197,24 @@ export function DistrictTrends({ district, propertyType }: Props) {
               <ComposedChart key={chartKey} data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#818cf8" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorCI" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.18}/>
-                    <stop offset="95%" stopColor="#a78bfa" stopOpacity={0.04}/>
+                    <stop offset="5%"  stopColor="#818cf8" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
                   </linearGradient>
                 </defs>
+
+                {/* Subtle shaded zone for prediction period — no fill artefacts */}
+                {reg && predZoneStart && predZoneEnd && (
+                  <ReferenceArea
+                    x1={predZoneStart}
+                    x2={predZoneEnd}
+                    fill="#a78bfa"
+                    fillOpacity={0.04}
+                    stroke="#a78bfa"
+                    strokeOpacity={0.15}
+                    strokeDasharray="3 3"
+                  />
+                )}
+
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" />
                 <XAxis
                   dataKey="name"
@@ -230,33 +239,12 @@ export function DistrictTrends({ district, propertyType }: Props) {
                   }}
                   formatter={(val: any, name: any) => {
                     if (name === 'price') return [formatCurrency(Number(val)), 'Median Price'];
-                    if (name === 'pred') return [formatCurrency(Number(val)), 'Forecast'];
-                    return [formatCurrency(Number(val)), String(name)];
+                    if (name === 'pred')  return [formatCurrency(Number(val)), 'Forecast'];
+                    return null;
                   }}
-                  itemSorter={(a: any) => a.name === 'price' ? 0 : 1}
                 />
-                {/* Confidence band (prediction only) */}
-                <Area
-                  type="monotone"
-                  dataKey="predHigh"
-                  stroke="none"
-                  fill="url(#colorCI)"
-                  fillOpacity={1}
-                  legendType="none"
-                  isAnimationActive={false}
-                  connectNulls
-                />
-                <Area
-                  type="monotone"
-                  dataKey="predLow"
-                  stroke="none"
-                  fill="#0f172a"
-                  fillOpacity={1}
-                  legendType="none"
-                  isAnimationActive={false}
-                  connectNulls
-                />
-                {/* Historical price area */}
+
+                {/* Historical area */}
                 <Area
                   type="monotone"
                   dataKey="price"
@@ -270,7 +258,8 @@ export function DistrictTrends({ district, propertyType }: Props) {
                   activeDot={{ r: 4, strokeWidth: 2 }}
                   connectNulls={false}
                 />
-                {/* Prediction line */}
+
+                {/* Forecast line — dashed, connects from last real point */}
                 {reg && (
                   <Line
                     type="monotone"
@@ -290,7 +279,7 @@ export function DistrictTrends({ district, propertyType }: Props) {
           </>
         )}
       </div>
-      
+
       <div className="mt-6 flex flex-wrap items-center gap-4 text-[10px] text-text-muted bg-bg-card-hover/50 p-3 rounded-xl border border-border/50">
         <span className="flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 text-accent-light" />
@@ -299,7 +288,7 @@ export function DistrictTrends({ district, propertyType }: Props) {
         {reg && (
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-6 border-t-2 border-dashed border-[#a78bfa]" />
-            Forecast (linear regression ±1.5σ) — indicative only
+            Forecast (last 6 months trend) — indicative only
           </span>
         )}
       </div>
