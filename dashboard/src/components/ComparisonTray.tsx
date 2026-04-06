@@ -37,14 +37,14 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
           </div>
         </div>
 
-        <div className="flex-1 flex items-center gap-2 overflow-x-auto py-1 scrollbar-hide no-scrollbar w-full sm:w-auto">
+        <div className="flex-1 flex items-center gap-2 overflow-x-auto overflow-y-visible pt-2 pb-1 scrollbar-hide no-scrollbar w-full sm:w-auto">
           {selected.map((item) => (
             <motion.div
               layout
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               key={item.id}
-              className="flex-shrink-0 w-32 relative group"
+              className="flex-shrink-0 w-32 relative group overflow-visible"
             >
               <div className="h-16 bg-bg-card-hover border border-border rounded-lg p-2 flex flex-col justify-center">
                 <p className="text-[10px] font-bold text-text-primary truncate mb-1">{item.title}</p>
@@ -55,7 +55,7 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
               <button
                 onClick={() => onRemove(item.id)}
                 aria-label={`Remove ${item.title || 'listing'} from comparison`}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center shadow-lg border-2 border-bg-card hover:bg-danger/80 transition-colors cursor-pointer sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center shadow-lg border-2 border-bg-card hover:bg-danger/90 hover:scale-110 hover:rotate-6 hover:shadow-[0_0_0_4px_rgba(239,68,68,0.18)] active:scale-95 transition-all duration-200 ease-out cursor-pointer sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <X className="w-3 h-3" />
               </button>
