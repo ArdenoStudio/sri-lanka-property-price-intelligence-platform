@@ -14,6 +14,7 @@ import { ComparisonTray } from './components/ComparisonTray';
 import { ComparisonModal } from './components/ComparisonModal';
 import { PageLoader } from './components/PageLoader';
 import { ChatWidget } from './components/ChatWidget';
+import { Analytics } from '@vercel/analytics/react';
 
 function readURLFilters() {
   const p = new URLSearchParams(window.location.search);
@@ -210,6 +211,7 @@ function App() {
           <ChatWidget />
 
           <Footer />
+          <Analytics />
         </div>
       )}
     </>
