@@ -86,7 +86,9 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
           <button
             onClick={onCompare}
             disabled={selected.length < 2}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-accent hover:bg-accent-light disabled:bg-border/50 text-white rounded-xl px-6 py-2.5 text-sm font-bold transition-all shadow-lg shadow-accent/20 cursor-pointer border-none"
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-accent hover:bg-accent-light disabled:bg-border/50 text-white rounded-xl px-6 py-2.5 text-sm font-bold transition-all border-none ${
+              selected.length >= 2 ? 'shadow-lg shadow-accent/20' : 'shadow-none'
+            }`}
           >
             <Table className="w-4 h-4" />
             Compare Now
