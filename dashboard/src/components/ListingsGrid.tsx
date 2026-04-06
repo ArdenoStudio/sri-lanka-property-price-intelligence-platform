@@ -110,8 +110,8 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                       }}
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
                         selectedForComparison.includes(listing.id)
-                          ? 'bg-accent text-white border-accent'
-                          : 'bg-bg-card text-text-muted border-border hover:border-accent hover:text-accent-light'
+                          ? 'bg-accent text-white border-accent translate-y-[1px] shadow-[inset_0_2px_6px_rgba(0,0,0,0.35)] ring-1 ring-white/10'
+                          : 'bg-bg-card text-text-muted border-border hover:border-accent hover:text-accent-light active:translate-y-[1px]'
                       }`}
                     >
                       {selectedForComparison.includes(listing.id) ? (
