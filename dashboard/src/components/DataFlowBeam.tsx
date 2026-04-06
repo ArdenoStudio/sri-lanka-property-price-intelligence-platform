@@ -14,7 +14,9 @@ function cubicPath(from: Pos, to: Pos, curvature = 0.5): string {
   const dx = to.x - from.x;
   const cx1 = from.x + dx * curvature;
   const cx2 = to.x  - dx * curvature;
-  return `M ${from.x} ${from.y} C ${cx1} ${from.y} ${cx2} ${to.y} ${to.x} ${to.y}`;
+  // Chrome SVG getTotalLength bug: perfectly collinear bezier curves evaluate to len=0
+  const yOffset = Math.abs(from.y - to.y) < 0.1 ? 0.1 : 0;
+  return `M ${from.x} ${from.y} C ${cx1} ${from.y} ${cx2} ${to.y + yOffset} ${to.x} ${to.y + yOffset}`;
 }
 
 // ─── Single animated beam ──────────────────────────────────────────────────
@@ -158,7 +160,7 @@ export function DataFlowBeam() {
     setSvgSize({ w: c.offsetWidth, h: c.offsetHeight });
     const get = (ref: React.RefObject<HTMLDivElement | null>) =>
       ref.current ? getCenter(ref.current, c) : null;
-    setPositions({
+    const pos = {
       ikman:   get(ikmanRef),
       lpw:     get(lpwRef),
       houseLk: get(houseLkRef),
@@ -166,7 +168,9 @@ export function DataFlowBeam() {
       cleaner: get(cleanerRef),
       db:      get(dbRef),
       you:     get(youRef),
-    });
+    };
+    console.log("POSITIONS:", pos);
+    setPositions(pos);
   };
 
   useEffect(() => {
@@ -203,7 +207,7 @@ export function DataFlowBeam() {
           style={{ overflow: 'visible' }}
         >
           <defs>
-            <filter id="beam-glow" x="-50%" y="-200%" width="200%" height="500%">
+            <filter id="beam-glow" filterUnits="userSpaceOnUse" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur"/>
               <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
@@ -217,9 +221,9 @@ export function DataFlowBeam() {
           */}
 
           {/* Sources → Scraper (staggered so 3 beams are always in flight) */}
-          <Beam id="ikman-scraper"   from={p.ikman}   to={p.scraper} duration={2.0} delay={0}   />
-          <Beam id="lpw-scraper"     from={p.lpw}     to={p.scraper} duration={2.0} delay={0}   />
-          <Beam id="houseLk-scraper" from={p.houseLk} to={p.scraper} duration={2.0} delay={0.5} />
+          <Beam key="ikman" id="ikman-scraper"   from={p.ikman}   to={p.scraper} duration={2.0} delay={0}   />
+          <Beam key="lpw" id="lpw-scraper"     from={p.lpw}     to={p.scraper} duration={2.0} delay={0.25}  />
+          <Beam key="house" id="houseLk-scraper" from={p.houseLk} to={p.scraper} duration={2.0} delay={0.5} />
 
           {/* Scraper → Cleaner: fires as source beams arrive (~1s into their 2s journey) */}
           <Beam id="scraper-cleaner" from={p.scraper} to={p.cleaner} duration={2.0} delay={1.0} />
