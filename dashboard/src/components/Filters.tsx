@@ -170,8 +170,8 @@ function CustomSelect({
         onClick={() => setOpen(o => !o)}
         className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all cursor-pointer
           ${isActive
-            ? 'bg-accent/10 border-accent/40 text-accent-light'
-            : 'bg-bg-card border-border text-text-secondary hover:border-border-hover hover:text-text-primary'
+            ? 'bg-accent/10 border-accent/40 text-accent-light shadow-[0_8px_20px_rgba(99,102,241,0.12)]'
+            : 'bg-bg-card/90 border-border text-text-secondary hover:border-border-hover hover:text-text-primary'
           }`}
       >
         <span className="truncate">{label}</span>
@@ -179,19 +179,22 @@ function CustomSelect({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1.5 w-full min-w-[160px] bg-[#1a1a2e] border border-border rounded-xl shadow-2xl overflow-hidden">
-          <div className="max-h-56 overflow-y-auto py-1">
+        <div className="absolute z-50 mt-2 w-full min-w-[180px] bg-[#141425]/95 backdrop-blur-xl border border-border/80 rounded-xl shadow-[0_18px_40px_rgba(0,0,0,0.45)] overflow-hidden">
+          <div className="max-h-60 overflow-y-auto py-1">
             {options.map(opt => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => { onChange(opt.value); setOpen(false); }}
-                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left transition-colors cursor-pointer
+                className={`relative w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm text-left transition-colors cursor-pointer
                   ${opt.value === value
                     ? 'text-accent-light bg-accent/10'
                     : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
                   }`}
               >
+                {opt.value === value && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r bg-accent" />
+                )}
                 <span className="truncate">{opt.label}</span>
                 {opt.value === value && opt.value !== '' && (
                   <Check className="w-3 h-3 flex-shrink-0 text-accent-light" />
