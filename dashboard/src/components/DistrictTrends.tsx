@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   XAxis,
   YAxis,
@@ -7,8 +7,6 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Area,
-  Line,
-  ReferenceArea,
 } from 'recharts';
 import { TrendingUp, Activity, Info } from 'lucide-react';
 import { getPrices, type PriceHistory } from '../api';
@@ -22,18 +20,51 @@ interface Props {
 export function DistrictTrends({ district, propertyType }: Props) {
   const [data, setData] = useState<PriceHistory[]>([]);
   const [loading, setLoading] = useState(false);
+  const [calculatingForecast, setCalculatingForecast] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
+  const [reveal, setReveal] = useState(false);
+  const requestRef = useRef(0);
 
   useEffect(() => {
     if (!district) return;
     async function load() {
+      const reqId = ++requestRef.current;
       setLoading(true);
+      setCalculatingForecast(true);
+      setShowForecast(false);
+      setReveal(false);
+      const startedAt = Date.now();
       try {
         const history = await getPrices(district, propertyType || 'land');
-        setData([...history].reverse());
+        const ordered = [...history].reverse();
+        const minLoadMs = 700;
+        const elapsed = Date.now() - startedAt;
+        const wait = Math.max(0, minLoadMs - elapsed);
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+        if (requestRef.current !== reqId) return;
+        setData(ordered);
+        setTimeout(() => {
+          if (requestRef.current !== reqId) return;
+          setReveal(true);
+          setLoading(false);
+        }, 120);
       } catch (err) {
         console.error('Failed to load prices', err);
+        if (requestRef.current !== reqId) return;
+        setData([]);
+        setTimeout(() => {
+          if (requestRef.current !== reqId) return;
+          setReveal(true);
+          setLoading(false);
+        }, 120);
       } finally {
-        setLoading(false);
+        if (requestRef.current !== reqId) return;
+        const forecastDelayMs = 900;
+        setTimeout(() => {
+          if (requestRef.current !== reqId) return;
+          setCalculatingForecast(false);
+          setShowForecast(true);
+        }, forecastDelayMs);
       }
     }
     load();
@@ -114,9 +145,14 @@ export function DistrictTrends({ district, propertyType }: Props) {
   const chartData = [
     ...historicalPoints.map((d, i) => ({
       ...d,
-      pred: i === historicalPoints.length - 1 && reg ? d.price : undefined as number | undefined,
+      pred: showForecast && i === historicalPoints.length - 1 && reg ? d.price : undefined as number | undefined,
+      skeleton: calculatingForecast && i === historicalPoints.length - 1 && reg ? d.price : undefined as number | undefined,
     })),
-    ...predPoints,
+    ...predPoints.map(p => ({
+      ...p,
+      pred: showForecast ? p.pred : undefined,
+      skeleton: calculatingForecast ? lastPrice : undefined,
+    })),
   ];
 
   const chartKey = `${district}-${propertyType}-${chartData.length}`;
@@ -127,14 +163,11 @@ export function DistrictTrends({ district, propertyType }: Props) {
     ? ((lastPrice - firstHistPrice) / firstHistPrice) * 100
     : null;
 
-  const predZoneStart = predPoints[0]?.name;
-  const predZoneEnd = predPoints[predPoints.length - 1]?.name;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
+      transition={{ duration: 0.45, ease: 'easeOut' }}
       className="bg-bg-card border border-border rounded-2xl p-6 mb-8 overflow-hidden relative"
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
@@ -151,7 +184,12 @@ export function DistrictTrends({ district, propertyType }: Props) {
           </p>
         </div>
 
-        <div className="bg-bg-card-hover border border-border rounded-xl px-4 py-2 flex items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.35, ease: 'easeOut' }}
+          className="bg-bg-card-hover border border-border rounded-xl px-4 py-2 flex items-center gap-4"
+        >
           <div>
             <span className="text-[10px] text-text-muted uppercase block font-bold">Avg Median</span>
             <span className="text-accent-light font-bold text-lg">
@@ -169,7 +207,7 @@ export function DistrictTrends({ district, propertyType }: Props) {
               </div>
             </>
           )}
-        </div>
+        </motion.div>
       </div>
 
       <div className="h-[300px] w-full relative overflow-hidden rounded-xl">
@@ -186,13 +224,15 @@ export function DistrictTrends({ district, propertyType }: Props) {
           </div>
         ) : (
           <>
-            <motion.div
-              key={chartKey}
-              initial={{ x: '-60%', opacity: 0 }}
-              animate={{ x: '60%', opacity: 0.35 }}
-              transition={{ duration: 1.6, ease: 'easeOut' }}
-              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-accent/10 to-transparent"
-            />
+            {reveal && (
+              <motion.div
+                key={`${chartKey}-sweep`}
+                initial={{ x: '-60%', opacity: 0 }}
+                animate={{ x: '60%', opacity: 0.35 }}
+                transition={{ duration: 1.4, ease: 'easeOut' }}
+                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-accent/10 to-transparent"
+              />
+            )}
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart key={chartKey} data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
                 <defs>
@@ -260,7 +300,7 @@ export function DistrictTrends({ district, propertyType }: Props) {
                   }}
                 />
 
-                {/* Forecast line and glowing gradient area — connects from last real point */}
+                {/* Forecast line — no fill, dashed stroke only */}
                 {reg && (
                   <Area
                     type="monotone"
@@ -268,16 +308,31 @@ export function DistrictTrends({ district, propertyType }: Props) {
                     stroke="url(#predGradient)"
                     strokeWidth={3}
                     strokeDasharray="6 6"
-                    fillOpacity={1}
-                    fill="url(#predFill)"
+                    fill="none"
                     activeDot={{ r: 5, fill: "#141417", stroke: "#e879f9", strokeWidth: 3 }}
-                    animationBegin={1200}
-                    animationDuration={800}
+                    isAnimationActive={showForecast}
+                    animationBegin={220}
+                    animationDuration={700}
                     connectNulls
                   />
                 )}
 
-                {/* Historical area */}
+                {/* Skeleton loading area */}
+                {reg && calculatingForecast && (
+                  <Area
+                    type="step"
+                    dataKey="skeleton"
+                    stroke="#4b5563"
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                    fill="none"
+                    isAnimationActive={false}
+                    className="animate-pulse"
+                    connectNulls
+                  />
+                )}
+
+                {/* Historical area — the one and only fill polygon */}
                 <Area
                   type="monotone"
                   dataKey="price"
@@ -285,8 +340,9 @@ export function DistrictTrends({ district, propertyType }: Props) {
                   strokeWidth={4}
                   fillOpacity={1}
                   fill="url(#colorPrice)"
-                  animationBegin={150}
-                  animationDuration={1400}
+                  isAnimationActive={reveal}
+                  animationBegin={120}
+                  animationDuration={1100}
                   animationEasing="ease-out"
                   activeDot={{ r: 6, fill: "#141417", stroke: "#818cf8", strokeWidth: 3 }}
                   connectNulls={false}

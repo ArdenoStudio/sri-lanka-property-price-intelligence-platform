@@ -86,6 +86,10 @@ function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChan
             setLocalMin(v);
             commitMin(v);
           }}
+          onPointerUp={e => (e.currentTarget as HTMLInputElement).blur()}
+          onKeyUp={e => {
+            if (e.key === 'Enter' || e.key === 'Escape') (e.currentTarget as HTMLInputElement).blur();
+          }}
           className="price-range-input"
           style={{ zIndex: localMin > SLIDER_MAX - 50 ? 5 : 3 }}
         />
@@ -98,6 +102,10 @@ function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChan
             const v = Math.max(Number(e.target.value), localMin + 10);
             setLocalMax(v);
             commitMax(v);
+          }}
+          onPointerUp={e => (e.currentTarget as HTMLInputElement).blur()}
+          onKeyUp={e => {
+            if (e.key === 'Enter' || e.key === 'Escape') (e.currentTarget as HTMLInputElement).blur();
           }}
           className="price-range-input"
           style={{ zIndex: localMax < 50 ? 5 : 4 }}

@@ -179,7 +179,7 @@ h1, h2, h3, h4, h5, h6 {
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .price-range-input:hover::-webkit-slider-thumb,
-.price-range-input:focus::-webkit-slider-thumb {
+.price-range-input:focus-visible::-webkit-slider-thumb {
   transform: scale(1.25);
   box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.25);
 }

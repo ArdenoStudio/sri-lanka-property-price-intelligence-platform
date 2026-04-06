@@ -154,7 +154,6 @@ function App() {
               points={heatmap}
               onDistrictSelect={(d) => {
                 setSelectedDistrict(d);
-                document.getElementById('trends')?.scrollIntoView({ behavior: 'smooth' });
               }}
             />
 
