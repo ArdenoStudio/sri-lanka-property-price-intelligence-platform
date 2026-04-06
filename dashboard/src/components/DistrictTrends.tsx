@@ -194,49 +194,65 @@ export function DistrictTrends({ district, propertyType }: Props) {
               className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-accent/10 to-transparent"
             />
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart key={chartKey} data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <ComposedChart key={chartKey} data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#818cf8" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
+                    <stop offset="0%"  stopColor="#818cf8" stopOpacity={0.5} />
+                    <stop offset="50%" stopColor="#6366f1" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#818cf8" stopOpacity={0} />
                   </linearGradient>
+
+                  <linearGradient id="predFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"  stopColor="#e879f9" stopOpacity={0.3} />
+                    <stop offset="50%" stopColor="#a78bfa" stopOpacity={0.1} />
+                    <stop offset="100%" stopColor="#a78bfa" stopOpacity={0} />
+                  </linearGradient>
+                  
+                  <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="50%" stopColor="#818cf8" />
+                    <stop offset="100%" stopColor="#a78bfa" />
+                  </linearGradient>
+
+                  <linearGradient id="predGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#a78bfa" />
+                    <stop offset="100%" stopColor="#e879f9" />
+                  </linearGradient>
+
+                  <pattern id="stripedPattern" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                    <rect width="2" height="8" fill="#e879f9" fillOpacity="0.15" />
+                  </pattern>
                 </defs>
 
-                {/* Subtle shaded zone for prediction period — no fill artefacts */}
-                {reg && predZoneStart && predZoneEnd && (
-                  <ReferenceArea
-                    x1={predZoneStart}
-                    x2={predZoneEnd}
-                    fill="#a78bfa"
-                    fillOpacity={0.04}
-                    stroke="#a78bfa"
-                    strokeOpacity={0.15}
-                    strokeDasharray="3 3"
-                  />
-                )}
-
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff" strokeOpacity={0.06} />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#9ca3af', fontSize: 10 }}
+                  tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
                   dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#9ca3af', fontSize: 10 }}
+                  tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
                   tickFormatter={formatCurrency}
+                  width={40}
                 />
                 <Tooltip
+                  cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '3 3' }}
                   contentStyle={{
-                    backgroundColor: '#111827',
-                    borderColor: '#374151',
-                    borderRadius: '12px',
+                    backgroundColor: 'rgba(20, 20, 23, 0.8)',
+                    backdropFilter: 'blur(12px)',
+                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                    borderRadius: '16px',
                     color: '#fff',
-                    fontSize: '12px',
+                    fontSize: '13px',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                    padding: '12px 16px'
                   }}
+                  itemStyle={{ fontWeight: 700 }}
+                  labelStyle={{ color: '#9ca3af', marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                   formatter={(val: any, name: any) => {
                     if (name === 'price') return [formatCurrency(Number(val)), 'Median Price'];
                     if (name === 'pred')  return [formatCurrency(Number(val)), 'Forecast'];
@@ -244,36 +260,37 @@ export function DistrictTrends({ district, propertyType }: Props) {
                   }}
                 />
 
-                {/* Historical area */}
-                <Area
-                  type="monotone"
-                  dataKey="price"
-                  stroke="#818cf8"
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorPrice)"
-                  animationBegin={150}
-                  animationDuration={1400}
-                  animationEasing="ease-out"
-                  activeDot={{ r: 4, strokeWidth: 2 }}
-                  connectNulls={false}
-                />
-
-                {/* Forecast line — dashed, connects from last real point */}
+                {/* Forecast line and glowing gradient area — connects from last real point */}
                 {reg && (
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="pred"
-                    stroke="#a78bfa"
-                    strokeWidth={2}
-                    strokeDasharray="5 4"
-                    dot={false}
-                    activeDot={{ r: 3, stroke: '#a78bfa', strokeWidth: 2 }}
+                    stroke="url(#predGradient)"
+                    strokeWidth={3}
+                    strokeDasharray="6 6"
+                    fillOpacity={1}
+                    fill="url(#predFill)"
+                    activeDot={{ r: 5, fill: "#141417", stroke: "#e879f9", strokeWidth: 3 }}
                     animationBegin={1200}
                     animationDuration={800}
                     connectNulls
                   />
                 )}
+
+                {/* Historical area */}
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke="url(#strokeGradient)"
+                  strokeWidth={4}
+                  fillOpacity={1}
+                  fill="url(#colorPrice)"
+                  animationBegin={150}
+                  animationDuration={1400}
+                  animationEasing="ease-out"
+                  activeDot={{ r: 6, fill: "#141417", stroke: "#818cf8", strokeWidth: 3 }}
+                  connectNulls={false}
+                />
               </ComposedChart>
             </ResponsiveContainer>
           </>
