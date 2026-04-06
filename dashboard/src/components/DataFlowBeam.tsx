@@ -176,7 +176,6 @@ export function DataFlowBeam() {
       db:      get(dbRef),
       you:     get(youRef),
     };
-    console.log("POSITIONS:", pos);
     setPositions(pos);
   };
 

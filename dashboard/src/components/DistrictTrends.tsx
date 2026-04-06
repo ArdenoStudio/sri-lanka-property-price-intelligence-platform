@@ -233,7 +233,7 @@ export function DistrictTrends({ district, propertyType }: Props) {
                 className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-accent/10 to-transparent"
               />
             )}
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={280} minWidth={300}>
               <ComposedChart key={chartKey} data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
