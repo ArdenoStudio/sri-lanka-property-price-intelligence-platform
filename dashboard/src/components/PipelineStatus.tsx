@@ -46,7 +46,7 @@ export function PipelineStatus({ status }: Props) {
     overall === 'ok' ? '#10b981' : overall === 'running' ? '#f59e0b' : '#ef4444';
 
   return (
-    <section className="pt-6 pb-2">
+    <section className="py-4">
       <div className="rounded-xl border border-border bg-bg-card overflow-hidden">
         {/* Single unified row */}
         <div className="flex items-center divide-x divide-border">

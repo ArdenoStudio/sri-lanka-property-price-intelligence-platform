@@ -61,18 +61,9 @@ export function StatsBar({ stats }: Props) {
   ];
 
   return (
-    <section className="py-8">
+    <section className="pt-8 pb-6">
       {/* Hero text */}
       <div className="text-center mb-12">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 mb-6"
-        >
-          <Sparkles className="w-4 h-4 text-accent-light" />
-          <span className="text-[10px] font-bold text-accent-light uppercase tracking-widest">Sri Lanka Price Intelligence</span>
-        </motion.div>
-        
         <motion.h2 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -141,7 +132,7 @@ export function StatsBar({ stats }: Props) {
 
       {/* Property type breakdown */}
       {stats?.listings_by_type && (
-        <div className="flex flex-wrap justify-center gap-3 mt-6">
+        <div className="flex flex-wrap justify-center gap-3 mt-5 mb-2">
           {Object.entries(stats.listings_by_type)
             .sort(([, a], [, b]) => b - a)
             .map(([type, count]) => (

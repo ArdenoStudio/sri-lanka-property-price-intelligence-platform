@@ -43,7 +43,7 @@ export function MapSection({ points, onDistrictSelect }: Props) {
   const maxCount = Math.max(...points.map((p) => p.count), 1);
 
   return (
-    <section className="mb-8">
+    <section className="mt-4 mb-8">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-bold">Market Heatmap</h3>
