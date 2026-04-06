@@ -15,6 +15,19 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
     hover: { rotate: -12, y: -1, scale: 1.05 },
     tap: { scale: 0.95 },
   };
+  const removeBtnVariants = {
+    rest: { scale: 1, rotate: 0 },
+    hover: { scale: 1.08, rotate: 6 },
+    tap: { scale: 0.94 },
+  };
+  const removeRingVariants = {
+    rest: { opacity: 0, scale: 0.7 },
+    hover: { opacity: 0.25, scale: 1.6 },
+  };
+  const removeIconVariants = {
+    rest: { rotate: 0 },
+    hover: { rotate: -90 },
+  };
 
   return (
     <AnimatePresence>
@@ -52,13 +65,27 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
                   {item.price_lkr ? `Rs ${(item.price_lkr / 1_000_000).toFixed(1)}M` : 'N/A'}
                 </p>
               </div>
-              <button
+              <motion.button
                 onClick={() => onRemove(item.id)}
                 aria-label={`Remove ${item.title || 'listing'} from comparison`}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center shadow-lg border-2 border-bg-card hover:bg-danger/90 hover:scale-110 hover:rotate-6 hover:shadow-[0_0_0_4px_rgba(239,68,68,0.18)] active:scale-95 transition-all duration-200 ease-out cursor-pointer sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center shadow-lg border-2 border-bg-card cursor-pointer sm:opacity-0 sm:group-hover:opacity-100"
+                initial="rest"
+                animate="rest"
+                whileHover="hover"
+                whileTap="tap"
+                variants={removeBtnVariants}
+                transition={{ type: 'spring', stiffness: 500, damping: 28 }}
               >
-                <X className="w-3 h-3" />
-              </button>
+                <motion.span
+                  className="absolute -inset-2 rounded-full bg-danger"
+                  variants={removeRingVariants}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  style={{ filter: 'blur(2px)' }}
+                />
+                <motion.span className="relative z-10" variants={removeIconVariants} transition={{ duration: 0.2 }}>
+                  <X className="w-3 h-3" />
+                </motion.span>
+              </motion.button>
             </motion.div>
           ))}
           
@@ -87,7 +114,9 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
             onClick={onCompare}
             disabled={selected.length < 2}
             className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-accent hover:bg-accent-light disabled:bg-border/50 text-white rounded-xl px-6 py-2.5 text-sm font-bold transition-all border-none ${
-              selected.length >= 2 ? 'shadow-lg shadow-accent/20' : 'shadow-none'
+              selected.length >= 2
+                ? 'shadow-lg shadow-accent/20 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(99,102,241,0.35)] active:translate-y-0'
+                : 'shadow-none'
             }`}
           >
             <Table className="w-4 h-4" />
