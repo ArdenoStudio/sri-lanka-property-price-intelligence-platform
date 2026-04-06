@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 export function Header() {
   const [tooltipVisible, setTooltipVisible] = useState(false);
@@ -16,7 +16,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center">
-            <MapPin className="w-5 h-5 text-accent-light" />
+            <img src="/favicon.svg" alt="PropertyLK" className="w-5 h-5" />
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight leading-none">
