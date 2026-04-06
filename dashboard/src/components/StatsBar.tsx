@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, MapPin, TrendingUp, TrendingDown, Clock, Sparkles } from 'lucide-react';
+import { Building2, MapPin, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Stats } from '../api';
 
