@@ -19,7 +19,7 @@ function cubicPath(from: Pos, to: Pos, curvature = 0.5): string {
 
 // ─── Single animated beam ──────────────────────────────────────────────────
 function Beam({
-  from, to, id, duration = 2.4, delay = 0, reverse = false,
+  from, to, duration = 2.4, delay = 0, reverse = false,
 }: {
   from: Pos | null; to: Pos | null;
   id: string; duration?: number; delay?: number; reverse?: boolean;
