@@ -164,6 +164,7 @@ def public_pipeline(db: Session = Depends(get_db)):
     job_defs = [
         {"name": "scrape_ikman", "type": "scrape", "source": "ikman", "expected_hours": 24},
         {"name": "scrape_lpw", "type": "scrape", "source": "lpw", "expected_hours": 24},
+        {"name": "scrape_lamudi", "type": "scrape", "source": "lamudi", "expected_hours": 24},
         {"name": "clean_listings", "type": "job", "expected_hours": 24},
         {"name": "geocode_listings", "type": "job", "expected_hours": 24},
         {"name": "compute_aggregates", "type": "job", "expected_hours": 168},

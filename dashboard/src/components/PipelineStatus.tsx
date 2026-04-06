@@ -33,6 +33,7 @@ function statusColor(status: PipelineJobStatus['status']) {
 const LABELS: Record<string, string> = {
   scrape_ikman: 'Ikman',
   scrape_lpw: 'LPW',
+  scrape_lamudi: 'house.lk',
   clean_listings: 'Cleaner',
   geocode_listings: 'Geocoder',
   compute_aggregates: 'Aggregates',
