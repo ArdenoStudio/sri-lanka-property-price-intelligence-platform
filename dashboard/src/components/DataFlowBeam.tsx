@@ -78,27 +78,34 @@ interface NodeProps {
   label: string;
   sub?: string;
   accent?: boolean;
+  tone?: 'success';
 }
 
 const Node = forwardRef<HTMLDivElement, NodeProps>(
-  ({ className = '', children, label, sub, accent }, ref) => (
+  ({ className = '', children, label, sub, accent, tone }, ref) => (
     <div className="flex flex-col items-center gap-2">
       <div
         ref={ref}
         className={`z-10 flex items-center justify-center rounded-full border transition-all duration-300
-          ${accent
-            ? 'w-14 h-14 bg-[#0f0f1a] border-accent/60 shadow-[0_0_24px_rgba(99,102,241,0.35)]'
-            : 'w-11 h-11 bg-bg-card border-border hover:border-border-hover'
+          ${tone === 'success'
+            ? 'w-12 h-12 bg-[#0f0f1a] border-emerald-400/50 shadow-[0_0_24px_rgba(16,185,129,0.35)]'
+            : accent
+              ? 'w-14 h-14 bg-[#0f0f1a] border-accent/60 shadow-[0_0_24px_rgba(99,102,241,0.35)]'
+              : 'w-11 h-11 bg-bg-card border-border hover:border-border-hover'
           } ${className}`}
       >
         {children}
       </div>
       <div className="text-center">
-        <p className={`text-[11px] font-bold leading-tight ${accent ? 'text-white' : 'text-text-secondary'}`}>
+        <p className={`text-[11px] font-bold leading-tight ${
+          tone === 'success' ? 'text-emerald-200' : (accent ? 'text-white' : 'text-text-secondary')
+        }`}>
           {label}
         </p>
         {sub && (
-          <p className="text-[9px] text-text-muted uppercase tracking-wider mt-0.5">{sub}</p>
+          <p className={`text-[9px] uppercase tracking-wider mt-0.5 ${
+            tone === 'success' ? 'text-emerald-400/70' : 'text-text-muted'
+          }`}>{sub}</p>
         )}
       </div>
     </div>
@@ -275,8 +282,8 @@ export function DataFlowBeam() {
 
         {/* You */}
         <div className="z-10">
-          <Node ref={youRef} label="You" sub="live dashboard">
-            <span className="text-text-muted"><UserIcon /></span>
+          <Node ref={youRef} label="You" sub="live dashboard" tone="success">
+            <span className="text-emerald-300"><UserIcon /></span>
           </Node>
         </div>
       </div>
