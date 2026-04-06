@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { X, ArrowRight, Table, Layers, Trash2 } from 'lucide-react';
 import type { Listing } from '../api';
 
@@ -10,16 +10,23 @@ interface Props {
 }
 
 export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props) {
-  if (selected.length === 0) return null;
+  const trashVariants = {
+    rest: { rotate: 0, y: 0, scale: 1 },
+    hover: { rotate: -12, y: -1, scale: 1.05 },
+    tap: { scale: 0.95 },
+  };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 pointer-events-none">
-      <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 100, opacity: 0 }}
-        className="max-w-4xl mx-auto bg-bg-card/90 backdrop-blur-xl border border-accent/30 rounded-2xl shadow-2xl p-4 flex flex-col sm:flex-row items-center gap-4 pointer-events-auto"
-      >
+    <AnimatePresence>
+      {selected.length > 0 && (
+        <motion.div
+          initial={{ y: 40, opacity: 0, scale: 0.98 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: 40, opacity: 0, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
+          transition={{ type: 'spring', stiffness: 260, damping: 26, mass: 0.7 }}
+          className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 pointer-events-none"
+        >
+          <div className="max-w-4xl mx-auto bg-bg-card/90 backdrop-blur-xl border border-accent/30 rounded-2xl shadow-2xl p-4 flex flex-col sm:flex-row items-center gap-4 pointer-events-auto">
         <div className="flex items-center gap-2 pr-4 border-b sm:border-b-0 sm:border-r border-border w-full sm:w-auto pb-2 sm:pb-0">
           <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent-light border border-accent/20">
             <Layers className="w-5 h-5" />
@@ -63,13 +70,19 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <button
+          <motion.button
             onClick={onClear}
-            className="flex-1 sm:flex-none p-2.5 rounded-xl border border-border text-text-muted hover:text-danger hover:border-danger/30 transition-all cursor-pointer bg-transparent"
+            className="flex-1 sm:flex-none h-10 sm:w-10 sm:h-10 rounded-xl border border-border text-text-muted hover:text-danger hover:border-danger/30 transition-all cursor-pointer bg-transparent flex items-center justify-center"
             aria-label="Clear all from comparison"
+            initial="rest"
+            animate="rest"
+            whileHover="hover"
+            whileTap="tap"
           >
-            <Trash2 className="w-4 h-4" />
-          </button>
+            <motion.span variants={trashVariants} className="inline-flex">
+              <Trash2 className="w-4 h-4" />
+            </motion.span>
+          </motion.button>
           <button
             onClick={onCompare}
             disabled={selected.length < 2}
@@ -80,7 +93,9 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-      </motion.div>
-    </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
