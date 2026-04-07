@@ -722,19 +722,28 @@ class DataCleaner:
                 self.detect_outliers(listing)
                 if listing.is_outlier: stats["outliers"] += 1
                 
-                if not self.detect_duplicates(listing):
+                # Skip if already cleaned (avoids UniqueViolation on source+source_id)
+                already_exists = self.db.query(Listing).filter(
+                    Listing.source == raw.source,
+                    Listing.source_id == raw.source_id,
+                ).first()
+                if already_exists:
+                    raw.is_processed = True
+                    stats["duplicates"] += 1
+                elif not self.detect_duplicates(listing):
                     self.db.add(listing)
                     stats["passed"] += 1
                 else:
                     stats["duplicates"] += 1
-                
+
                 raw.is_processed = True
-                
+
             except Exception as e:
                 log.error("clean_error", raw_id=raw.id, error=str(e))
-            
+                self.db.rollback()
+
             stats["processed"] += 1
-        
+
         self.db.commit()
         log.info("clean_complete", **stats)
         return stats
