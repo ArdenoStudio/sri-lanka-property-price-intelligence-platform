@@ -126,6 +126,7 @@ class LPWScraper:
                 base_url = entry["url"]
                 default_type = entry["type"]
                 listing_type = entry["listing_type"]
+                category_blocks = 0
 
                 for page_num in range(1, max_pages + 1):
                     full_url = f"{base_url}?page={page_num}"
@@ -134,10 +135,11 @@ class LPWScraper:
                     try:
                         ok = await self._safe_goto(page, full_url)
                         if not ok:
-                            consecutive_blocks += 1
-                            log.error("page_blocked", source=self.SOURCE, page=page_num, url=full_url, blocks=consecutive_blocks)
-                            if consecutive_blocks >= self.stop_after_blocks:
-                                raise RuntimeError("blocked_by_site")
+                            category_blocks += 1
+                            log.error("page_blocked", source=self.SOURCE, page=page_num, url=full_url, blocks=category_blocks)
+                            if category_blocks >= self.stop_after_blocks:
+                                log.warning("lpw_category_blocked_skipping", url=base_url)
+                                break
                             continue
                         consecutive_blocks = 0
                         await page.wait_for_selector("article.listing-item", timeout=12000)
@@ -253,8 +255,6 @@ class LPWScraper:
                         await asyncio.sleep(random.uniform(1.5, 2.5))
 
                     except Exception as e:
-                        if str(e) == "blocked_by_site":
-                            raise
                         log.error("lpw_page_error", url=full_url, error=str(e))
                         break
 
