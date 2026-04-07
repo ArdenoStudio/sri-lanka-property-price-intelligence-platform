@@ -14,11 +14,10 @@ log = structlog.get_logger()
 BLOCK_STATUSES = {403, 429, 503, 520, 521, 522, 524}
 BLOCK_KEYWORDS = [
     "access denied",
-    "captcha",
     "unusual traffic",
     "verify you are human",
-    "blocked",
-    "cloudflare",
+    "sorry, you have been blocked",
+    "please complete the security check",
 ]
 
 USER_AGENTS = [
