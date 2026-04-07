@@ -4,7 +4,7 @@ import re
 import os
 from datetime import datetime
 import structlog
-from db.models import RawListing, ListingSnapshot
+from db.models import RawListing, ListingSnapshot, ScrapeRun
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 from scraper.utils import build_snapshot_fingerprint
@@ -350,5 +350,13 @@ class LamudiScraper:
 
             await browser.close()
 
+        self.db.add(ScrapeRun(
+            source=self.SOURCE,
+            started_at=datetime.utcnow(),
+            finished_at=datetime.utcnow(),
+            listings_found=total_found,
+            listings_new=total_new,
+        ))
+        self.db.commit()
         log.info("houseLk_scrape_complete", total_found=total_found, total_new=total_new)
         return total_found, total_new

@@ -6,7 +6,9 @@ then runs the cleaner on newly ingested listings.
 import asyncio
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 from db.connection import SessionLocal
+from db.models import JobRun
 from scraper.lpw import LPWScraper
 from scraper.cleaner import DataCleaner
 
@@ -32,6 +34,7 @@ async def run():
         print("Running cleaner...", flush=True)
         cleaner = DataCleaner(db)
         total_processed = 0
+        cleaner_start = datetime.utcnow()
         while True:
             stats = cleaner.process_all(limit=500)
             total_processed += stats.get("processed", 0)
@@ -39,6 +42,10 @@ async def run():
             if stats.get("processed", 0) < 500:
                 break
         print(f"Cleaner done. Total processed: {total_processed}", flush=True)
+        db.add(JobRun(job_name="clean_listings", started_at=cleaner_start,
+                      finished_at=datetime.utcnow(), status="success",
+                      stats={"processed": total_processed}))
+        db.commit()
 
     finally:
         db.close()
