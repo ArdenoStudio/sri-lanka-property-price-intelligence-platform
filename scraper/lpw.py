@@ -32,10 +32,10 @@ BASE = "https://www.lankapropertyweb.com"
 # Updated URL structure after LPW site redesign (Apr 2026)
 # Old: /property-for-sale/?page=N  →  New: /sale/index.php?page=N
 BASE_URLS = [
-    {"url": f"{BASE}/sale/index.php",                  "type": "house",     "listing_type": "sale"},
-    {"url": f"{BASE}/land/index.php",                  "type": "land",      "listing_type": "sale"},
-    {"url": f"{BASE}/rentals/index.php",               "type": "house",     "listing_type": "rent"},
-    {"url": f"{BASE}/forsale-all-Apartment.html",      "type": "apartment", "listing_type": "sale"},
+    {"url": f"{BASE}/sale/index.php",       "type": "house",     "listing_type": "sale"},
+    {"url": f"{BASE}/land/index.php",       "type": "land",      "listing_type": "sale"},
+    {"url": f"{BASE}/rentals/index.php",    "type": "house",     "listing_type": "rent"},
+    {"url": f"{BASE}/apartment/index.php",  "type": "apartment", "listing_type": "sale"},
 ]
 
 # Thin districts to target with srch_words filter
@@ -190,6 +190,7 @@ class LPWScraper:
                                     m = re.search(r"(\d+)\.html", listing_url)
                                     source_id = m.group(1) if m else listing_url.split("/")[-1]
 
+                                now = datetime.utcnow()
                                 stmt = insert(RawListing).values(
                                     source=self.SOURCE,
                                     source_id=source_id,
@@ -200,11 +201,21 @@ class LPWScraper:
                                     raw_size=raw_size,
                                     property_type=property_type,
                                     listing_type=listing_type,
-                                    scraped_at=datetime.utcnow()
-                                ).on_conflict_do_nothing()
+                                    raw_json={},
+                                    is_processed=False,
+                                    scraped_at=now,
+                                ).on_conflict_do_update(
+                                    index_elements=["source", "source_id"],
+                                    set_={
+                                        "scraped_at": now,
+                                        "raw_price": raw_price,
+                                        "raw_location": raw_loc,
+                                        "raw_size": raw_size,
+                                    }
+                                )
 
                                 res = self.db.execute(stmt)
-                                if res.rowcount > 0:
+                                if res.rowcount and res.rowcount > 0:
                                     total_new += 1
                                 total_found += 1
 
@@ -227,11 +238,11 @@ class LPWScraper:
                                     raw_size=raw_size,
                                     property_type=property_type,
                                     listing_type=listing_type,
-                                    raw_json=None,
+                                    raw_json={},
                                     fingerprint=fingerprint,
-                                    scraped_at=datetime.utcnow(),
+                                    scraped_at=now,
                                 ).on_conflict_do_nothing(
-                                    index_elements=['source', 'source_id', 'fingerprint']
+                                    index_elements=["source", "source_id", "fingerprint"]
                                 )
                                 self.db.execute(snap_stmt)
 
