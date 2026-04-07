@@ -728,7 +728,6 @@ class DataCleaner:
                     Listing.source_id == raw.source_id,
                 ).first()
                 if already_exists:
-                    raw.is_processed = True
                     stats["duplicates"] += 1
                 elif not self.detect_duplicates(listing):
                     self.db.add(listing)
@@ -737,6 +736,7 @@ class DataCleaner:
                     stats["duplicates"] += 1
 
                 raw.is_processed = True
+                self.db.commit()
 
             except Exception as e:
                 log.error("clean_error", raw_id=raw.id, error=str(e))
@@ -744,6 +744,5 @@ class DataCleaner:
 
             stats["processed"] += 1
 
-        self.db.commit()
         log.info("clean_complete", **stats)
         return stats
