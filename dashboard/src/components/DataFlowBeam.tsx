@@ -24,7 +24,7 @@ function Beam({
   from, to, duration = 2.4, delay = 0, reverse = false, color = "rgba(129,140,248,0.9)"
 }: {
   from: Pos | null; to: Pos | null;
-  id?: string; duration?: number; delay?: number; reverse?: boolean; color?: string;
+  duration?: number; delay?: number; reverse?: boolean; color?: string;
 }) {
   const pathRef = useRef<SVGPathElement>(null);
   const [len, setLen] = useState(0);
@@ -228,21 +228,21 @@ export function DataFlowBeam() {
 
           {/* Sources → Scraper (staggered so 3 beams are always in flight) */}
           {/* Color: Indigo */}
-          <Beam key="ikman" id="ikman-scraper"   from={p.ikman}   to={p.scraper} duration={2.0} delay={0}    color="rgba(129,140,248,0.9)" />
-          <Beam key="lpw" id="lpw-scraper"     from={p.lpw}     to={p.scraper} duration={2.0} delay={0.25} color="rgba(129,140,248,0.9)" />
-          <Beam key="house" id="houseLk-scraper" from={p.houseLk} to={p.scraper} duration={2.0} delay={0.5}  color="rgba(129,140,248,0.9)" />
+          <Beam key="ikman"  from={p.ikman}   to={p.scraper} duration={2.0} delay={0}    color="rgba(129,140,248,0.9)" />
+          <Beam key="lpw"    from={p.lpw}     to={p.scraper} duration={2.0} delay={0.25} color="rgba(129,140,248,0.9)" />
+          <Beam key="house"  from={p.houseLk} to={p.scraper} duration={2.0} delay={0.5}  color="rgba(129,140,248,0.9)" />
 
           {/* Scraper → Cleaner: fires as source beams arrive (~1s into their 2s journey) */}
           {/* Color: Violet */}
-          <Beam id="scraper-cleaner" from={p.scraper} to={p.cleaner} duration={2.0} delay={1.0} color="rgba(167,139,250,0.9)" />
+          <Beam key="s-c"  from={p.scraper} to={p.cleaner} duration={2.0} delay={1.0} color="rgba(167,139,250,0.9)" />
 
           {/* Cleaner → DB: fires as scraper→cleaner arrives */}
           {/* Color: Pink */}
-          <Beam id="cleaner-db"      from={p.cleaner} to={p.db}      duration={2.0} delay={2.0} color="rgba(244,114,182,0.9)" />
+          <Beam key="c-db" from={p.cleaner} to={p.db}      duration={2.0} delay={2.0} color="rgba(244,114,182,0.9)" />
 
           {/* DB → You: fires as cleaner→db arrives */}
           {/* Color: Emerald */}
-          <Beam id="db-you"          from={p.db}      to={p.you}     duration={2.0} delay={3.0} color="rgba(52,211,153,0.9)" />
+          <Beam key="db-y" from={p.db}      to={p.you}     duration={2.0} delay={3.0} color="rgba(52,211,153,0.9)" />
         </svg>
 
         {/* Left: sources stacked */}
