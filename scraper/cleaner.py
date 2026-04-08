@@ -683,75 +683,84 @@ class DataCleaner:
 
     def process_all(self, limit: int = 500):
         """Processes a batch of unprocessed raw_listings to avoid memory issues."""
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
         raw_listings = self.db.query(RawListing).filter(RawListing.is_processed == False).limit(limit).all()
-        
+
         stats = {"processed": 0, "passed": 0, "outliers": 0, "duplicates": 0}
-        
+
         for raw in raw_listings:
             try:
                 # 1. Basic Cleaning
                 price_lkr, price_per_perch = self.parse_price(raw.raw_price)
                 size_perches, size_sqft = self.parse_size(raw.raw_size, raw.title)
                 district, city, confidence = self.parse_location(raw.raw_location, raw.title)
-                
-                # If we only got price_per_perch but have size, compute total
+
                 if not price_lkr and price_per_perch and size_perches:
                     price_lkr = price_per_perch * size_perches
-                # If we have total and size, compute per perch
                 elif price_lkr and not price_per_perch and size_perches:
                     price_per_perch = price_lkr / size_perches
 
-                # 2. Create Listing
-                listing = Listing(
-                    raw_id=raw.id,
-                    source=raw.source,
-                    source_id=raw.source_id,
-                    scraped_at=raw.scraped_at,
-                    price_lkr=price_lkr,
-                    original_price_lkr=price_lkr,
-                    price_per_perch=price_per_perch,
-                    price_per_sqft=None,
-                    raw_location=raw.raw_location,
-                    district=district,
-                    city=city,
-                    geocode_confidence=confidence,
-                    property_type=raw.property_type,
-                    listing_type=raw.listing_type,
-                    size_perches=size_perches,
-                    size_sqft=size_sqft
-                )
-
                 location = self._get_or_create_location(district, city, confidence)
-                if location:
-                    listing.location_id = location.id
-                    if location.lat and location.lng:
-                        listing.lat = location.lat
-                        listing.lng = location.lng
-                
-                self.detect_outliers(listing)
-                if listing.is_outlier: stats["outliers"] += 1
-                
-                # Skip if already cleaned (avoids UniqueViolation on source+source_id)
-                already_exists = self.db.query(Listing).filter(
-                    Listing.source == raw.source,
-                    Listing.source_id == raw.source_id,
-                ).first()
-                if already_exists:
-                    stats["duplicates"] += 1
-                elif not self.detect_duplicates(listing):
-                    self.db.add(listing)
-                    stats["passed"] += 1
-                else:
-                    stats["duplicates"] += 1
+                location_id = location.id if location else None
+                lat = location.lat if location else None
+                lng = location.lng if location else None
 
+                # 2. Build values dict
+                is_outlier, outlier_reason = False, None
+                dummy = Listing(
+                    source=raw.source, source_id=raw.source_id,
+                    scraped_at=raw.scraped_at, price_lkr=price_lkr,
+                    original_price_lkr=price_lkr, price_per_perch=price_per_perch,
+                    raw_location=raw.raw_location, district=district, city=city,
+                    geocode_confidence=confidence, property_type=raw.property_type,
+                    listing_type=raw.listing_type, size_perches=size_perches,
+                    size_sqft=size_sqft, raw_id=raw.id,
+                    location_id=location_id, lat=lat, lng=lng,
+                )
+                self.detect_outliers(dummy)
+                if dummy.is_outlier:
+                    stats["outliers"] += 1
+
+                is_duplicate = self.detect_duplicates(dummy)
+                if is_duplicate:
+                    stats["duplicates"] += 1
+                else:
+                    stats["passed"] += 1
+
+                # 3. Upsert — ON CONFLICT (source, source_id) update price fields
+                stmt = pg_insert(Listing).values(
+                    raw_id=raw.id, source=raw.source, source_id=raw.source_id,
+                    scraped_at=raw.scraped_at, price_lkr=price_lkr,
+                    original_price_lkr=price_lkr, price_per_perch=price_per_perch,
+                    price_per_sqft=None, raw_location=raw.raw_location,
+                    district=district, city=city, geocode_confidence=confidence,
+                    property_type=raw.property_type, listing_type=raw.listing_type,
+                    size_perches=size_perches, size_sqft=size_sqft,
+                    location_id=location_id, lat=lat, lng=lng,
+                    is_outlier=dummy.is_outlier, outlier_reason=dummy.outlier_reason,
+                    is_duplicate=dummy.is_duplicate, duplicate_of=dummy.duplicate_of,
+                ).on_conflict_do_update(
+                    index_elements=["source", "source_id"],
+                    set_={
+                        "price_lkr": price_lkr,
+                        "price_per_perch": price_per_perch,
+                        "is_outlier": dummy.is_outlier,
+                        "outlier_reason": dummy.outlier_reason,
+                        "raw_location": raw.raw_location,
+                        "district": district,
+                        "city": city,
+                    }
+                )
+                self.db.execute(stmt)
                 raw.is_processed = True
-                self.db.commit()
 
             except Exception as e:
                 log.error("clean_error", raw_id=raw.id, error=str(e))
                 self.db.rollback()
 
             stats["processed"] += 1
+
+        self.db.commit()
 
         log.info("clean_complete", **stats)
         return stats
