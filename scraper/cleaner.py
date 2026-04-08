@@ -510,13 +510,19 @@ class DataCleaner:
 
     def parse_price(self, raw_price: str) -> Tuple[Optional[float], Optional[float]]:
         """Parses raw_price string to numeric LKR. Returns (total_price, price_per_unit)"""
-        if not raw_price or "Negotiable" in raw_price:
+        if not raw_price:
             return None, None
 
-        # Clean string
-        clean_str = raw_price.replace("Rs.", "").replace("LKR", "").replace(",", "").strip()
-        
-        # Handle "Million" / "Mn"
+        # Strip trailing qualifiers before parsing
+        clean_str = raw_price
+        for suffix in ("Negotiable", "Fixed Price", "ONO", "Per Month", "per month",
+                        "Per Perch", "PSF", "per perch"):
+            clean_str = clean_str.replace(suffix, "")
+        # Strip brackets e.g. "[1396396 PSF]"
+        clean_str = re.sub(r"\[.*?\]", "", clean_str)
+        clean_str = clean_str.replace("Rs.", "").replace("LKR", "").replace(",", "").strip()
+
+        # Handle "Million" / "Mn" / "M" suffix
         multiplier = 1.0
         if "Million" in clean_str:
             multiplier = 1_000_000.0
@@ -524,6 +530,9 @@ class DataCleaner:
         elif "Mn" in clean_str:
             multiplier = 1_000_000.0
             clean_str = clean_str.replace("Mn", "").strip()
+        elif re.search(r"(\d)\s*M\b", clean_str):
+            multiplier = 1_000_000.0
+            clean_str = re.sub(r"M\b", "", clean_str).strip()
 
         # Check for per unit rates
         price_per_unit = None
