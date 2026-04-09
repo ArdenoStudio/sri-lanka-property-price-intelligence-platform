@@ -59,7 +59,13 @@ async def run():
                 print(f"  failed: {e}", flush=True)
             await asyncio.sleep(2)
 
-        cleaner = DataCleaner(db)
+    finally:
+        db.close()
+
+    # Fresh session for cleaner + JobRun — isolated from scraper session
+    db2 = SessionLocal()
+    try:
+        cleaner = DataCleaner(db2)
         total_processed = 0
         cleaner_start = datetime.utcnow()
         while True:
@@ -69,11 +75,11 @@ async def run():
             if stats.get("processed", 0) < 500:
                 break
         print("cleaner_processed", total_processed, flush=True)
-        db.add(JobRun(job_name="clean_listings", started_at=cleaner_start,
-                      finished_at=datetime.utcnow(), status="success",
-                      stats={"processed": total_processed}))
-        db.commit()
+        db2.add(JobRun(job_name="clean_listings", started_at=cleaner_start,
+                       finished_at=datetime.utcnow(), status="success",
+                       stats={"processed": total_processed}))
+        db2.commit()
     finally:
-        db.close()
+        db2.close()
 
 asyncio.run(run())
