@@ -37,30 +37,28 @@ district_counts = {
 }
 
 async def run():
-    db = SessionLocal()
     if os.path.exists(STATE_FILE):
         print(f"Using saved auth state from {STATE_FILE}", flush=True)
     else:
         print("No auth state found — run _ikman_solve_captcha.py first if getting blocked.", flush=True)
 
-    try:
-        for i, (slug, count) in enumerate(district_counts.items(), 1):
-            pages = max(1, ceil(count / 25))
-            print(f"[{i}/{len(district_counts)}] {slug}: {pages} pages", flush=True)
-            try:
-                scraper = IkmanScraper(db)
-                found, new = await scraper.scrape(
-                    max_pages=pages,
-                    location=slug,
-                    storage_state=STATE_FILE if os.path.exists(STATE_FILE) else None,
-                )
-                print(f"  done: found={found}, new={new}", flush=True)
-            except Exception as e:
-                print(f"  failed: {e}", flush=True)
-            await asyncio.sleep(2)
-
-    finally:
-        db.close()
+    for i, (slug, count) in enumerate(district_counts.items(), 1):
+        pages = max(1, ceil(count / 25))
+        print(f"[{i}/{len(district_counts)}] {slug}: {pages} pages", flush=True)
+        db = SessionLocal()
+        try:
+            scraper = IkmanScraper(db)
+            found, new = await scraper.scrape(
+                max_pages=pages,
+                location=slug,
+                storage_state=STATE_FILE if os.path.exists(STATE_FILE) else None,
+            )
+            print(f"  done: found={found}, new={new}", flush=True)
+        except Exception as e:
+            print(f"  failed: {e}", flush=True)
+        finally:
+            db.close()
+        await asyncio.sleep(2)
 
     # Fresh session for cleaner + JobRun — isolated from scraper session
     db2 = SessionLocal()
