@@ -272,16 +272,21 @@ class IkmanScraper:
                     await asyncio.sleep(1)  # brief pause before next page
 
             from db.models import ScrapeRun
-            # Record the successful run for the dashboard to show "Last Updated"
-            new_run = ScrapeRun(
-                source=self.SOURCE,
-                started_at=datetime.utcnow(), # Approximate
-                finished_at=datetime.utcnow(),
-                listings_found=total_found,
-                listings_new=total_new
-            )
-            self.db.add(new_run)
-            self.db.commit()
+            try:
+                self.db.rollback()
+                self.db.expire_all()
+                new_run = ScrapeRun(
+                    source=self.SOURCE,
+                    started_at=datetime.utcnow(),
+                    finished_at=datetime.utcnow(),
+                    listings_found=total_found,
+                    listings_new=total_new
+                )
+                self.db.add(new_run)
+                self.db.commit()
+            except Exception as e:
+                log.error("scrape_run_write_error", source=self.SOURCE, error=str(e))
+                self.db.rollback()
 
             return total_found, total_new
 
