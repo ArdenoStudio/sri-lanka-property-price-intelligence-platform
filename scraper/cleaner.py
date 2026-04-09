@@ -757,10 +757,16 @@ class DataCleaner:
             except Exception as e:
                 log.error("clean_error", raw_id=raw.id, error=str(e))
                 self.db.rollback()
+                self.db.expire_all()
 
             stats["processed"] += 1
 
-        self.db.commit()
+        try:
+            self.db.commit()
+        except Exception as e:
+            log.error("clean_batch_commit_error", error=str(e))
+            self.db.rollback()
+            self.db.expire_all()
 
         log.info("clean_complete", **stats)
         return stats
