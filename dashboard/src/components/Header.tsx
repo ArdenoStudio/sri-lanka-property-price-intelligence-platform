@@ -1,9 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
+
+const GITHUB_REPO = 'ArdenoStudio/sri-lanka-property-price-intelligence-platform';
+const GITHUB_URL  = `https://github.com/${GITHUB_REPO}`;
 
 export function Header() {
   const [tooltip, setTooltip] = useState(false);
+  const [stars, setStars] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(`https://api.github.com/repos/${GITHUB_REPO}`)
+      .then(r => r.json())
+      .then(d => { if (typeof d.stargazers_count === 'number') setStars(d.stargazers_count); })
+      .catch(() => {});
+  }, []);
 
   const { scrollY } = useScroll();
   const raw = useTransform(scrollY, [0, 80], [0, 1], { clamp: true });
@@ -16,7 +27,7 @@ export function Header() {
   const logoRadius   = useTransform(p, [0, 1], [9,   8]);
 
   const taglineOpacity = useTransform(p, [0, 0.38], [1, 0],   { clamp: true });
-  const taglineWidth   = useTransform(p, [0, 0.72], [108, 0],  { clamp: true });
+  const taglineWidth   = useTransform(p, [0, 0.72], [132, 0],  { clamp: true });
 
   return (
     <motion.div
@@ -102,7 +113,7 @@ export function Header() {
             onMouseLeave={() => setTooltip(false)}
           >
             <a
-              href="https://github.com/ArdenoStudio/sri-lanka-property-price-intelligence-platform"
+              href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="View on GitHub"
@@ -115,22 +126,61 @@ export function Header() {
             </a>
 
             {/* Rich tooltip */}
-            <div className={`absolute right-0 top-full mt-3 w-56 pointer-events-none transition-all duration-200 z-50 ${
-              tooltip ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'
-            }`}>
-              <div className="relative bg-[#161616] border border-white/[0.1] rounded-xl p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
-                {/* Arrow */}
-                <div className="absolute -top-[7px] right-4 w-3.5 h-3.5 rotate-45 bg-[#161616] border-l border-t border-white/[0.1]" />
-                <p className="text-[12px] font-bold text-white mb-1">Open Source</p>
-                <p className="text-[11px] text-[#525252] leading-relaxed mb-3">
-                  Fully open source. Star it on GitHub if you find it useful!
-                </p>
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#14b8a6]">
-                  <Star className="w-3 h-3 fill-[#14b8a6]" />
-                  Star the repo
-                </div>
-              </div>
-            </div>
+            <AnimatePresence>
+              {tooltip && (
+                <motion.div
+                  className="absolute right-0 top-full mt-3 w-64 pointer-events-none z-50"
+                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-[0_24px_64px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)] backdrop-blur-2xl bg-white/[0.04]">
+                    {/* Teal accent bar */}
+                    <div className="h-[2px] w-full bg-gradient-to-r from-[#14b8a6] to-[#0d9488]" />
+                    {/* Subtle inner glow */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none" />
+
+                    <div className="relative bg-[#0e0e0e]/70 backdrop-blur-xl p-4">
+                      {/* Title */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1 h-3.5 rounded-full bg-[#14b8a6]" />
+                        <p className="text-[13px] font-bold text-white tracking-tight">Open Source</p>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-[11.5px] text-[#888] leading-snug mb-3 pl-3">
+                        Fully open source. Star it on GitHub if you find it useful!
+                      </p>
+
+                      {/* CTA button */}
+                      <a
+                        href={GITHUB_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="pointer-events-auto flex items-center justify-between gap-2 w-full
+                          bg-[#14b8a6]/[0.08] hover:bg-[#14b8a6]/[0.15]
+                          border border-[#14b8a6]/20 hover:border-[#14b8a6]/40
+                          backdrop-blur-sm rounded-lg px-3 py-2 transition-colors duration-150 group/btn no-underline"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Star className="w-3.5 h-3.5 fill-[#14b8a6] text-[#14b8a6] group-hover/btn:scale-110 transition-transform" />
+                          <span className="text-[11.5px] font-semibold text-[#14b8a6]">Star the repo</span>
+                        </div>
+                        {stars !== null && (
+                          <span className="bg-white/[0.06] rounded-full px-2 py-0.5 text-[10px] text-[#a3a3a3] font-medium tabular-nums">
+                            {stars.toLocaleString()}
+                          </span>
+                        )}
+                        {stars === null && (
+                          <span className="bg-white/[0.06] rounded-full px-2 py-0.5 text-[10px] text-[#525252]">—</span>
+                        )}
+                      </a>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       </motion.nav>
