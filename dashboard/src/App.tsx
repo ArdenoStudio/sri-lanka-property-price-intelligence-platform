@@ -14,6 +14,9 @@ import { ComparisonTray } from './components/ComparisonTray';
 import { ComparisonModal } from './components/ComparisonModal';
 import { PageLoader } from './components/PageLoader';
 import { ChatWidget } from './components/ChatWidget';
+import { NoiseOverlay } from './components/NoiseOverlay';
+import { ScrollProgressBar } from './components/ScrollProgressBar';
+import { RevealSection } from './components/RevealSection';
 import { Analytics } from '@vercel/analytics/react';
 
 function readURLFilters() {
@@ -61,6 +64,7 @@ function App() {
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
   }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, sortBy]);
+
   const PAGE_SIZE = 24;
 
   // Comparison state
@@ -70,10 +74,8 @@ function App() {
   const toggleComparison = (listing: Listing) => {
     setSelectedForComparison(prev => {
       const isAlreadyAdded = prev.some(l => l.id === listing.id);
-      if (isAlreadyAdded) {
-        return prev.filter(l => l.id !== listing.id);
-      }
-      if (prev.length >= 3) return prev; // Limit to 3
+      if (isAlreadyAdded) return prev.filter(l => l.id !== listing.id);
+      if (prev.length >= 3) return prev;
       return [...prev, listing];
     });
   };
@@ -100,13 +102,13 @@ function App() {
     if (!isSilent) setListingsLoading(false);
   }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, sortBy, page]);
 
-  // Initial data load + Polling
+  // Initial data load + polling
   const refreshStatsAndDistricts = useCallback(async () => {
     try {
       const [s, d, h, p] = await Promise.all([
         getStats().catch(() => null),
         getDistricts().catch(() => []),
-        getHeatmap().catch(() => ({ points: [], total_districts: 0 })),
+        getHeatmap(selectedType || undefined, listingType || undefined).catch(() => ({ points: [], total_districts: 0 })),
         getPipelineStatus().catch(() => null),
       ]);
       if (s) setStats(s);
@@ -114,18 +116,17 @@ function App() {
       setHeatmap(h.points);
       if (p) setPipeline(p);
     } catch (e) {
-      console.error("Data sync error:", e);
+      console.error('Data sync error:', e);
     }
-  }, []);
+  }, [selectedType, listingType]);
 
   useEffect(() => {
     refreshStatsAndDistricts();
     loadListings();
 
-    // Polling every 30 seconds
     const interval = setInterval(() => {
       refreshStatsAndDistricts();
-      loadListings(true); // silent refresh
+      loadListings(true);
     }, 30000);
 
     return () => clearInterval(interval);
@@ -138,64 +139,77 @@ function App() {
 
   return (
     <>
-      <PageLoader 
-        minDuration={3200} 
-        onComplete={() => setLoading(false)} 
+      {/* Global ambient components — always rendered */}
+      <NoiseOverlay />
+      <ScrollProgressBar />
+
+      <PageLoader
+        minDuration={1800}
+        onComplete={() => setLoading(false)}
       />
-      
+
       {!loading && (
-        <div className="min-h-screen">
+        <div className="min-h-screen relative overflow-x-hidden">
           <Header />
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+          <main className="relative max-w-7xl mx-auto px-6 lg:px-8 pb-32 pt-24">
             <StatsBar stats={stats} />
-            <PipelineStatus status={pipeline} />
 
-            <MapSection
-              points={heatmap}
-              onDistrictSelect={(d) => {
-                setSelectedDistrict(d);
-              }}
-            />
+            <RevealSection className="mt-4">
+              <PipelineStatus status={pipeline} />
+            </RevealSection>
 
-            <div id="trends" className="pt-8">
-              <DistrictTrends district={selectedDistrict} propertyType={selectedType} />
-            </div>
-
-            <div id="listings" className="pt-8">
-              <Filters
-                districts={districts}
-                selectedDistrict={selectedDistrict}
-                onDistrictChange={setSelectedDistrict}
-                selectedType={selectedType}
-                onTypeChange={setSelectedType}
-                listingType={listingType}
-                onListingTypeChange={setListingType}
-                minPrice={minPrice}
-                onMinPriceChange={setMinPrice}
-                maxPrice={maxPrice}
-                onMaxPriceChange={setMaxPrice}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                totalResults={totalListings}
+            <RevealSection className="mt-8">
+              <MapSection
+                points={heatmap}
+                onDistrictSelect={(d) => setSelectedDistrict(d)}
               />
+            </RevealSection>
 
-              <ListingsGrid
-                listings={listings}
-                loading={listingsLoading}
-                page={page}
-                pageSize={PAGE_SIZE}
-                total={totalListings}
-                onPageChange={setPage}
-                onCompareToggle={toggleComparison}
-                selectedForComparison={selectedForComparison.map(l => l.id)}
-              />
-            </div>
+            <RevealSection className="pt-20" delay={50}>
+              <div id="trends">
+                <DistrictTrends district={selectedDistrict} propertyType={selectedType} />
+              </div>
+            </RevealSection>
 
-            <About stats={stats} />
+            <RevealSection className="pt-20">
+              <div id="listings">
+                <Filters
+                  districts={districts}
+                  selectedDistrict={selectedDistrict}
+                  onDistrictChange={setSelectedDistrict}
+                  selectedType={selectedType}
+                  onTypeChange={setSelectedType}
+                  listingType={listingType}
+                  onListingTypeChange={setListingType}
+                  minPrice={minPrice}
+                  onMinPriceChange={setMinPrice}
+                  maxPrice={maxPrice}
+                  onMaxPriceChange={setMaxPrice}
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  totalResults={totalListings}
+                />
+
+                <ListingsGrid
+                  listings={listings}
+                  loading={listingsLoading}
+                  page={page}
+                  pageSize={PAGE_SIZE}
+                  total={totalListings}
+                  onPageChange={setPage}
+                  onCompareToggle={toggleComparison}
+                  selectedForComparison={selectedForComparison.map(l => l.id)}
+                />
+              </div>
+            </RevealSection>
+
+            <RevealSection className="pt-20">
+              <About stats={stats} />
+            </RevealSection>
           </main>
 
-          <ComparisonTray 
+          <ComparisonTray
             selected={selectedForComparison}
             onRemove={(id) => setSelectedForComparison(prev => prev.filter(l => l.id !== id))}
             onClear={() => setSelectedForComparison([])}
@@ -209,7 +223,6 @@ function App() {
           />
 
           <ChatWidget />
-
           <Footer />
           <Analytics />
         </div>

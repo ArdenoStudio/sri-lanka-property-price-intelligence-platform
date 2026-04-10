@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import type { PipelineStatusResponse, PipelineJobStatus } from '../api';
 
 interface Props {
@@ -48,20 +48,19 @@ export function PipelineStatus({ status }: Props) {
 
   return (
     <section className="py-4">
-      <div className="rounded-xl border border-border bg-bg-card overflow-hidden">
+      <div className="surface-1 rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
         {/* Single unified row */}
-        <div className="flex items-center divide-x divide-border">
+        <div className="flex items-center divide-x divide-white/[0.06]">
 
           {/* Left label */}
           <div className="flex items-center gap-2 px-5 py-4 shrink-0">
-            <Activity className="w-3 h-3 text-text-muted" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted whitespace-nowrap">
-              Pipeline
-            </span>
             <span
               className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: overallColor, boxShadow: `0 0 5px ${overallColor}` }}
+              style={{ background: overallColor }}
             />
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#525252] whitespace-nowrap">
+              Pipeline
+            </span>
           </div>
 
           {/* Jobs */}
@@ -71,7 +70,7 @@ export function PipelineStatus({ status }: Props) {
             return (
               <div
                 key={job.name}
-                className="flex-1 flex items-center gap-2.5 px-5 py-4 hover:bg-bg-card-hover transition-colors"
+                className="flex-1 flex items-center gap-2.5 px-5 py-4 hover:bg-bg-card-hover/70 transition-colors"
               >
                 <Icon
                   className="w-3 h-3 shrink-0"

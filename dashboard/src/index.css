@@ -2,50 +2,104 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg-primary: #09090b;
-  --color-bg-secondary: #0e0e11;
-  --color-bg-card: #141417;
-  --color-bg-card-hover: #1c1c21;
-  --color-border: #27272a;
-  --color-border-hover: #3f3f46;
-  --color-accent: #6366f1;
-  --color-accent-light: #818cf8;
-  --color-accent-glow: rgba(99, 102, 241, 0.15);
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #94949e;
-  --color-text-muted: #4a4a4f;
-  
-  --font-geist: 'Geist', sans-serif;
-  --font-instrument: 'Instrument Serif', serif;
-  --font-fraunces: 'Fraunces', serif;
-  --font-cinzel: 'Cinzel', serif;
-  --font-cormorant: 'Cormorant Garamond', serif;
+  /* Backgrounds — true black, Apple dark mode */
+  --color-bg-primary:    #000000;
+  --color-bg-secondary:  #0a0a0a;
+  --color-bg-card:       #111111;
+  --color-bg-card-hover: #1a1a1a;
+  --color-bg-elevated:   #161616;
+
+  /* Borders — extremely subtle single-weight */
+  --color-border:        rgba(255, 255, 255, 0.08);
+  --color-border-hover:  rgba(255, 255, 255, 0.14);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
+
+  /* Accent — teal, used ≤4× per viewport */
+  --color-accent:       #14b8a6;
+  --color-accent-light: #5eead4;
+  --color-accent-glow:  rgba(20, 184, 166, 0.15);
+  --color-accent-dim:   rgba(20, 184, 166, 0.12);
+
+  /* Semantic */
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger:  #f87171;
+
+  /* Text — Apple's precise gray scale */
+  --color-text-primary:   #f5f5f5;
+  --color-text-secondary: #a3a3a3;
+  --color-text-muted:     #525252;
+  --color-text-faint:     #2e2e2e;
+
+  /* Legacy surface glass — for components not yet migrated */
+  --color-surface-glass:        rgba(17, 17, 17, 0.92);
+  --color-surface-glass-strong: rgba(10, 10, 10, 0.96);
+
+  /* Shadows */
+  --shadow-soft:     0 4px 20px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.6);
+
+  /* Font — one family, weights do the work */
+  --font-geist: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-* {
+:root {
+  /* Type scale — editorial sizes */
+  --text-display:  clamp(4rem, 10vw, 9rem);
+  --text-headline: clamp(2rem, 5vw, 4rem);
+  --text-title:    clamp(1.25rem, 2.5vw, 1.75rem);
+  --text-body:     0.9375rem;
+  --text-small:    0.8125rem;
+  --text-micro:    0.6875rem;
+
+  /* 8-point spacing grid */
+  --space-1: 0.25rem;  --space-2: 0.5rem;   --space-3: 0.75rem;
+  --space-4: 1rem;     --space-6: 1.5rem;   --space-8: 2rem;
+  --space-12: 3rem;    --space-16: 4rem;    --space-24: 6rem;
+  --space-32: 8rem;
+
+  /* Radii — Apple-generous rounding */
+  --radius-sm:   10px;
+  --radius-md:   16px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-pill: 9999px;
+
+  /* Motion — Apple's spring feel */
+  --motion-instant: 80ms;
+  --motion-fast:    160ms;
+  --motion-normal:  280ms;
+  --motion-slow:    480ms;
+  --ease-apple:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============================================================
+   GLOBAL RESET
+   ============================================================ */
+*, *::before, *::after {
   box-sizing: border-box;
   scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* Keyboard focus ring — visible only on keyboard navigation */
+*::-webkit-scrollbar { display: none; }
+
+
+
+/* Focus ring — keyboard-only, teal accent */
 :focus-visible {
-  outline: 2px solid var(--color-accent-light);
+  outline: 2px solid #5eead4;
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 8px;
 }
-:focus:not(:focus-visible) {
-  outline: none;
-}
+:focus:not(:focus-visible) { outline: none; }
 
-/* Scroll offset for sticky header on anchor links */
-#trends, #listings {
-  scroll-margin-top: 100px;
-}
+/* Anchor scroll offset — accounts for fixed pill nav */
+#trends, #listings { scroll-margin-top: 80px; }
 
-/* Respect reduced motion — collapse all animations/transitions instantly */
+/* Reduced motion — respect user preference */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -55,51 +109,173 @@
   }
 }
 
+/* ============================================================
+   BODY
+   ============================================================ */
 body {
   margin: 0;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  background: #000000;
+  color: #f5f5f5;
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.01em;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.016em;
+  text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  letter-spacing: -0.03em;
-}
+h1, h2, h3, h4, h5, h6 { letter-spacing: -0.03em; }
 
-/* Glassmorphism utility */
-.glass {
-  background: rgba(20, 20, 23, 0.7);
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
+/* ============================================================
+   CARD SYSTEM — replaces .glass and .premium-card
+   ============================================================ */
+.card {
+  background: #111111;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 4px 24px rgba(0, 0, 0, 0.4);
+  transition:
+    border-color var(--motion-fast) var(--ease-spring),
+    transform var(--motion-fast) var(--ease-spring),
+    box-shadow var(--motion-fast) var(--ease-spring);
+}
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 8px 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Premium Gradient utility */
+/* ============================================================
+   LEGACY — kept for components not yet migrated
+   ============================================================ */
+.glass {
+  background: rgba(17, 17, 17, 0.92);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.premium-card {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  transition:
+    border-color var(--motion-fast) var(--ease-spring),
+    transform var(--motion-fast) var(--ease-spring),
+    box-shadow var(--motion-fast) var(--ease-spring);
+}
+.premium-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+
+.premium-interactive {
+  transition:
+    transform var(--motion-fast) var(--ease-spring),
+    background-color var(--motion-fast) var(--ease-spring),
+    border-color var(--motion-fast) var(--ease-spring),
+    color var(--motion-fast) var(--ease-spring),
+    box-shadow var(--motion-fast) var(--ease-spring);
+}
+.premium-interactive:active { transform: scale(0.98); }
+
 .gradient-accent {
-  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #5eead4 100%);
 }
 
 .text-gradient {
-  background: linear-gradient(to right, #ffffff, #a1a1aa);
+  background: linear-gradient(to right, #f5f5f5, #5eead4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Leaflet overrides for high-end dark theme */
+/* ============================================================
+   TYPOGRAPHY UTILITIES
+   ============================================================ */
+
+/* Tabular numbers — critical for stats and prices */
+.num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: -0.02em;
+}
+.text-numeric { font-variant-numeric: tabular-nums lining-nums; } /* legacy alias */
+
+/* ============================================================
+   SCROLL REVEAL — IntersectionObserver adds .visible class
+   ============================================================ */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity var(--motion-slow) var(--ease-spring),
+    transform var(--motion-slow) var(--ease-spring);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================================
+   NOISE OVERLAY — subtle analog grain texture
+   ============================================================ */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 128px;
+  mix-blend-mode: overlay;
+}
+
+
+/* ============================================================
+   SCROLL PROGRESS BAR — 2px fixed top line
+   ============================================================ */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, #14b8a6, #5eead4);
+  z-index: 9997;
+  transform-origin: left;
+  transform: scaleX(0);
+  will-change: transform;
+}
+
+/* ============================================================
+   LIVE DOT — slow 3s pulse (premium, not frantic)
+   ============================================================ */
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+  60%       { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+}
+.animate-live-dot { animation: live-pulse 3s ease-in-out infinite; }
+
+/* ============================================================
+   LEAFLET — dark theme overrides
+   ============================================================ */
 .leaflet-container {
-  background: #09090b !important;
-  border-radius: 24px;
+  background: #000000 !important;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
-.leaflet-top,
-.leaflet-bottom {
-  z-index: 800 !important;
-}
+.leaflet-top, .leaflet-bottom { z-index: 800 !important; }
 .leaflet-tile-pane {
-  filter: brightness(0.6) contrast(1.2) grayscale(1) invert(1) hue-rotate(180deg);
+  filter: brightness(0.68) contrast(1.1) grayscale(0.92) invert(1) hue-rotate(180deg);
 }
 .leaflet-control-zoom {
   border: none !important;
@@ -109,71 +285,60 @@ h1, h2, h3, h4, h5, h6 {
   width: 34px !important;
   height: 34px !important;
   line-height: 34px !important;
-  background: rgba(20, 20, 23, 0.9) !important;
-  color: #ffffff !important;
-  border: 1px solid #27272a !important;
+  background: rgba(10, 10, 10, 0.95) !important;
+  color: #f5f5f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 999px !important;
   margin-bottom: 6px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   backdrop-filter: blur(8px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.45) !important;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+  transition: transform var(--motion-fast) var(--ease-spring), border-color var(--motion-fast) ease;
   font-weight: 600;
 }
 .leaflet-control-zoom a:hover {
   transform: translateY(-1px);
-  border-color: #3f3f46 !important;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.55) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5) !important;
 }
-.leaflet-control-zoom a:active {
-  transform: translateY(0);
-}
+.leaflet-control-zoom a:active { transform: translateY(0); }
 .leaflet-popup-content-wrapper {
-  background: #141417 !important;
-  color: #ffffff !important;
+  background: #161616 !important;
+  color: #f5f5f5 !important;
   border-radius: 16px !important;
-  border: 1px solid #3f3f46;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6) !important;
 }
-.leaflet-popup-tip {
-  background: #141417 !important;
-}
+.leaflet-popup-tip { background: #161616 !important; }
 
-/* Hide scrollbar globally but keep scroll functionality */
-* {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-*::-webkit-scrollbar {
-  display: none;
-}
+/* ============================================================
+   SCROLLBAR UTILITIES
+   ============================================================ */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Grid layout refinements */
+/* ============================================================
+   LISTINGS GRID — magazine 1px gap trick
+   ============================================================ */
 .listings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 24px;
+  overflow: hidden;
 }
 
 @media (max-width: 640px) {
-  .listings-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
+  .listings-grid { grid-template-columns: 1fr; }
 }
 
-/* Hide scrollbar utility */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Dual price range slider */
+/* ============================================================
+   PRICE RANGE SLIDER
+   ============================================================ */
 .price-range-input {
   position: absolute;
   width: 100%;
@@ -187,26 +352,26 @@ h1, h2, h3, h4, h5, h6 {
 .price-range-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: #818cf8;
-  border: 2px solid #141417;
+  background: #5eead4;
+  border: 2px solid #000000;
   cursor: pointer;
   pointer-events: all;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .price-range-input:hover::-webkit-slider-thumb,
 .price-range-input:focus-visible::-webkit-slider-thumb {
-  transform: scale(1.25);
-  box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.25);
+  transform: scale(1.15);
+  box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.2);
 }
 .price-range-input::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: #818cf8;
-  border: 2px solid #141417;
+  background: #5eead4;
+  border: 2px solid #000000;
   cursor: pointer;
   pointer-events: all;
 }

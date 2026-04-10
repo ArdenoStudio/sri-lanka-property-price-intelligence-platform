@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { sendChatMessage } from '../api';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const ACCENT      = "#6366f1";
-const ACCENT_RGB  = "99,102,241";
+const ACCENT      = "#1fb6aa";
+const ACCENT_RGB  = "31,182,170";
 const STORAGE_KEY  = "propertylk_chat_v1";
 const TOOLTIP_KEY  = "propertylk_chat_tooltip_seen";
 const genId = () => Math.random().toString(36).slice(2, 10);
@@ -120,9 +120,8 @@ const STYLES = `
 
   .aw-input-wrap { transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
   .aw-input-wrap.focused {
-    border-color: rgba(${ACCENT_RGB},.30) !important;
-    box-shadow:   0 0 0 3px rgba(${ACCENT_RGB},.08) !important;
-    background:   rgba(255,255,255,.045) !important;
+    border-color: rgba(${ACCENT_RGB},.50) !important;
+    background:   rgba(255,255,255,.02) !important;
   }
 
   .aw-text p { margin: 0 0 10px; }
@@ -411,45 +410,16 @@ export function ChatWidget() {
         className="aw-fab aw-fab-wrapper"
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 72, height: 72, padding: 0,
-          background: 'rgba(8,8,10,.82)', backdropFilter: 'blur(16px)',
-          color: '#fff', border: '1px solid rgba(255,255,255,.08)', borderRadius: '22px',
-          boxShadow: open
-            ? `0 22px 64px rgba(0,0,0,.66), 0 0 0 1px rgba(255,255,255,.03), 0 0 40px rgba(${ACCENT_RGB},.22)`
-            : `0 18px 56px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.04), 0 0 22px rgba(${ACCENT_RGB},.12)`,
-          cursor: 'pointer', position: 'fixed', overflow: 'hidden',
+          width: 48, height: 48, padding: 0,
+          background: '#111111',
+          color: '#fff', border: '1px solid rgba(255,255,255,.1)', borderRadius: '50%',
+          boxShadow: '0 8px 32px rgba(0,0,0,.5)',
+          cursor: 'pointer', position: 'fixed',
         }}
       >
-        {/* halo */}
-        <span style={{
-          position: 'absolute', inset: -18, borderRadius: 999,
-          background: `radial-gradient(circle, rgba(${ACCENT_RGB},.26) 0%, rgba(${ACCENT_RGB},.1) 36%, transparent 70%)`,
-          animation: 'awFabHalo 2.8s ease-in-out infinite', pointerEvents: 'none',
-        }} />
-        {/* pulse ring */}
-        <span style={{
-          position: 'absolute', inset: 8, borderRadius: 16,
-          border: `1px solid rgba(${ACCENT_RGB},.22)`,
-          animation: 'awPulseRing 2.8s ease-out infinite', pointerEvents: 'none',
-        }} />
-        {/* rotating conic gradient */}
-        <span style={{
-          position: 'absolute', width: 120, height: 120, borderRadius: '50%',
-          background: `conic-gradient(from 0deg, rgba(${ACCENT_RGB},0) 0deg, rgba(${ACCENT_RGB},.22) 100deg, rgba(${ACCENT_RGB},0) 220deg, rgba(${ACCENT_RGB},.16) 320deg, rgba(${ACCENT_RGB},0) 360deg)`,
-          animation: 'awRotateSlow 8s linear infinite', pointerEvents: 'none',
-        }} />
-        {/* icon container */}
-        <div style={{
-          width: 44, height: 44, borderRadius: 14,
-          display: 'grid', placeItems: 'center',
-          background: 'linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015))',
-          border: '1px solid rgba(255,255,255,.07)',
-          boxShadow: `inset 0 1px 0 rgba(255,255,255,.06), 0 0 22px rgba(${ACCENT_RGB},.16)`,
-          animation: 'awGlow 2.8s ease-in-out infinite',
-          position: 'relative', zIndex: 1, color: ACCENT,
-        }}>
+        <span style={{ color: ACCENT }}>
           {open ? <CloseIcon /> : <PropertyIcon />}
-        </div>
+        </span>
       </button>
 
       {/* ── Panel ── */}
@@ -463,26 +433,17 @@ export function ChatWidget() {
           style={{
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
             borderRadius: '20px',
-            background: 'linear-gradient(180deg, rgba(14,14,16,.97) 0%, rgba(9,9,11,.985) 100%)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,.08)',
-            boxShadow: `0 30px 100px rgba(0,0,0,.74), 0 0 0 1px rgba(255,255,255,.02), 0 0 42px rgba(${ACCENT_RGB},.08)`,
+            background: '#111111',
+            border: '1px solid rgba(255,255,255,.1)',
+            boxShadow: '0 20px 60px rgba(0,0,0,.6)',
           }}
         >
-          <div className="aw-panel-glow" />
-
-          {/* accent top bar */}
-          <div style={{
-            position: 'relative', height: 1, flexShrink: 0, zIndex: 1,
-            background: `linear-gradient(90deg, rgba(${ACCENT_RGB},.94) 0%, rgba(${ACCENT_RGB},.18) 42%, transparent 100%)`,
-          }} />
-
           {/* ── Header ── */}
           <div style={{
             position: 'relative', padding: '13px 13px 12px',
             borderBottom: '1px solid rgba(255,255,255,.07)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012))',
+            background: 'transparent',
             zIndex: 1,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -537,10 +498,9 @@ export function ChatWidget() {
               <>
                 {/* Welcome card */}
                 <div className="aw-msg" style={{
-                  padding: '18px', borderRadius: '20px',
-                  background: 'linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.022))',
+                  padding: '18px', borderRadius: '16px',
+                  background: 'rgba(255,255,255,.03)',
                   border: '1px solid rgba(255,255,255,.07)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,.03)',
                 }}>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#fff', lineHeight: 1.25 }}>
                     Talk to <span style={{ color: ACCENT }}>Property AI</span>
@@ -596,11 +556,10 @@ export function ChatWidget() {
                   lineHeight: 1.68, color: 'rgba(255,255,255,.92)',
                   borderRadius: msg.role === 'user' ? '18px 18px 7px 18px' : '7px 18px 18px 18px',
                   ...(msg.role === 'user' ? {
-                    background: `linear-gradient(180deg, rgba(${ACCENT_RGB},.19), rgba(${ACCENT_RGB},.11))`,
-                    border: `1px solid rgba(${ACCENT_RGB},.25)`,
-                    boxShadow: `0 8px 24px rgba(${ACCENT_RGB},.11)`,
+                    background: `rgba(${ACCENT_RGB},.12)`,
+                    border: `1px solid rgba(${ACCENT_RGB},.2)`,
                   } : {
-                    background: 'linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.028))',
+                    background: 'rgba(255,255,255,.03)',
                     border: '1px solid rgba(255,255,255,.07)',
                   }),
                 }}>
@@ -619,7 +578,7 @@ export function ChatWidget() {
                 </span>
                 <div style={{
                   padding: '14px 16px', borderRadius: '7px 18px 18px 18px',
-                  background: 'linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.028))',
+                  background: 'rgba(255,255,255,.03)',
                   border: '1px solid rgba(255,255,255,.07)',
                   display: 'flex', gap: 5, alignItems: 'center',
                 }}>
@@ -637,14 +596,13 @@ export function ChatWidget() {
           </div>
 
           {/* ── Input ── */}
-          <div style={{ padding: '12px 14px 14px', background: 'rgba(0,0,0,.18)', borderTop: '1px solid rgba(255,255,255,.07)', zIndex: 1 }}>
+          <div style={{ padding: '12px 14px 14px', background: 'transparent', borderTop: '1px solid rgba(255,255,255,.07)', zIndex: 1 }}>
             <div
               className={`aw-input-wrap ${focused ? 'focused' : ''}`}
               style={{
                 display: 'flex', alignItems: 'flex-end', gap: 8, padding: '8px',
-                borderRadius: '18px', background: 'rgba(255,255,255,.03)',
+                borderRadius: '16px', background: '#0a0a0a',
                 border: '1px solid rgba(255,255,255,.08)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,.02)',
               }}
             >
               <textarea

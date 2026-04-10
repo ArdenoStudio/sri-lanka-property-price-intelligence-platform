@@ -23,15 +23,23 @@ function formatPrice(price: number | null): string {
 
 function getColor(count: number, maxCount: number): string {
   const ratio = count / maxCount;
-  if (ratio > 0.7) return '#e17055';
-  if (ratio > 0.4) return '#fdcb6e';
-  if (ratio > 0.2) return '#6c5ce7';
-  return '#a29bfe';
+  if (ratio > 0.72) return '#c4d7ff';
+  if (ratio > 0.45) return '#8fb7ff';
+  if (ratio > 0.22) return '#628fcf';
+  return '#4f617f';
 }
 
 function getRadius(count: number, maxCount: number): number {
   const ratio = count / maxCount;
-  return Math.max(8, Math.min(35, ratio * 40 + 8));
+  return Math.max(7, Math.min(27, ratio * 30 + 7));
+}
+
+function getFillOpacity(count: number, maxCount: number): number {
+  const ratio = count / maxCount;
+  if (ratio > 0.72) return 0.84;
+  if (ratio > 0.45) return 0.74;
+  if (ratio > 0.22) return 0.66;
+  return 0.58;
 }
 
 interface Props {
@@ -46,21 +54,21 @@ export function MapSection({ points, onDistrictSelect }: Props) {
     <section className="mt-4 mb-8">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold">Market Heatmap</h3>
-          <p className="text-xs text-text-secondary mt-0.5">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-1">Market Heatmap</p>
+          <p className="text-xs text-[#525252]">
             Circle size = listing volume. Click a district to filter.
           </p>
         </div>
         <div className="flex items-center gap-1.5">
           {([
-            { label: 'Low',  color: '#a29bfe' },
-            { label: 'Med',  color: '#6c5ce7' },
-            { label: 'High', color: '#fdcb6e' },
-            { label: 'Hot',  color: '#e17055' },
+            { label: 'Low',  color: '#4f617f' },
+            { label: 'Med',  color: '#628fcf' },
+            { label: 'High', color: '#8fb7ff' },
+            { label: 'Hot',  color: '#c4d7ff' },
           ] as { label: string; color: string }[]).map(({ label, color }) => (
             <span
               key={label}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-bg-card border border-border text-text-muted"
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold border border-white/[0.08] text-[#525252]"
             >
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
               {label}
@@ -69,7 +77,7 @@ export function MapSection({ points, onDistrictSelect }: Props) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border overflow-hidden" style={{ height: 420 }}>
+      <div className="card overflow-hidden" style={{ height: 420 }}>
         <MapContainer
           center={SL_CENTER}
           zoom={SL_ZOOM}
@@ -89,12 +97,26 @@ export function MapSection({ points, onDistrictSelect }: Props) {
               radius={getRadius(pt.count, maxCount)}
               pathOptions={{
                 fillColor: getColor(pt.count, maxCount),
-                fillOpacity: 0.7,
+                fillOpacity: getFillOpacity(pt.count, maxCount),
                 color: getColor(pt.count, maxCount),
-                weight: 2,
-                opacity: 0.9,
+                weight: 1.5,
+                opacity: 0.96,
               }}
               eventHandlers={{
+                mouseover: (e) => {
+                  (e.target as any).setStyle({
+                    weight: 2.2,
+                    fillOpacity: Math.min(0.92, getFillOpacity(pt.count, maxCount) + 0.1),
+                  });
+                  (e.target as any).openPopup();
+                },
+                mouseout: (e) => {
+                  (e.target as any).setStyle({
+                    weight: 1.5,
+                    fillOpacity: getFillOpacity(pt.count, maxCount),
+                  });
+                  (e.target as any).closePopup();
+                },
                 click: () => onDistrictSelect(pt.district),
               }}
             >

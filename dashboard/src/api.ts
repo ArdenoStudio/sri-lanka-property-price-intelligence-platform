@@ -96,8 +96,11 @@ export const getStats = () => fetchJSON<Stats>('/stats');
 export const getDistricts = (propertyType?: string) =>
   fetchJSON<District[]>('/districts', { property_type: propertyType });
 
-export const getHeatmap = (propertyType?: string) =>
-  fetchJSON<HeatmapResponse>('/heatmap', { property_type: propertyType });
+export const getHeatmap = (propertyType?: string, listingType?: string) =>
+  fetchJSON<HeatmapResponse>('/heatmap', {
+    property_type: propertyType,
+    listing_type: listingType,
+  });
 
 export const getListings = (params: {
   district?: string;
