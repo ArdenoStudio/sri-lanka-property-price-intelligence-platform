@@ -76,7 +76,7 @@ export function StatsBar({ stats }: Props) {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="mb-16"
+        className="mb-16 text-center flex flex-col items-center"
       >
         <p className="text-[11px] uppercase tracking-[0.22em] text-[#525252] mb-5">
           Sri Lanka · Property Intelligence
@@ -85,9 +85,8 @@ export function StatsBar({ stats }: Props) {
           Market<br />
           <span className="text-[#525252]">Intelligence</span>
         </h1>
-        <p className="mt-7 text-[#a3a3a3] text-[15px] max-w-md leading-relaxed">
-          Real-time property data across Sri Lanka.
-          Updated daily from 5,000+ listings.
+        <p className="mt-7 text-[#a3a3a3] text-[15px] leading-relaxed whitespace-nowrap">
+          Real-time property data across Sri Lanka. Updated daily from 5,000+ listings.
         </p>
       </motion.div>
 
