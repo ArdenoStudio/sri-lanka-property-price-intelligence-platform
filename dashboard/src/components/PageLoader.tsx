@@ -77,19 +77,29 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
       {/* Noise grain */}
       <div className="noise-overlay" aria-hidden="true" />
 
-      {/* Wordmark */}
-      <p
-        style={{
-          fontFamily: "'Geist', -apple-system, sans-serif",
-          fontSize: '22px',
-          fontWeight: 500,
-          color: '#f5f5f5',
-          letterSpacing: '-0.02em',
-          margin: 0,
-        }}
-      >
-        PropertyLK
-      </p>
+      {/* Logo and Wordmark */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+        <motion.img 
+          src="/favicon.svg" 
+          alt="PropertyLK Logo" 
+          style={{ width: '56px', height: '56px' }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        />
+        <p
+          style={{
+            fontFamily: "'Geist', -apple-system, sans-serif",
+            fontSize: '24px',
+            fontWeight: 600,
+            color: '#f5f5f5',
+            letterSpacing: '-0.02em',
+            margin: 0,
+          }}
+        >
+          PropertyLK
+        </p>
+      </div>
 
       {/* Progress line */}
       <div
@@ -115,23 +125,37 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
       </div>
 
       {/* Bottom label */}
-      <p
+      <div
         style={{
           position: 'absolute',
           bottom: '40px',
           left: '50%',
           transform: 'translateX(-50%)',
-          fontFamily: "'Geist', -apple-system, sans-serif",
-          fontSize: '10px',
-          color: '#2e2e2e',
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-          margin: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px'
         }}
       >
-        Sri Lanka Property Intelligence
-      </p>
+        <img 
+          src="/ardeno-logo.svg" 
+          alt="Ardeno Logo" 
+          style={{ height: '40px' }}
+        />
+        <p
+          style={{
+            fontFamily: "'Geist', -apple-system, sans-serif",
+            fontSize: '10px',
+            color: '#2e2e2e',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            margin: 0,
+          }}
+        >
+          Sri Lanka Property Intelligence
+        </p>
+      </div>
     </div>
   );
 };
