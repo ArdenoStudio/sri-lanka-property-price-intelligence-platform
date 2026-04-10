@@ -106,8 +106,14 @@ export function StatsBar({ stats }: Props) {
           }}
         >
           {/* ---- Hero card: Avg Price (span 2 on lg) ---- */}
-          <div className="bg-[#111111] p-8 lg:col-span-2 flex flex-col justify-between min-h-[180px]">
-            <div className="w-16 h-px bg-[#14b8a6] mb-8" />
+          <div className="relative bg-[#111111] p-8 lg:col-span-2 flex flex-col justify-between min-h-[180px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
+            {/* Teal top accent stripe */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#14b8a6] to-[#0d9488]" />
+            {/* Subtle radial teal glow — hero card only */}
+            <div
+              className="absolute top-0 left-0 w-full h-full pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse 60% 50% at 20% 0%, rgba(20,184,166,0.07) 0%, transparent 70%)' }}
+            />
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#525252] mb-3">
                 Average Price
@@ -117,12 +123,15 @@ export function StatsBar({ stats }: Props) {
               </p>
               {changePct !== null && (
                 <span
-                  className={`mt-4 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full num ${
+                  className={`mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full num ${
                     changePct >= 0
                       ? 'bg-emerald-950 text-emerald-400'
                       : 'bg-red-950 text-red-400'
                   }`}
                 >
+                  <span className="text-[14px] leading-none" aria-hidden="true">
+                    {changePct >= 0 ? '▲' : '▼'}
+                  </span>
                   {changePct >= 0 ? '+' : ''}{changePct}% vs last month
                 </span>
               )}
@@ -130,8 +139,7 @@ export function StatsBar({ stats }: Props) {
           </div>
 
           {/* ---- Total Listings ---- */}
-          <div className="bg-[#111111] p-8 flex flex-col justify-between min-h-[140px]">
-            <div className="w-8 h-px bg-white/[0.15] mb-8" />
+          <div className="relative bg-[#111111] p-8 flex flex-col justify-between min-h-[140px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#525252] mb-3">
                 Listings
@@ -146,8 +154,7 @@ export function StatsBar({ stats }: Props) {
           </div>
 
           {/* ---- Districts ---- */}
-          <div className="bg-[#111111] p-8 flex flex-col justify-between min-h-[140px]">
-            <div className="w-8 h-px bg-white/[0.15] mb-8" />
+          <div className="relative bg-[#111111] p-8 flex flex-col justify-between min-h-[140px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#525252] mb-3">
                 Districts
@@ -163,9 +170,19 @@ export function StatsBar({ stats }: Props) {
         </div>
 
         {/* Subline */}
-        <p className="text-[#2e2e2e] text-[11px] mt-4 leading-relaxed">
+        <p className="text-[#444444] text-[11px] mt-4 leading-relaxed flex items-center gap-2 flex-wrap">
           {stats?.total_listings?.toLocaleString() ?? '...'} listings across {typeBreakdown}
-          {stats?.last_updated && ` · Updated ${formatDate(stats.last_updated)}`}
+          {stats?.last_updated && (
+            <>
+              <span className="text-[#444444]"> · Updated {formatDate(stats.last_updated)}</span>
+              <span className="inline-flex items-center gap-1.5 shrink-0">
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-dot shrink-0"
+                  aria-label="Live data"
+                />
+              </span>
+            </>
+          )}
         </p>
       </motion.div>
     </section>
