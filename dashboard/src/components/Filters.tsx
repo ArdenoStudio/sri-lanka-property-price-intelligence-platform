@@ -267,43 +267,60 @@ export function Filters({
   return (
     <div className="mb-8">
       {/* ---- Horizontal filter bar ---- */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 flex-wrap sm:flex-nowrap">
+      <div className="flex items-center gap-2 pb-1 flex-wrap sm:flex-nowrap">
 
-        {/* Type pills */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {PROPERTY_TYPES.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => onTypeChange(opt.value)}
-              className={`px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer border-none ${
-                selectedType === opt.value
-                  ? 'bg-white text-black'
-                  : 'bg-transparent text-[#525252] hover:text-white'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        {/* Pills — scoped overflow so dropdowns outside aren't clipped */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-shrink-0">
+          {/* Type pills */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {PROPERTY_TYPES.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => onTypeChange(opt.value)}
+                className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap cursor-pointer border-none transition-colors ${
+                  selectedType === opt.value
+                    ? 'text-black'
+                    : 'bg-transparent text-[#525252] hover:text-white'
+                }`}
+              >
+                {selectedType === opt.value && (
+                  <motion.span
+                    layoutId="active-type-pill"
+                    className="absolute inset-0 bg-white rounded-full"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{opt.label}</span>
+              </button>
+            ))}
+          </div>
 
-        {/* Separator */}
-        <div className="w-px h-4 bg-white/[0.1] flex-shrink-0 mx-1" />
+          {/* Separator */}
+          <div className="w-px h-4 bg-white/[0.1] flex-shrink-0 mx-1" />
 
-        {/* Listing type toggle */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {LISTING_TYPES.filter(t => t.value !== '').map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => onListingTypeChange(listingType === opt.value ? '' : opt.value)}
-              className={`px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer border-none ${
-                listingType === opt.value
-                  ? 'bg-white text-black'
-                  : 'bg-transparent text-[#525252] hover:text-white'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+          {/* Listing type toggle */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {LISTING_TYPES.filter(t => t.value !== '').map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => onListingTypeChange(listingType === opt.value ? '' : opt.value)}
+                className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap cursor-pointer border-none transition-colors ${
+                  listingType === opt.value
+                    ? 'text-black'
+                    : 'bg-transparent text-[#525252] hover:text-white'
+                }`}
+              >
+                {listingType === opt.value && (
+                  <motion.span
+                    layoutId="active-listing-pill"
+                    className="absolute inset-0 bg-white rounded-full"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{opt.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Separator */}
