@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0319" />
+      <stop offset="100%" stop-color="#14062a" />
+    </linearGradient>
+
+    <!-- Roof Gradient -->
+    <linearGradient id="roofGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#863bff" />
+      <stop offset="50%" stop-color="#a865ff" />
+      <stop offset="100%" stop-color="#e22aff" />
+    </linearGradient>
+
+    <!-- Data Bars Gradients -->
+    <linearGradient id="bar1Grad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#47bfff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#47bfff" />
+    </linearGradient>
+
+    <linearGradient id="bar2Grad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#00f3ff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#00f3ff" />
+    </linearGradient>
+
+    <linearGradient id="bar3Grad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#e22aff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#e22aff" />
+    </linearGradient>
+
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-opacity="0.4" flood-color="#863bff" />
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.6" flood-color="#e22aff" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="128" fill="url(#bgGlow)" />
+  <rect width="508" height="508" x="2" y="2" rx="126" stroke="#ffffff" stroke-opacity="0.05" stroke-width="4" />
+  
+  <g transform="translate(0, 16)">
+    <!-- Data Bars -->
+    <rect x="156" y="260" width="48" height="120" rx="24" fill="url(#bar1Grad)" />
+    <rect x="232" y="190" width="48" height="190" rx="24" fill="url(#bar2Grad)" />
+    <rect x="308" y="120" width="48" height="260" rx="24" fill="url(#bar3Grad)" />
+
+    <!-- Sleek House Roof Overlay -->
+    <path d="M 100 240 L 256 120 L 412 240" fill="none" stroke="url(#roofGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)" />
+  </g>
+</svg>

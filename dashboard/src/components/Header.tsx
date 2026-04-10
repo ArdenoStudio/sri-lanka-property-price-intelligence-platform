@@ -24,7 +24,6 @@ export function Header() {
   const paddingX     = useTransform(p, [0, 1], [24, 20]);
   const paddingY     = useTransform(p, [0, 1], [14, 10]);
   const logoSize     = useTransform(p, [0, 1], [28, 24]);
-  const logoRadius   = useTransform(p, [0, 1], [9,   8]);
 
   const taglineOpacity = useTransform(p, [0, 0.38], [1, 0],   { clamp: true });
   const taglineWidth   = useTransform(p, [0, 0.72], [132, 0],  { clamp: true });
@@ -52,12 +51,12 @@ export function Header() {
         >
           {/* ── Logo ─────────────────────────────── */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <motion.div
-              className="bg-[#14b8a6]/15 border border-[#14b8a6]/25 flex items-center justify-center shrink-0"
-              style={{ width: logoSize, height: logoSize, borderRadius: logoRadius }}
-            >
-              <img src="/favicon.svg" alt="PropertyLK" className="w-3.5 h-3.5" />
-            </motion.div>
+            <motion.img
+              src="/favicon.svg"
+              alt="PropertyLK"
+              className="shrink-0 drop-shadow-sm"
+              style={{ width: logoSize, height: logoSize }}
+            />
             <span className="text-[14px] font-semibold text-white tracking-tight leading-none whitespace-nowrap">
               PropertyLK
             </span>
