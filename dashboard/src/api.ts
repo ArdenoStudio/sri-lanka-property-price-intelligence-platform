@@ -107,6 +107,7 @@ export const getListings = (params: {
   district?: string;
   property_type?: string;
   listing_type?: string;
+  source?: string;
   min_price?: number;
   max_price?: number;
   min_bedrooms?: number;

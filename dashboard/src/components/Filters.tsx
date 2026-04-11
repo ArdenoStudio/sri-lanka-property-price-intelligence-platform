@@ -435,8 +435,17 @@ interface Props {
   onMaxSizeSqftChange: (v: number | '') => void;
   sortBy: string;
   onSortChange: (s: string) => void;
+  selectedSource: string;
+  onSourceChange: (s: string) => void;
   totalResults: number;
 }
+
+const SOURCES = [
+  { value: '',        label: 'All Sources' },
+  { value: 'ikman',  label: 'ikman.lk' },
+  { value: 'lpw',    label: 'LPW' },
+  { value: 'lamudi', label: 'house.lk' },
+];
 
 export function Filters({
   districts, selectedDistrict, onDistrictChange,
@@ -445,10 +454,10 @@ export function Filters({
   minBeds, onMinBedsChange, minBaths, onMinBathsChange,
   minSizePerches, maxSizePerches, onMinSizePerchesChange, onMaxSizePerchesChange,
   minSizeSqft, maxSizeSqft, onMinSizeSqftChange, onMaxSizeSqftChange,
-  sortBy, onSortChange, totalResults,
+  sortBy, onSortChange, selectedSource, onSourceChange, totalResults,
 }: Props) {
   const hasFilters = !!(
-    selectedDistrict || selectedType || listingType ||
+    selectedDistrict || selectedType || listingType || selectedSource ||
     minPrice !== '' || maxPrice !== '' ||
     minBeds > 0 || minBaths > 0 ||
     minSizePerches !== '' || maxSizePerches !== '' ||
@@ -461,7 +470,7 @@ export function Filters({
   ];
 
   const clearAll = () => {
-    onDistrictChange(''); onTypeChange(''); onListingTypeChange('');
+    onDistrictChange(''); onTypeChange(''); onListingTypeChange(''); onSourceChange('');
     onMinPriceChange(''); onMaxPriceChange('');
     onMinBedsChange(0);   onMinBathsChange(0);
     onMinSizePerchesChange(''); onMaxSizePerchesChange('');
@@ -515,6 +524,9 @@ export function Filters({
         {/* ── Dropdowns ── */}
         <MinimalSelect options={districtOptions} value={selectedDistrict}
           onChange={onDistrictChange} prefix="District" />
+
+        <MinimalSelect options={SOURCES} value={selectedSource}
+          onChange={onSourceChange} prefix="Source" />
 
         <PriceDropdown minPrice={minPrice} maxPrice={maxPrice}
           onMinPriceChange={onMinPriceChange} onMaxPriceChange={onMaxPriceChange} />

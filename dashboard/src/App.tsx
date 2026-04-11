@@ -35,6 +35,7 @@ function readURLFilters() {
     minSizeSqft:    n('min_size_sqft'),
     maxSizeSqft:    n('max_size_sqft'),
     sortBy:         p.get('sort') || 'newest',
+    source:         p.get('source') || '',
   };
 }
 
@@ -63,6 +64,7 @@ function App() {
   const [minSizeSqft, setMinSizeSqft] = useState<number | ''>(initialFilters.minSizeSqft);
   const [maxSizeSqft, setMaxSizeSqft] = useState<number | ''>(initialFilters.maxSizeSqft);
   const [sortBy, setSortBy] = useState(initialFilters.sortBy);
+  const [selectedSource, setSelectedSource] = useState(initialFilters.source);
   const [page, setPage] = useState(0);
 
   // Keep URL in sync with filters
@@ -80,9 +82,10 @@ function App() {
     if (minSizeSqft !== '') p.set('min_size_sqft', String(minSizeSqft));
     if (maxSizeSqft !== '') p.set('max_size_sqft', String(maxSizeSqft));
     if (sortBy && sortBy !== 'newest') p.set('sort', sortBy);
+    if (selectedSource) p.set('source', selectedSource);
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy]);
+  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource]);
 
   const PAGE_SIZE = 24;
 
@@ -113,6 +116,7 @@ function App() {
         district:          selectedDistrict || undefined,
         property_type:     selectedType || undefined,
         listing_type:      listingType || undefined,
+        source:            selectedSource || undefined,
         min_price:         minPrice !== '' ? minPrice : undefined,
         max_price:         maxPrice !== '' ? maxPrice : undefined,
         min_bedrooms:      minBeds > 0  ? minBeds  : undefined,
@@ -131,7 +135,7 @@ function App() {
       setListings([]);
     }
     if (!isSilent) setListingsLoading(false);
-  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, page]);
+  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource, page]);
 
   // Initial data load + polling
   const refreshStatsAndDistricts = useCallback(async () => {
@@ -166,7 +170,7 @@ function App() {
   // Reset page on filter change
   useEffect(() => {
     setPage(0);
-  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy]);
+  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource]);
 
   return (
     <>
@@ -231,6 +235,8 @@ function App() {
                   onMaxSizeSqftChange={setMaxSizeSqft}
                   sortBy={sortBy}
                   onSortChange={setSortBy}
+                  selectedSource={selectedSource}
+                  onSourceChange={setSelectedSource}
                   totalResults={totalListings}
                 />
 

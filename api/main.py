@@ -696,6 +696,7 @@ def get_listings(
     district: Optional[str] = None,
     property_type: Optional[str] = None,
     listing_type: Optional[str] = None,
+    source: Optional[str] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
     min_bedrooms: Optional[int] = None,
@@ -729,6 +730,8 @@ def get_listings(
             query = query.filter(Listing.property_type == property_type)
         if listing_type:
             query = query.filter(Listing.listing_type == listing_type)
+        if source:
+            query = query.filter(Listing.source == source)
         if min_price is not None:
             query = query.filter(Listing.price_lkr >= min_price)
         if max_price is not None:
