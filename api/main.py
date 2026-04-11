@@ -698,6 +698,12 @@ def get_listings(
     listing_type: Optional[str] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
+    min_bedrooms: Optional[int] = None,
+    min_bathrooms: Optional[int] = None,
+    min_size_perches: Optional[float] = None,
+    max_size_perches: Optional[float] = None,
+    min_size_sqft: Optional[float] = None,
+    max_size_sqft: Optional[float] = None,
     sort: str = Query("newest", pattern="^(newest|price_asc|price_desc)$"),
     limit: int = Query(30, le=100),
     offset: int = Query(0, ge=0),
@@ -728,6 +734,18 @@ def get_listings(
             query = query.filter(Listing.price_lkr >= min_price)
         if max_price is not None:
             query = query.filter(Listing.price_lkr <= max_price)
+        if min_bedrooms is not None:
+            query = query.filter(Listing.bedrooms >= min_bedrooms)
+        if min_bathrooms is not None:
+            query = query.filter(Listing.bathrooms >= min_bathrooms)
+        if min_size_perches is not None:
+            query = query.filter(Listing.size_perches >= min_size_perches)
+        if max_size_perches is not None:
+            query = query.filter(Listing.size_perches <= max_size_perches)
+        if min_size_sqft is not None:
+            query = query.filter(Listing.size_sqft >= min_size_sqft)
+        if max_size_sqft is not None:
+            query = query.filter(Listing.size_sqft <= max_size_sqft)
 
         total = query.count()
 
@@ -772,6 +790,7 @@ def get_listings(
                     "property_type": l.property_type,
                     "listing_type": l.listing_type,
                     "size_perches": float(l.size_perches) if l.size_perches else None,
+                    "size_sqft": float(l.size_sqft) if l.size_sqft else None,
                     "bedrooms": l.bedrooms,
                     "bathrooms": l.bathrooms,
                     "url": raw_url,

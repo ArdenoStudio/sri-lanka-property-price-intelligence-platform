@@ -21,13 +21,20 @@ import { Analytics } from '@vercel/analytics/react';
 
 function readURLFilters() {
   const p = new URLSearchParams(window.location.search);
+  const n = (k: string) => p.get(k) ? Number(p.get(k)) : ('' as number | '');
   return {
-    district: p.get('district') || '',
-    type: p.get('type') || '',
-    listingType: p.get('listing_type') || '',
-    minPrice: p.get('min_price') ? Number(p.get('min_price')) : ('' as number | ''),
-    maxPrice: p.get('max_price') ? Number(p.get('max_price')) : ('' as number | ''),
-    sortBy: p.get('sort') || 'newest',
+    district:       p.get('district') || '',
+    type:           p.get('type') || '',
+    listingType:    p.get('listing_type') || '',
+    minPrice:       n('min_price'),
+    maxPrice:       n('max_price'),
+    minBeds:        p.get('min_beds')  ? Number(p.get('min_beds'))  : 0,
+    minBaths:       p.get('min_baths') ? Number(p.get('min_baths')) : 0,
+    minSizePerches: n('min_size_p'),
+    maxSizePerches: n('max_size_p'),
+    minSizeSqft:    n('min_size_sqft'),
+    maxSizeSqft:    n('max_size_sqft'),
+    sortBy:         p.get('sort') || 'newest',
   };
 }
 
@@ -49,6 +56,12 @@ function App() {
   const [listingType, setListingType] = useState(initialFilters.listingType);
   const [minPrice, setMinPrice] = useState<number | ''>(initialFilters.minPrice);
   const [maxPrice, setMaxPrice] = useState<number | ''>(initialFilters.maxPrice);
+  const [minBeds, setMinBeds] = useState(initialFilters.minBeds);
+  const [minBaths, setMinBaths] = useState(initialFilters.minBaths);
+  const [minSizePerches, setMinSizePerches] = useState<number | ''>(initialFilters.minSizePerches);
+  const [maxSizePerches, setMaxSizePerches] = useState<number | ''>(initialFilters.maxSizePerches);
+  const [minSizeSqft, setMinSizeSqft] = useState<number | ''>(initialFilters.minSizeSqft);
+  const [maxSizeSqft, setMaxSizeSqft] = useState<number | ''>(initialFilters.maxSizeSqft);
   const [sortBy, setSortBy] = useState(initialFilters.sortBy);
   const [page, setPage] = useState(0);
 
@@ -60,10 +73,16 @@ function App() {
     if (listingType) p.set('listing_type', listingType);
     if (minPrice !== '') p.set('min_price', String(minPrice));
     if (maxPrice !== '') p.set('max_price', String(maxPrice));
+    if (minBeds > 0) p.set('min_beds', String(minBeds));
+    if (minBaths > 0) p.set('min_baths', String(minBaths));
+    if (minSizePerches !== '') p.set('min_size_p', String(minSizePerches));
+    if (maxSizePerches !== '') p.set('max_size_p', String(maxSizePerches));
+    if (minSizeSqft !== '') p.set('min_size_sqft', String(minSizeSqft));
+    if (maxSizeSqft !== '') p.set('max_size_sqft', String(maxSizeSqft));
     if (sortBy && sortBy !== 'newest') p.set('sort', sortBy);
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, sortBy]);
+  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy]);
 
   const PAGE_SIZE = 24;
 
@@ -80,19 +99,31 @@ function App() {
     });
   };
 
+  // Clear size filters when property type changes (sqft vs perches units are incompatible)
+  useEffect(() => {
+    setMinSizePerches(''); setMaxSizePerches('');
+    setMinSizeSqft('');    setMaxSizeSqft('');
+  }, [selectedType]);
+
   // Listings load (depends on filters)
   const loadListings = useCallback(async (isSilent = false) => {
     if (!isSilent) setListingsLoading(true);
     try {
       const res = await getListings({
-        district: selectedDistrict || undefined,
-        property_type: selectedType || undefined,
-        listing_type: listingType || undefined,
-        min_price: minPrice !== '' ? minPrice : undefined,
-        max_price: maxPrice !== '' ? maxPrice : undefined,
-        sort: sortBy,
-        limit: PAGE_SIZE,
-        offset: page * PAGE_SIZE,
+        district:          selectedDistrict || undefined,
+        property_type:     selectedType || undefined,
+        listing_type:      listingType || undefined,
+        min_price:         minPrice !== '' ? minPrice : undefined,
+        max_price:         maxPrice !== '' ? maxPrice : undefined,
+        min_bedrooms:      minBeds > 0  ? minBeds  : undefined,
+        min_bathrooms:     minBaths > 0 ? minBaths : undefined,
+        min_size_perches:  minSizePerches !== '' ? minSizePerches : undefined,
+        max_size_perches:  maxSizePerches !== '' ? maxSizePerches : undefined,
+        min_size_sqft:     minSizeSqft !== '' ? minSizeSqft : undefined,
+        max_size_sqft:     maxSizeSqft !== '' ? maxSizeSqft : undefined,
+        sort:              sortBy,
+        limit:             PAGE_SIZE,
+        offset:            page * PAGE_SIZE,
       });
       setListings(res.listings);
       setTotalListings(res.total);
@@ -100,7 +131,7 @@ function App() {
       setListings([]);
     }
     if (!isSilent) setListingsLoading(false);
-  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, sortBy, page]);
+  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, page]);
 
   // Initial data load + polling
   const refreshStatsAndDistricts = useCallback(async () => {
@@ -135,7 +166,7 @@ function App() {
   // Reset page on filter change
   useEffect(() => {
     setPage(0);
-  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, sortBy]);
+  }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy]);
 
   return (
     <>
@@ -186,6 +217,18 @@ function App() {
                   onMinPriceChange={setMinPrice}
                   maxPrice={maxPrice}
                   onMaxPriceChange={setMaxPrice}
+                  minBeds={minBeds}
+                  onMinBedsChange={setMinBeds}
+                  minBaths={minBaths}
+                  onMinBathsChange={setMinBaths}
+                  minSizePerches={minSizePerches}
+                  maxSizePerches={maxSizePerches}
+                  onMinSizePerchesChange={setMinSizePerches}
+                  onMaxSizePerchesChange={setMaxSizePerches}
+                  minSizeSqft={minSizeSqft}
+                  maxSizeSqft={maxSizeSqft}
+                  onMinSizeSqftChange={setMinSizeSqft}
+                  onMaxSizeSqftChange={setMaxSizeSqft}
                   sortBy={sortBy}
                   onSortChange={setSortBy}
                   totalResults={totalListings}

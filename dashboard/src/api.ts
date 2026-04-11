@@ -50,6 +50,7 @@ export interface Listing {
   property_type: string | null;
   listing_type: string | null;
   size_perches: number | null;
+  size_sqft: number | null;
   bedrooms: number | null;
   bathrooms: number | null;
   url: string | null;
@@ -108,6 +109,12 @@ export const getListings = (params: {
   listing_type?: string;
   min_price?: number;
   max_price?: number;
+  min_bedrooms?: number;
+  min_bathrooms?: number;
+  min_size_perches?: number;
+  max_size_perches?: number;
+  min_size_sqft?: number;
+  max_size_sqft?: number;
   sort?: string;
   limit?: number;
   offset?: number;
