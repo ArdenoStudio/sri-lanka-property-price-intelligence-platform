@@ -187,7 +187,7 @@ class IkmanScraper:
                             # Property type inference
                             combined = (title + " " + raw_meta).lower()
                             property_type = 'land'
-                            if 'house' in combined:
+                            if any(w in combined for w in ('house', 'bungalow', 'villa', 'cottage', 'annexe', 'annex', 'townhouse', 'holiday home')):
                                 property_type = 'house'
                             elif 'apartment' in combined or 'flat' in combined:
                                 property_type = 'apartment'
@@ -371,7 +371,8 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
                                 property_type = override_type
                             else:
                                 property_type = 'land'
-                                if 'house' in combined: property_type = 'house'
+                                if any(w in combined for w in ('house', 'bungalow', 'villa', 'cottage', 'annexe', 'annex', 'townhouse', 'holiday home')):
+                                    property_type = 'house'
                                 elif 'apartment' in combined or 'flat' in combined: property_type = 'apartment'
                                 elif 'commercial' in combined: property_type = 'commercial'
                             if override_listing:

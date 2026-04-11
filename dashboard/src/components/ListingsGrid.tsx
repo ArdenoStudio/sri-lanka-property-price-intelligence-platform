@@ -1,5 +1,34 @@
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+const MORPH_TRANSITION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] } as const;
+
+function PlusCheckIcon({ checked }: { checked: boolean }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Horizontal arm → short check arm */}
+      <motion.line
+        animate={checked
+          ? { x1: 3, y1: 9.5, x2: 6.5, y2: 12 }
+          : { x1: 3,   y1: 7,   x2: 11,  y2: 7  }}
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        transition={MORPH_TRANSITION}
+      />
+      {/* Vertical arm → long diagonal check arm */}
+      <motion.line
+        animate={checked
+          ? { x1: 6.5, y1: 12, x2: 12, y2: 3 }
+          : { x1: 7,   y1: 3,  x2: 7,  y2: 11 }}
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        transition={MORPH_TRANSITION}
+      />
+    </svg>
+  );
+}
 import type { Listing } from '../api';
 
 function formatNum(p: number): string {
@@ -104,10 +133,10 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                         ? 'bg-[#14b8a6] text-black border-[#14b8a6] opacity-100'
                         : 'text-[#525252] border-white/[0.12] hover:text-white hover:border-white/25 bg-transparent'
                     }`}
-                    whileTap={{ scale: 0.9 }}
+                    whileTap={{ scale: 0.88 }}
                     aria-label={isCompared ? 'Remove from comparison' : 'Add to comparison'}
                   >
-                    {isCompared ? '✓' : '+'}
+                    <PlusCheckIcon checked={isCompared} />
                   </motion.button>
                 </div>
 

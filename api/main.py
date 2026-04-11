@@ -630,6 +630,7 @@ def list_districts(
 @app.get("/heatmap")
 def get_heatmap(
     property_type: Optional[str] = None,
+    listing_type: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     has_districts = db.query(func.count(Listing.id)).filter(Listing.district.isnot(None)).scalar() > 0
@@ -644,10 +645,14 @@ def get_heatmap(
         ).filter(
             Listing.district.isnot(None),
             Listing.is_outlier == False,
+            Listing.price_lkr.isnot(None),
+            Listing.price_lkr > 0,
         )
 
         if property_type:
             query = query.filter(Listing.property_type == property_type)
+        if listing_type:
+            query = query.filter(Listing.listing_type == listing_type)
 
         results = query.group_by(Listing.district).all()
 

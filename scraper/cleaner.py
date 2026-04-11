@@ -1,4 +1,5 @@
 import re
+import time
 import structlog
 from typing import Dict, Optional, Tuple
 from db.models import RawListing, Listing, Location
@@ -550,6 +551,19 @@ class DataCleaner:
         
         return None, None
 
+    def parse_bedrooms(self, title: str, raw_size: str = "") -> Optional[int]:
+        """Extract bedroom count from title or raw_size string."""
+        text = (str(title or "") + " " + str(raw_size or "")).lower()
+        # "3 bedroom", "3 bed", "3br", "3bhk", "3 bedroomed"
+        m = re.search(r"(\d+)\s*(?:bed(?:room(?:ed)?)?s?|br\b|bhk)", text)
+        if m:
+            n = int(m.group(1))
+            return n if 1 <= n <= 20 else None
+        # "studio" → 1
+        if "studio" in text:
+            return 1
+        return None
+
     def parse_size(self, raw_size: str, title: str = "") -> Tuple[Optional[float], Optional[float]]:
         """Parses size from raw_size or title. Returns (perches, sqft)"""
         text_to_search = (str(raw_size or "") + " " + str(title or "")).lower().strip()
@@ -693,6 +707,7 @@ class DataCleaner:
                 # 1. Basic Cleaning
                 price_lkr, price_per_perch = self.parse_price(raw.raw_price)
                 size_perches, size_sqft = self.parse_size(raw.raw_size, raw.title)
+                bedrooms = self.parse_bedrooms(raw.title, raw.raw_size)
                 district, city, confidence = self.parse_location(raw.raw_location, raw.title)
 
                 if not price_lkr and price_per_perch and size_perches:
@@ -714,7 +729,7 @@ class DataCleaner:
                     raw_location=raw.raw_location, district=district, city=city,
                     geocode_confidence=confidence, property_type=raw.property_type,
                     listing_type=raw.listing_type, size_perches=size_perches,
-                    size_sqft=size_sqft, raw_id=raw.id,
+                    size_sqft=size_sqft, bedrooms=bedrooms, raw_id=raw.id,
                     location_id=location_id, lat=lat, lng=lng,
                 )
                 self.detect_outliers(dummy)
@@ -735,7 +750,7 @@ class DataCleaner:
                     price_per_sqft=None, raw_location=raw.raw_location,
                     district=district, city=city, geocode_confidence=confidence,
                     property_type=raw.property_type, listing_type=raw.listing_type,
-                    size_perches=size_perches, size_sqft=size_sqft,
+                    size_perches=size_perches, size_sqft=size_sqft, bedrooms=bedrooms,
                     location_id=location_id, lat=lat, lng=lng,
                     is_outlier=dummy.is_outlier, outlier_reason=dummy.outlier_reason,
                     is_duplicate=dummy.is_duplicate, duplicate_of=dummy.duplicate_of,
@@ -751,8 +766,21 @@ class DataCleaner:
                         "city": city,
                     }
                 )
-                self.db.execute(stmt)
-                raw.is_processed = True
+                # Retry once on statement timeout before giving up
+                for attempt in range(2):
+                    try:
+                        self.db.execute(stmt)
+                        raw.is_processed = True
+                        break
+                    except Exception as exec_err:
+                        if "QueryCanceled" in type(exec_err).__name__ or "canceling statement" in str(exec_err):
+                            self.db.rollback()
+                            self.db.expire_all()
+                            if attempt == 0:
+                                log.warning("clean_timeout_retry", raw_id=raw.id)
+                                time.sleep(2)
+                                continue
+                        raise
 
             except Exception as e:
                 log.error("clean_error", raw_id=raw.id, error=str(e))

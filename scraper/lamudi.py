@@ -6,6 +6,7 @@ from datetime import datetime
 import structlog
 from db.models import RawListing, ListingSnapshot, ScrapeRun
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from scraper.utils import build_snapshot_fingerprint
 from playwright.async_api import async_playwright
@@ -256,8 +257,9 @@ class LamudiScraper:
                         "raw_size": item.get("raw_size"),
                     }
                 )
-                result = self.db.execute(raw_stmt)
-                if result.rowcount and result.rowcount > 0:
+                result = self.db.execute(raw_stmt.returning(text("(xmax = 0) AS is_new")))
+                row = result.fetchone()
+                if row and row.is_new:
                     new_count += 1
             except Exception as e:
                 log.error("houseLk_upsert_error", source_id=item.get("source_id"), error=str(e))

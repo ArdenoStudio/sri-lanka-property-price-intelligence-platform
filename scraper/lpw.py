@@ -6,6 +6,7 @@ from datetime import datetime
 import structlog
 from db.models import RawListing, ListingSnapshot
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from scraper.utils import build_snapshot_fingerprint
 
@@ -215,8 +216,9 @@ class LPWScraper:
                                     }
                                 )
 
-                                res = self.db.execute(stmt)
-                                if res.rowcount and res.rowcount > 0:
+                                res = self.db.execute(stmt.returning(text("(xmax = 0) AS is_new")))
+                                row = res.fetchone()
+                                if row and row.is_new:
                                     total_new += 1
                                 total_found += 1
 
