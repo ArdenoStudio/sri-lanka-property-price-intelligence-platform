@@ -158,10 +158,18 @@ class LamudiScraper:
                     type_class = await type_el.get_attribute("class") or ""
                     type_text = (await type_el.inner_text()).strip()
                     # Prefer class-based detection (more reliable than text)
+                    raw_t = None
                     for t in ("land", "villa", "apartment", "commercial", "hotel", "house"):
                         if t in type_class.lower() or t in type_text.lower():
-                            pt = t
+                            raw_t = t
                             break
+                    # Normalise to our 4 canonical types
+                    if raw_t == "villa":
+                        pt = "house"
+                    elif raw_t == "hotel":
+                        pt = "commercial"
+                    elif raw_t:
+                        pt = raw_t
 
                 # Size
                 size_el = await card.query_selector(".infosize")

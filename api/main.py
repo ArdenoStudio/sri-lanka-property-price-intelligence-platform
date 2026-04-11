@@ -719,7 +719,6 @@ def get_listings(
 
         if district:
             # Robust filter: check both clean district field and raw title
-            from sqlalchemy import or_
             query = query.filter(
                 or_(
                     Listing.district == district,
