@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import Optional
 import structlog
 from playwright.async_api import async_playwright
-from sqlalchemy import text
+from sqlalchemy import text, or_, and_
 from sqlalchemy.orm import Session
 from db.models import Listing, RawListing
 
@@ -338,11 +338,16 @@ class DetailEnricher:
             .join(RawListing, Listing.raw_id == RawListing.id)
             .filter(
                 Listing.is_outlier == False,
-                Listing.size_perches.is_(None),
-                Listing.size_sqft.is_(None),
                 Listing.enrichment_attempted_at.is_(None),
                 RawListing.url.isnot(None),
                 RawListing.source.in_(["ikman", "lpw", "lamudi"]),
+                or_(
+                    and_(Listing.size_perches.is_(None), Listing.size_sqft.is_(None)),
+                    and_(
+                        Listing.bedrooms.is_(None),
+                        Listing.property_type.in_(["house", "apartment"]),
+                    ),
+                ),
             )
             .order_by(Listing.first_seen_at.desc())
             .limit(self.max_per_run)
@@ -363,14 +368,14 @@ class DetailEnricher:
         semaphore = asyncio.Semaphore(concurrency)
 
         async with async_playwright() as pw:
-            browser = await pw.chromium.launch(
-                headless=True,
-                args=["--no-sandbox", "--disable-setuid-sandbox",
-                      "--disable-blink-features=AutomationControlled"],
-            )
+            _args = ["--no-sandbox", "--disable-setuid-sandbox",
+                     "--disable-blink-features=AutomationControlled"]
+            browser_ikman = await pw.chromium.launch(headless=False, args=_args)
+            browser_other = await pw.chromium.launch(headless=True,  args=_args)
 
             async def visit(listing_id: int, url: str, source: str):
                 async with semaphore:
+                    browser = browser_ikman if source == "ikman" else browser_other
                     page = await browser.new_page(
                         user_agent=random.choice(USER_AGENTS),
                         viewport={"width": 1280, "height": 800},
@@ -410,7 +415,8 @@ class DetailEnricher:
                         await page.close()
 
             await asyncio.gather(*[visit(lid, url, src) for lid, url, src in raw_rows])
-            await browser.close()
+            await browser_ikman.close()
+            await browser_other.close()
 
         # Phase 3: write results — short-lived DB transactions, no Playwright overhead
         # Also stamp enrichment_attempted_at on every listing we visited (success OR failure)
@@ -506,7 +512,7 @@ class DetailEnricher:
 
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(
-                headless=True,
+                headless=False,
                 args=["--no-sandbox", "--disable-setuid-sandbox",
                       "--disable-blink-features=AutomationControlled"],
             )

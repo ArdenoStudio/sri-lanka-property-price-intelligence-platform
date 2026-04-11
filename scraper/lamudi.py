@@ -6,6 +6,7 @@ from datetime import datetime
 import structlog
 from db.models import RawListing, ListingSnapshot, ScrapeRun
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from scraper.utils import build_snapshot_fingerprint
 from playwright.async_api import async_playwright
@@ -157,10 +158,18 @@ class LamudiScraper:
                     type_class = await type_el.get_attribute("class") or ""
                     type_text = (await type_el.inner_text()).strip()
                     # Prefer class-based detection (more reliable than text)
+                    raw_t = None
                     for t in ("land", "villa", "apartment", "commercial", "hotel", "house"):
                         if t in type_class.lower() or t in type_text.lower():
-                            pt = t
+                            raw_t = t
                             break
+                    # Normalise to our 4 canonical types
+                    if raw_t == "villa":
+                        pt = "house"
+                    elif raw_t == "hotel":
+                        pt = "commercial"
+                    elif raw_t:
+                        pt = raw_t
 
                 # Size
                 size_el = await card.query_selector(".infosize")
@@ -256,8 +265,9 @@ class LamudiScraper:
                         "raw_size": item.get("raw_size"),
                     }
                 )
-                result = self.db.execute(raw_stmt)
-                if result.rowcount and result.rowcount > 0:
+                result = self.db.execute(raw_stmt.returning(text("(xmax = 0) AS is_new")))
+                row = result.fetchone()
+                if row and row.is_new:
                     new_count += 1
             except Exception as e:
                 log.error("houseLk_upsert_error", source_id=item.get("source_id"), error=str(e))

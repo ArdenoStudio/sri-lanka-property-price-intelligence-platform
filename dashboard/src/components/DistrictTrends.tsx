@@ -8,7 +8,7 @@ import {
   ComposedChart,
   Area,
 } from 'recharts';
-import { TrendingUp, Activity, Info } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { getPrices, type PriceHistory } from '../api';
 import { motion } from 'framer-motion';
 
@@ -72,12 +72,10 @@ export function DistrictTrends({ district, propertyType }: Props) {
 
   if (!district) {
     return (
-      <div className="bg-bg-card border border-border rounded-2xl p-8 text-center">
-        <Activity className="w-8 h-8 text-text-muted mx-auto mb-3 opacity-20" />
-        <h3 className="text-lg font-bold text-text-primary mb-1">Market Insights</h3>
-        <p className="text-text-muted text-sm max-w-xs mx-auto">
-          Select a district from the map or dropdown to view price trends and movement.
-        </p>
+      <div className="card p-12 text-center">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-[#2e2e2e] mb-4">Price Trends</p>
+        <p className="text-[#525252] text-[15px]">Select a district to view price history</p>
+        <p className="text-[11px] text-[#2e2e2e] mt-2">Click a district on the map or use the filter above</p>
       </div>
     );
   }
@@ -168,39 +166,33 @@ export function DistrictTrends({ district, propertyType }: Props) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: 'easeOut' }}
-      className="bg-bg-card border border-border rounded-2xl p-6 mb-8 overflow-hidden relative"
+      className="card p-6 mb-8 overflow-hidden relative"
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-5 h-5 text-accent-light" />
-            <h3 className="text-xl font-bold text-text-primary">
-              {district} Price Trends
-            </h3>
-          </div>
-          <p className="text-text-muted text-xs flex items-center gap-1.5 uppercase tracking-wider font-medium">
-            <Activity className="w-3 h-3" />
-            Market Movement • Past 12 Months
-          </p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-2">Price History</p>
+          <h3 className="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-white tracking-tight">
+            {district}
+          </h3>
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.35, ease: 'easeOut' }}
-          className="bg-bg-card-hover border border-border rounded-xl px-4 py-2 flex items-center gap-4"
+          className="flex items-center gap-4 bg-[#161616] border border-white/[0.08] rounded-2xl px-4 py-3"
         >
           <div>
-            <span className="text-[10px] text-text-muted uppercase block font-bold">Avg Median</span>
-            <span className="text-accent-light font-bold text-lg">
+            <span className="text-[10px] text-[#525252] uppercase block tracking-[0.1em]">Median</span>
+            <span className="text-white font-bold text-lg num">
               {lastPrice > 0 ? formatCurrency(lastPrice) : 'N/A'}
             </span>
           </div>
           {pctChange !== null && (
             <>
-              <div className="w-px h-8 bg-border" />
-              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold ${
-                pctChange >= 0 ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'
+              <div className="w-px h-8 bg-white/[0.08]" />
+              <div className={`flex items-center gap-1 text-xs font-bold num ${
+                pctChange >= 0 ? 'text-emerald-400' : 'text-red-400'
               }`}>
                 <TrendingUp className={`w-3 h-3 ${pctChange < 0 ? 'rotate-180' : ''}`} />
                 {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(1)}%
@@ -210,9 +202,9 @@ export function DistrictTrends({ district, propertyType }: Props) {
         </motion.div>
       </div>
 
-      <div className="h-[300px] w-full relative overflow-hidden rounded-xl">
+      <div className="h-[300px] w-full relative overflow-hidden rounded-2xl">
         {loading ? (
-          <div className="h-full w-full flex items-center justify-center bg-bg-card-hover/20 rounded-xl border border-dashed border-border">
+          <div className="h-full w-full flex items-center justify-center bg-bg-card-hover/20 rounded-2xl border border-dashed border-border">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
               <p className="text-xs text-text-muted">Loading trends...</p>
@@ -237,9 +229,9 @@ export function DistrictTrends({ district, propertyType }: Props) {
               <ComposedChart key={chartKey} data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"  stopColor="#818cf8" stopOpacity={0.5} />
-                    <stop offset="50%" stopColor="#6366f1" stopOpacity={0.2} />
-                    <stop offset="100%" stopColor="#818cf8" stopOpacity={0} />
+                    <stop offset="0%"  stopColor="#14b8a6" stopOpacity={0.18} />
+                    <stop offset="70%" stopColor="#14b8a6" stopOpacity={0.05} />
+                    <stop offset="100%" stopColor="#14b8a6" stopOpacity={0} />
                   </linearGradient>
 
                   <linearGradient id="predFill" x1="0" y1="0" x2="0" y2="1">
@@ -249,9 +241,9 @@ export function DistrictTrends({ district, propertyType }: Props) {
                   </linearGradient>
                   
                   <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#6366f1" />
-                    <stop offset="50%" stopColor="#818cf8" />
-                    <stop offset="100%" stopColor="#a78bfa" />
+                    <stop offset="0%" stopColor="#1fb6aa" />
+                    <stop offset="50%" stopColor="#46d6cb" />
+                    <stop offset="100%" stopColor="#93e9ff" />
                   </linearGradient>
 
                   <linearGradient id="predGradient" x1="0" y1="0" x2="1" y2="0">
@@ -264,35 +256,35 @@ export function DistrictTrends({ district, propertyType }: Props) {
                   </pattern>
                 </defs>
 
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff" strokeOpacity={0.06} />
+                <CartesianGrid strokeDasharray="0" vertical={false} stroke="#ffffff" strokeOpacity={0.03} />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
+                  tick={{ fill: '#2e2e2e', fontSize: 10, fontWeight: 500 }}
                   dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
+                  tick={{ fill: '#2e2e2e', fontSize: 10, fontWeight: 500 }}
                   tickFormatter={formatCurrency}
                   width={40}
                 />
                 <Tooltip
-                  cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '3 3' }}
+                  cursor={{ stroke: 'rgba(255,255,255,0.06)', strokeWidth: 1, strokeDasharray: '3 3' }}
                   contentStyle={{
-                    backgroundColor: 'rgba(20, 20, 23, 0.8)',
-                    backdropFilter: 'blur(12px)',
-                    borderColor: 'rgba(255, 255, 255, 0.08)',
-                    borderRadius: '16px',
-                    color: '#fff',
+                    backgroundColor: '#161616',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '12px',
+                    color: '#f5f5f5',
                     fontSize: '13px',
-                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
-                    padding: '12px 16px'
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                    padding: '12px 16px',
+                    fontFamily: 'Geist, sans-serif',
                   }}
-                  itemStyle={{ fontWeight: 700 }}
-                  labelStyle={{ color: '#9ca3af', marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  itemStyle={{ fontWeight: 600 }}
+                  labelStyle={{ color: '#525252', marginBottom: '4px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                   formatter={(val: any, name: any) => {
                     if (name === 'price') return [formatCurrency(Number(val)), 'Median Price'];
                     if (name === 'pred')  return [formatCurrency(Number(val)), 'Forecast'];
@@ -300,16 +292,16 @@ export function DistrictTrends({ district, propertyType }: Props) {
                   }}
                 />
 
-                {/* Forecast line — no fill, dashed stroke only */}
+                {/* Forecast line — dashed white */}
                 {reg && (
                   <Area
                     type="monotone"
                     dataKey="pred"
-                    stroke="url(#predGradient)"
-                    strokeWidth={3}
-                    strokeDasharray="6 6"
+                    stroke="rgba(255,255,255,0.22)"
+                    strokeWidth={1.5}
+                    strokeDasharray="5 5"
                     fill="none"
-                    activeDot={{ r: 5, fill: "#141417", stroke: "#e879f9", strokeWidth: 3 }}
+                    activeDot={{ r: 4, fill: "#161616", stroke: "rgba(255,255,255,0.4)", strokeWidth: 2 }}
                     isAnimationActive={showForecast}
                     animationBegin={220}
                     animationDuration={700}
@@ -332,19 +324,19 @@ export function DistrictTrends({ district, propertyType }: Props) {
                   />
                 )}
 
-                {/* Historical area — the one and only fill polygon */}
+                {/* Historical area */}
                 <Area
                   type="monotone"
                   dataKey="price"
-                  stroke="url(#strokeGradient)"
-                  strokeWidth={4}
+                  stroke="#14b8a6"
+                  strokeWidth={1.5}
                   fillOpacity={1}
                   fill="url(#colorPrice)"
                   isAnimationActive={reveal}
                   animationBegin={120}
                   animationDuration={1100}
                   animationEasing="ease-out"
-                  activeDot={{ r: 6, fill: "#141417", stroke: "#818cf8", strokeWidth: 3 }}
+                  activeDot={{ r: 5, fill: "#161616", stroke: "#5eead4", strokeWidth: 2 }}
                   connectNulls={false}
                 />
               </ComposedChart>
@@ -353,18 +345,10 @@ export function DistrictTrends({ district, propertyType }: Props) {
         )}
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-4 text-[10px] text-text-muted bg-bg-card-hover/50 p-3 rounded-xl border border-border/50">
-        <span className="flex items-center gap-1.5">
-          <Info className="w-3.5 h-3.5 text-accent-light" />
-          Based on median advertised prices. Actual sale prices may vary.
-        </span>
-        {reg && (
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block w-6 border-t-2 border-dashed border-[#a78bfa]" />
-            Forecast (last 6 months trend) — indicative only
-          </span>
-        )}
-      </div>
+      <p className="mt-4 text-[11px] text-[#2e2e2e]">
+        Median advertised prices. Actual sale prices vary.
+        {reg && ' · Dashed line: 3-month forecast (indicative).'}
+      </p>
     </motion.div>
   );
 }

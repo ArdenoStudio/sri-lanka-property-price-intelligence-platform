@@ -39,7 +39,7 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
           transition={{ type: 'spring', stiffness: 260, damping: 26, mass: 0.7 }}
           className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 pointer-events-none"
         >
-          <div className="max-w-4xl mx-auto bg-bg-card/90 backdrop-blur-xl border border-accent/30 rounded-2xl shadow-2xl p-4 flex flex-col sm:flex-row items-center gap-4 pointer-events-auto">
+          <div className="max-w-4xl mx-auto bg-[#111111] border-t border-white/[0.1] rounded-2xl shadow-2xl p-4 flex flex-col sm:flex-row items-center gap-4 pointer-events-auto">
             <div className="flex items-center gap-2 pr-4 border-b sm:border-b-0 sm:border-r border-border w-full sm:w-auto pb-2 sm:pb-0">
               <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent-light border border-accent/20">
                 <Layers className="w-5 h-5" />
@@ -113,9 +113,7 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
               <button
                 onClick={onCompare}
                 disabled={selected.length < 2}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-accent hover:bg-accent-light disabled:bg-border/50 text-white rounded-xl px-6 py-2.5 text-sm font-bold transition-all border-none ${
-                  selected.length >= 2 ? 'shadow-lg shadow-accent/20' : 'shadow-none'
-                }`}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 bg-[#14b8a6] hover:bg-[#5eead4] disabled:bg-white/[0.08] disabled:text-white/30 text-black rounded-xl px-6 py-2.5 text-sm font-semibold transition-all border-none cursor-pointer`}
               >
                 <Table className="w-4 h-4" />
                 Compare Now

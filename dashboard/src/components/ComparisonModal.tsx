@@ -181,10 +181,10 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="relative w-full max-w-4xl mx-4 mb-0 sm:mb-4 bg-[#0d0d1a] border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+            className="relative w-full max-w-4xl mx-4 mb-0 sm:mb-4 bg-[#111111] border border-white/[0.1] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border/60">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.07]">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center">
                   <Scale className="w-4 h-4 text-accent-light" />
@@ -207,14 +207,14 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto">
               {/* Listing header cards */}
-              <div className="grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-border/30 border-b border-border/60">
+              <div className="grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-white/[0.04] border-b border-white/[0.07]">
                 {/* spacer */}
-                <div className="bg-[#0d0d1a] p-4" />
+                <div className="bg-[#111111] p-4" />
                 {listings.map((l, i) => {
                   const col = SLOT_COLORS[i];
                   const Icon = l.property_type === 'land' ? Maximize : Home;
                   return (
-                    <div key={l.id} className="bg-[#0d0d1a] p-4 relative overflow-hidden">
+                    <div key={l.id} className="bg-[#111111] p-4 relative overflow-hidden">
                       <div className={`absolute top-0 left-0 right-0 h-0.5 ${col.bar}`} />
                       <p className="text-xs font-semibold text-text-primary line-clamp-2 leading-snug mb-2 min-h-[2.5rem]">
                         {l.title || 'Untitled'}
@@ -242,7 +242,7 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
                 })}
                 {/* Empty slots */}
                 {Array.from({ length: 3 - listings.length }).map((_, i) => (
-                  <div key={i} className="bg-[#0d0d1a] p-4 flex items-center justify-center min-h-[80px]">
+                  <div key={i} className="bg-[#111111] p-4 flex items-center justify-center min-h-[80px]">
                     <p className="text-[10px] text-text-muted/30 uppercase tracking-widest font-bold">Empty</p>
                   </div>
                 ))}
@@ -254,10 +254,10 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
                 return (
                   <div
                     key={row.label}
-                    className={`grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-border/20 ${ri % 2 === 0 ? '' : 'bg-white/[0.015]'}`}
+                    className={`grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-white/[0.03] ${ri % 2 === 0 ? '' : 'bg-white/[0.015]'}`}
                   >
                     {/* Label */}
-                    <div className="bg-[#0d0d1a] px-4 py-3.5 flex flex-col justify-center border-r border-border/40">
+                    <div className="bg-[#111111] px-4 py-3.5 flex flex-col justify-center border-r border-white/[0.06]">
                       <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">{row.label}</p>
                       {row.sub && <p className="text-[9px] text-text-muted mt-0.5">{row.sub}</p>}
                     </div>
@@ -271,7 +271,7 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
                         <div
                           key={l.id}
                           className={`relative px-4 py-3.5 flex items-center transition-colors
-                            ${isWinner ? 'bg-success/5' : 'bg-[#0d0d1a]'}
+                            ${isWinner ? 'bg-teal-950/40' : 'bg-[#111111]'}
                           `}
                         >
                           {isWinner && (
@@ -303,7 +303,7 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
 
                     {/* Empty slot cells */}
                     {Array.from({ length: 3 - listings.length }).map((_, i) => (
-                      <div key={i} className="bg-[#0d0d1a] px-4 py-3.5" />
+                      <div key={i} className="bg-[#111111] px-4 py-3.5" />
                     ))}
                   </div>
                 );
@@ -311,13 +311,13 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
 
               {/* Signal badges row if any listing has signals */}
               {listings.some(l => l.deal_score !== null || l.price_drop_pct !== null) && (
-                <div className="grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-border/20 border-t border-border/40">
-                  <div className="bg-[#0d0d1a] px-4 py-3.5 flex flex-col justify-center border-r border-border/40">
+                <div className="grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-white/[0.03] border-t border-white/[0.06]">
+                  <div className="bg-[#111111] px-4 py-3.5 flex flex-col justify-center border-r border-white/[0.06]">
                     <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Signals</p>
                     <p className="text-[9px] text-text-muted mt-0.5">market indicators</p>
                   </div>
                   {listings.map((l) => (
-                    <div key={l.id} className="bg-[#0d0d1a] px-3 py-3 flex flex-wrap gap-1.5 items-center">
+                    <div key={l.id} className="bg-[#111111] px-3 py-3 flex flex-wrap gap-1.5 items-center">
                       {l.deal_score !== null && l.deal_score >= 5 && (
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-success/15 text-success border border-success/25">
                           <BarChart2 className="w-2 h-2" />
@@ -331,7 +331,7 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
                         </span>
                       )}
                       {l.days_on_market !== null && l.days_on_market > 0 && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium text-text-muted border border-border/60">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium text-text-muted border border-white/[0.07]">
                           <Clock className="w-2 h-2" />
                           {l.days_on_market}d
                         </span>
@@ -342,34 +342,34 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
                     </div>
                   ))}
                   {Array.from({ length: 3 - listings.length }).map((_, i) => (
-                    <div key={i} className="bg-[#0d0d1a] px-4 py-3" />
+                    <div key={i} className="bg-[#111111] px-4 py-3" />
                   ))}
                 </div>
               )}
 
               {/* Location row with map pin */}
-              <div className="grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-border/20 border-t border-border/40">
-                <div className="bg-[#0d0d1a] px-4 py-3.5 flex flex-col justify-center border-r border-border/40">
+              <div className="grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-white/[0.03] border-t border-white/[0.06]">
+                <div className="bg-[#111111] px-4 py-3.5 flex flex-col justify-center border-r border-white/[0.06]">
                   <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">District</p>
                 </div>
                 {listings.map((l) => (
-                  <div key={l.id} className="bg-[#0d0d1a] px-4 py-3.5 flex items-center gap-1.5">
+                  <div key={l.id} className="bg-[#111111] px-4 py-3.5 flex items-center gap-1.5">
                     <MapPin className="w-3 h-3 text-text-muted flex-shrink-0" />
                     <span className="text-xs text-text-secondary truncate">{l.district || '—'}</span>
                   </div>
                 ))}
                 {Array.from({ length: 3 - listings.length }).map((_, i) => (
-                  <div key={i} className="bg-[#0d0d1a] px-4 py-3.5" />
+                  <div key={i} className="bg-[#111111] px-4 py-3.5" />
                 ))}
               </div>
 
               {/* View buttons */}
-              <div className="grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-border/20 border-t border-border/40">
-                <div className="bg-[#0d0d1a] px-4 py-4" />
+              <div className="grid grid-cols-[140px_repeat(3,1fr)] gap-px bg-white/[0.03] border-t border-white/[0.06]">
+                <div className="bg-[#111111] px-4 py-4" />
                 {listings.map((l, i) => {
                   const col = SLOT_COLORS[i];
                   return (
-                    <div key={l.id} className="bg-[#0d0d1a] px-3 py-4">
+                    <div key={l.id} className="bg-[#111111] px-3 py-4">
                       <a
                         href={l.url || '#'}
                         target="_blank"
@@ -383,13 +383,13 @@ export function ComparisonModal({ isOpen, onClose, listings }: Props) {
                   );
                 })}
                 {Array.from({ length: 3 - listings.length }).map((_, i) => (
-                  <div key={i} className="bg-[#0d0d1a] px-4 py-4" />
+                  <div key={i} className="bg-[#111111] px-4 py-4" />
                 ))}
               </div>
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-3 border-t border-border/60 flex items-center justify-between">
+            <div className="px-6 py-3 border-t border-white/[0.07] flex items-center justify-between">
               <p className="text-[10px] text-text-muted">
                 <span className="text-success font-bold">Best</span> highlights the most favourable value per metric
               </p>
