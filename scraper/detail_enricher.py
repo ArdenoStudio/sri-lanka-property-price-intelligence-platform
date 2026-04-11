@@ -62,20 +62,21 @@ def _parse_int(text: str) -> Optional[int]:
 
 
 def _parse_float(text: str) -> Optional[float]:
-    m = re.search(r"(\d+\.?\d*)", text)
-    return float(m.group(1)) if m else None
+    """Parse a number from text, handling comma-formatted values like '1,170.0'."""
+    m = re.search(r"([\d,]+\.?\d*)", text)
+    return float(m.group(1).replace(",", "")) if m else None
 
 
 def _perch_from_text(text: str) -> Optional[float]:
     t = text.lower()
     if "acre" in t:
-        m = re.search(r"(\d+\.?\d*)", t)
-        return float(m.group(1)) * 160 if m else None
+        m = re.search(r"([\d,]+\.?\d*)", t)
+        return float(m.group(1).replace(",", "")) * 160 if m else None
     if "perch" in t or re.search(r"\bp\b", t):
         return _parse_float(t)
     # bare number next to "P" abbreviation: "15 P"
-    m = re.search(r"(\d+\.?\d*)\s*p\b", t)
-    return float(m.group(1)) if m else None
+    m = re.search(r"([\d,]+\.?\d*)\s*p\b", t)
+    return float(m.group(1).replace(",", "")) if m else None
 
 
 async def _extract_ikman(page) -> dict:

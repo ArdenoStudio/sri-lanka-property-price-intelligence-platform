@@ -572,21 +572,19 @@ class DataCleaner:
         
         # Acres to Perches (1 acre = 160 perches)
         if "acre" in text_to_search:
-            match = re.search(r"(\d+\.?\d*)\s*acre", text_to_search)
+            match = re.search(r"([\d,]+\.?\d*)\s*acre", text_to_search)
             if match:
-                return float(match.group(1)) * 160.0, None
-        
-        # Perches (handle "perch", "perches", "p")
-        # Regex to find numbers followed by "perch", "perches", or just "p" at the end of a word
-        p_match = re.search(r"(\d+\.?\d*)\s*(?:perch|perches|p\b)", text_to_search)
+                return float(match.group(1).replace(",", "")) * 160.0, None
+
+        # Perches — handle comma-formatted numbers like "1,170.0 perches"
+        p_match = re.search(r"([\d,]+\.?\d*)\s*(?:perch(?:es)?|p\b)", text_to_search)
         if p_match:
-            return float(p_match.group(1)), None
-        
-        # Sqft
-        if "sq ft" in text_to_search or "sqft" in text_to_search:
-            match = re.search(r"(\d+\.?\d*)", text_to_search)
-            if match:
-                return None, float(match.group(1))
+            return float(p_match.group(1).replace(",", "")), None
+
+        # Sqft — match number immediately before the unit (not just any number in string)
+        sqft_match = re.search(r"([\d,]+\.?\d*)\s*(?:sq\.?\s*ft|sqft)", text_to_search)
+        if sqft_match:
+            return None, float(sqft_match.group(1).replace(",", ""))
         
         return None, None
 

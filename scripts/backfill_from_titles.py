@@ -40,10 +40,10 @@ def parse_size(title: str, raw_size: str = "") -> tuple[float | None, float | No
         m = re.search(r"(\d+\.?\d*)\s*acre", t)
         if m:
             return float(m.group(1)) * 160.0, None
-    m = re.search(r"(\d+\.?\d*)\s*(?:perch(?:es)?|p\b)", t)
+    m = re.search(r"([\d,]+\.?\d*)\s*(?:perch(?:es)?|p\b)", t)
     if m:
-        return float(m.group(1)), None
-    m = re.search(r"(\d[\d,]*\.?\d*)\s*(?:sq\.?\s*ft|sqft)", t)
+        return float(m.group(1).replace(",", "")), None
+    m = re.search(r"([\d,]+\.?\d*)\s*(?:sq\.?\s*ft|sqft)", t)
     if m:
         return None, float(m.group(1).replace(",", ""))
     return None, None
