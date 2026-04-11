@@ -103,49 +103,6 @@ function CornerOrnaments() {
   );
 }
 
-// ── Ruler divider ──────────────────────────────────────────────────────────
-const TICKS = 48;
-
-function RulerDivider() {
-  return (
-    <div className="relative h-5 w-full">
-      <svg
-        aria-hidden="true"
-        className="w-full h-full"
-        viewBox="0 0 1200 20"
-        preserveAspectRatio="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <line
-          x1="0" y1="10" x2="1200" y2="10"
-          stroke="rgba(20,184,166,0.15)"
-          strokeWidth="1"
-        />
-        {Array.from({ length: TICKS }, (_, i) => {
-          const x        = (i / (TICKS - 1)) * 1200;
-          const isMajor  = i % 6 === 0;
-          const isQuart  = i % 3 === 0;
-          const h        = isMajor ? 6 : isQuart ? 4 : 2;
-          const opacity  = isMajor ? 0.3 : isQuart ? 0.2 : 0.1;
-          return (
-            <line
-              key={i}
-              x1={x} y1={10 - h / 2}
-              x2={x} y2={10 + h / 2}
-              stroke="#14b8a6"
-              strokeWidth={isMajor ? 1 : 0.75}
-              strokeOpacity={opacity}
-            />
-          );
-        })}
-      </svg>
-      <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[8px] font-mono tracking-[0.15em] uppercase select-none pr-1"
-        style={{ color: 'rgba(20,184,166,0.25)' }}>
-        SCALE 1:1
-      </span>
-    </div>
-  );
-}
 
 // ── Variants ───────────────────────────────────────────────────────────────
 const containerVariants = {
