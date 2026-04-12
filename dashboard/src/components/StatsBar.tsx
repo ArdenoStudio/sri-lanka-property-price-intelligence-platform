@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import type { Stats } from '../api';
 
 // ---- Formatters ----
@@ -72,13 +71,11 @@ export function StatsBar({ stats }: Props) {
   return (
     <section className="pt-4 pb-10">
       {/* ---- Hero editorial headline ---- */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="mb-16 text-center flex flex-col items-center"
+      {/* Replaced motion.div with CSS transition for simple mount animation */}
+      <div
+        className="mb-16 text-center flex flex-col items-center css-fade-in"
       >
-        <p className="text-[11px] uppercase tracking-[0.22em] text-[#525252] mb-5">
+        <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-5">
           Sri Lanka · Property Intelligence
         </p>
         <h1 className="text-[clamp(3rem,8vw,7rem)] font-bold tracking-[-0.04em] leading-[0.92] text-white">
@@ -88,14 +85,11 @@ export function StatsBar({ stats }: Props) {
         <p className="mt-7 text-[#a3a3a3] text-[15px] leading-relaxed max-w-[22rem] sm:whitespace-nowrap">
           Real-time property data across Sri Lanka. Updated daily from 5,000+ listings.
         </p>
-      </motion.div>
+      </div>
 
       {/* ---- Bento stats grid ---- */}
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-      >
+      {/* Replaced motion.div with CSS transition */}
+      <div className="css-fade-in css-fade-in-delay">
         <div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 rounded-3xl overflow-hidden"
           style={{
@@ -114,7 +108,7 @@ export function StatsBar({ stats }: Props) {
               style={{ background: 'radial-gradient(ellipse 60% 50% at 20% 0%, rgba(20,184,166,0.07) 0%, transparent 70%)' }}
             />
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#525252] mb-3">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">
                 Average Price
               </p>
               <p className="text-[clamp(2.5rem,5vw,4rem)] font-bold text-white tracking-[-0.04em] leading-none num">
@@ -140,13 +134,13 @@ export function StatsBar({ stats }: Props) {
           {/* ---- Total Listings ---- */}
           <div className="relative bg-[#111111] p-8 flex flex-col justify-between min-h-[140px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#525252] mb-3">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">
                 Listings
               </p>
               <p className="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-white tracking-[-0.03em] leading-none num">
                 {totalRaw.toLocaleString()}
               </p>
-              <p className="text-[11px] text-[#525252] mt-3">
+              <p className="text-[11px] text-[#737373] mt-3">
                 +{weeklyNew.toLocaleString()} this week
               </p>
             </div>
@@ -155,13 +149,13 @@ export function StatsBar({ stats }: Props) {
           {/* ---- Districts ---- */}
           <div className="relative bg-[#111111] p-8 flex flex-col justify-between min-h-[140px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#525252] mb-3">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">
                 Districts
               </p>
               <p className="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-white tracking-[-0.03em] leading-none num">
                 {districtsRaw}
               </p>
-              <p className="text-[11px] text-[#525252] mt-3">
+              <p className="text-[11px] text-[#737373] mt-3">
                 Across Sri Lanka
               </p>
             </div>
@@ -169,11 +163,11 @@ export function StatsBar({ stats }: Props) {
         </div>
 
         {/* Subline */}
-        <p className="text-[#444444] text-[11px] mt-4 leading-relaxed flex items-center gap-2 flex-wrap">
+        <p className="text-[#737373] text-[11px] mt-4 leading-relaxed flex items-center gap-2 flex-wrap">
           {stats?.total_listings?.toLocaleString() ?? '...'} listings across {typeBreakdown}
           {stats?.last_updated && (
             <>
-              <span className="text-[#444444]"> · Updated {formatDate(stats.last_updated)}</span>
+              <span className="text-[#737373]"> · Updated {formatDate(stats.last_updated)}</span>
               <span className="inline-flex items-center gap-1.5 shrink-0">
                 <span
                   className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-dot shrink-0"
@@ -183,7 +177,7 @@ export function StatsBar({ stats }: Props) {
             </>
           )}
         </p>
-      </motion.div>
+      </div>
     </section>
   );
 }

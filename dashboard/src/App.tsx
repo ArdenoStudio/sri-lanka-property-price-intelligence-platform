@@ -1,23 +1,70 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { getStats, getDistricts, getHeatmap, getListings, getPipelineStatus } from './api';
 import type { Stats, District, HeatmapPoint, Listing, PipelineStatusResponse } from './api';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
 import { PipelineStatus } from './components/PipelineStatus';
-import { MapSection } from './components/MapSection';
 import { Filters } from './components/Filters';
 import { ListingsGrid } from './components/ListingsGrid';
 import { About } from './components/About';
 import { Footer } from './components/Footer';
-import { DistrictTrends } from './components/DistrictTrends';
 import { ComparisonTray } from './components/ComparisonTray';
-import { ComparisonModal } from './components/ComparisonModal';
 import { PageLoader } from './components/PageLoader';
-import { ChatWidget } from './components/ChatWidget';
 import { NoiseOverlay } from './components/NoiseOverlay';
 import { ScrollProgressBar } from './components/ScrollProgressBar';
 import { RevealSection } from './components/RevealSection';
 import { Analytics } from '@vercel/analytics/react';
+
+// ── Lazy-loaded heavy components ──────────────────────────────────────────────
+const MapSection = lazy(() =>
+  import('./components/MapSection').then(m => ({ default: m.MapSection }))
+);
+const DistrictTrends = lazy(() =>
+  import('./components/DistrictTrends').then(m => ({ default: m.DistrictTrends }))
+);
+const ComparisonModal = lazy(() =>
+  import('./components/ComparisonModal').then(m => ({ default: m.ComparisonModal }))
+);
+const ChatWidget = lazy(() =>
+  import('./components/ChatWidget').then(m => ({ default: m.ChatWidget }))
+);
+
+// ── Skeleton fallbacks ────────────────────────────────────────────────────────
+function MapSkeleton() {
+  return (
+    <section className="mt-4 mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="h-3 w-24 bg-white/[0.05] rounded mb-2" />
+          <div className="h-2.5 w-48 bg-white/[0.05] rounded" />
+        </div>
+      </div>
+      <div className="card overflow-hidden" style={{ height: 420 }}>
+        <div className="h-full w-full bg-[#0a0a0a] animate-pulse flex items-center justify-center">
+          <p className="text-[11px] text-[#2e2e2e] uppercase tracking-widest">Loading map…</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TrendsSkeleton() {
+  return (
+    <div className="card p-6 mb-8">
+      <div className="h-3 w-20 bg-white/[0.05] rounded mb-3" />
+      <div className="h-8 w-40 bg-white/[0.05] rounded mb-6" />
+      <div className="h-[300px] bg-[#0a0a0a] rounded-2xl animate-pulse" />
+    </div>
+  );
+}
+
+function ModalSkeleton() {
+  return null; // Modal is hidden by default, no visual skeleton needed
+}
+
+function ChatSkeleton() {
+  return null; // Chat FAB appears on demand, no visual skeleton needed
+}
 
 function readURLFilters() {
   const p = new URLSearchParams(window.location.search);
@@ -138,34 +185,57 @@ function App() {
   }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource, page]);
 
   // Initial data load + polling
-  const refreshStatsAndDistricts = useCallback(async () => {
+  // Critical fetches: stats, districts, listings
+  // Deferred fetches: heatmap, pipeline (loaded after first paint via requestIdleCallback)
+  const loadCritical = useCallback(async () => {
     try {
-      const [s, d, h, p] = await Promise.all([
+      const [s, d] = await Promise.all([
         getStats().catch(() => null),
         getDistricts().catch(() => []),
-        getHeatmap(selectedType || undefined, listingType || undefined).catch(() => ({ points: [], total_districts: 0 })),
-        getPipelineStatus().catch(() => null),
       ]);
       if (s) setStats(s);
       setDistricts(d);
+    } catch (e) {
+      console.error('Critical data load error:', e);
+    }
+  }, []);
+
+  const loadDeferred = useCallback(async () => {
+    try {
+      const [h, p] = await Promise.all([
+        getHeatmap(selectedType || undefined, listingType || undefined).catch(() => ({ points: [], total_districts: 0 })),
+        getPipelineStatus().catch(() => null),
+      ]);
       setHeatmap(h.points);
       if (p) setPipeline(p);
     } catch (e) {
-      console.error('Data sync error:', e);
+      console.error('Deferred data load error:', e);
     }
   }, [selectedType, listingType]);
 
   useEffect(() => {
-    refreshStatsAndDistricts();
+    // Critical data immediately
+    loadCritical();
     loadListings();
 
+    // Deferred data after idle
+    const scheduleDeferred = () => {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => loadDeferred());
+      } else {
+        setTimeout(() => loadDeferred(), 200);
+      }
+    };
+    scheduleDeferred();
+
     const interval = setInterval(() => {
-      refreshStatsAndDistricts();
+      loadCritical();
+      loadDeferred();
       loadListings(true);
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [refreshStatsAndDistricts, loadListings]);
+  }, [loadCritical, loadDeferred, loadListings]);
 
   // Reset page on filter change
   useEffect(() => {
@@ -195,15 +265,19 @@ function App() {
             </RevealSection>
 
             <RevealSection className="mt-8">
-              <MapSection
-                points={heatmap}
-                onDistrictSelect={(d) => setSelectedDistrict(d)}
-              />
+              <Suspense fallback={<MapSkeleton />}>
+                <MapSection
+                  points={heatmap}
+                  onDistrictSelect={(d) => setSelectedDistrict(d)}
+                />
+              </Suspense>
             </RevealSection>
 
             <RevealSection className="pt-20" delay={50}>
               <div id="trends">
-                <DistrictTrends district={selectedDistrict} propertyType={selectedType} />
+                <Suspense fallback={<TrendsSkeleton />}>
+                  <DistrictTrends district={selectedDistrict} propertyType={selectedType} />
+                </Suspense>
               </div>
             </RevealSection>
 
@@ -265,13 +339,17 @@ function App() {
             onCompare={() => setIsCompareModalOpen(true)}
           />
 
-          <ComparisonModal
-            isOpen={isCompareModalOpen}
-            onClose={() => setIsCompareModalOpen(false)}
-            listings={selectedForComparison}
-          />
+          <Suspense fallback={<ModalSkeleton />}>
+            <ComparisonModal
+              isOpen={isCompareModalOpen}
+              onClose={() => setIsCompareModalOpen(false)}
+              listings={selectedForComparison}
+            />
+          </Suspense>
 
-          <ChatWidget />
+          <Suspense fallback={<ChatSkeleton />}>
+            <ChatWidget />
+          </Suspense>
           <Footer />
           <Analytics />
         </div>

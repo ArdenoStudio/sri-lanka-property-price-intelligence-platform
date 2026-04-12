@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
+const SESSION_KEY = 'propertylk_loader_shown';
+
 export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: number }> = ({
   onComplete,
   minDuration = 1800,
@@ -9,8 +11,16 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Check if loader has already run this session
+  const hasShownThisSession = typeof window !== 'undefined' &&
+    sessionStorage.getItem(SESSION_KEY) === '1';
+
+  // For repeat visits: use a much shorter duration (fast fade-in only)
+  const effectiveDuration = hasShownThisSession ? 400 : minDuration;
+  const isRepeatVisit = hasShownThisSession;
+
   const [done, setDone] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(isRepeatVisit ? 100 : 0);
   const [exiting, setExiting] = useState(false);
 
   const rafRef = useRef(0);
@@ -20,14 +30,15 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
   useEffect(() => {
     if (!prefersReducedMotion) return;
     setDone(true);
+    try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
     onComplete?.();
   }, [prefersReducedMotion, onComplete]);
 
-  // Progress counter via RAF
+  // Progress counter via RAF — skip expensive animation for repeat visits
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || isRepeatVisit) return;
     const start = Date.now();
-    const duration = minDuration * 0.85;
+    const duration = effectiveDuration * 0.85;
 
     const tick = () => {
       const raw = Math.min((Date.now() - start) / duration, 1);
@@ -41,7 +52,7 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [minDuration, prefersReducedMotion]);
+  }, [effectiveDuration, prefersReducedMotion, isRepeatVisit]);
 
   // Exit sequence
   useEffect(() => {
@@ -49,13 +60,51 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
     const timers: ReturnType<typeof setTimeout>[] = [];
     const t = (fn: () => void, ms: number) => timers.push(setTimeout(fn, ms));
 
-    t(() => setExiting(true), minDuration);
-    t(() => { setDone(true); onComplete?.(); }, minDuration + 350);
+    t(() => setExiting(true), effectiveDuration);
+    t(() => {
+      setDone(true);
+      try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
+      onComplete?.();
+    }, effectiveDuration + 350);
 
     return () => timers.forEach(clearTimeout);
-  }, [minDuration, onComplete, prefersReducedMotion]);
+  }, [effectiveDuration, onComplete, prefersReducedMotion]);
 
   if (done) return null;
+
+  // Repeat visits: minimal fast fade loader (no progress bar, no branding animation)
+  if (isRepeatVisit) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 999999,
+          background: '#000000',
+          opacity: exiting ? 0 : 1,
+          transition: 'opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+          pointerEvents: exiting ? 'none' : 'all',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div className="noise-overlay" aria-hidden="true" />
+        <p
+          style={{
+            fontFamily: "'Geist', -apple-system, sans-serif",
+            fontSize: '20px',
+            fontWeight: 600,
+            color: '#f5f5f5',
+            letterSpacing: '-0.02em',
+            margin: 0,
+          }}
+        >
+          PropertyLK
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

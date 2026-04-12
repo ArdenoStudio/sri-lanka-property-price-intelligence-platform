@@ -1,35 +1,23 @@
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
-
-const MORPH_TRANSITION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] } as const;
+import type { Listing } from '../api';
 
 function PlusCheckIcon({ checked }: { checked: boolean }) {
   return (
     <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Horizontal arm → short check arm */}
-      <motion.line
-        animate={checked
-          ? { x1: 3, y1: 9.5, x2: 6.5, y2: 12 }
-          : { x1: 3,   y1: 7,   x2: 11,  y2: 7  }}
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        transition={MORPH_TRANSITION}
-      />
-      {/* Vertical arm → long diagonal check arm */}
-      <motion.line
-        animate={checked
-          ? { x1: 6.5, y1: 12, x2: 12, y2: 3 }
-          : { x1: 7,   y1: 3,  x2: 7,  y2: 11 }}
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        transition={MORPH_TRANSITION}
-      />
+      {checked ? (
+        <>
+          <line x1="3" y1="9.5" x2="6.5" y2="12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="6.5" y1="12" x2="12" y2="3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </>
+      ) : (
+        <>
+          <line x1="3" y1="7" x2="11" y2="7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="7" y1="3" x2="7" y2="11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </>
+      )}
     </svg>
   );
 }
-import type { Listing } from '../api';
 
 function formatNum(p: number): string {
   if (p >= 1_000_000) return `Rs ${(p / 1_000_000).toFixed(1)}M`;
@@ -89,7 +77,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
     return (
       <div className="card p-16 text-center">
         <p className="text-[11px] uppercase tracking-[0.2em] text-[#2e2e2e] mb-4">Results</p>
-        <p className="text-[#525252] text-[15px]">No listings match your filters</p>
+        <p className="text-[#737373] text-[15px]">No listings match your filters</p>
         <p className="text-[11px] text-[#2e2e2e] mt-2">Try broadening your search</p>
       </div>
     );
@@ -110,12 +98,10 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
           ].filter(Boolean);
 
           return (
-            <motion.div
+            <div
               key={listing.id}
-              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, delay: Math.min(idx * 0.03, 0.3) }}
+              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in"
+              style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
             >
               {/* Left accent line — teal on hover */}
               <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-transparent group-hover:bg-[#14b8a6]/50 transition-colors duration-300" />
@@ -123,21 +109,20 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
               <div className="p-6 flex flex-col h-full">
                 {/* Type + location + compare button */}
                 <div className="flex items-start justify-between mb-3">
-                  <p className="text-[11px] uppercase tracking-[0.12em] text-[#525252] leading-none">
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-[#737373] leading-none">
                     {[listing.property_type, listing.district].filter(Boolean).join(' · ') || 'Property'}
                   </p>
-                  <motion.button
+                  <button
                     onClick={(e) => { e.preventDefault(); onCompareToggle(listing); }}
-                    className={`opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border ${
+                    className={`opacity-0 group-hover:opacity-100 transition-all text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border active:scale-90 ${
                       isCompared
                         ? 'bg-[#14b8a6] text-black border-[#14b8a6] opacity-100'
-                        : 'text-[#525252] border-white/[0.12] hover:text-white hover:border-white/25 bg-transparent'
+                        : 'text-[#737373] border-white/[0.12] hover:text-white hover:border-white/25 bg-transparent'
                     }`}
-                    whileTap={{ scale: 0.88 }}
                     aria-label={isCompared ? 'Remove from comparison' : 'Add to comparison'}
                   >
                     <PlusCheckIcon checked={isCompared} />
-                  </motion.button>
+                  </button>
                 </div>
 
                 {/* PRICE — HERO */}
@@ -146,7 +131,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                     {text}
                   </p>
                   {suffix && (
-                    <p className="text-[11px] text-[#525252] mt-1">{suffix}</p>
+                    <p className="text-[11px] text-[#737373] mt-1">{suffix}</p>
                   )}
                 </div>
 
@@ -159,7 +144,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
 
                 {/* Title */}
                 {listing.title && (
-                  <p className="text-[13px] text-[#525252] line-clamp-1 mb-2">
+                  <p className="text-[13px] text-[#737373] line-clamp-1 mb-2">
                     {listing.title}
                   </p>
                 )}
@@ -183,7 +168,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
 
                 {/* Footer — meta + link */}
                 <div className="mt-auto pt-3 flex items-center justify-between">
-                  <p className="text-[11px] text-[#2e2e2e] num">
+                  <p className="text-[11px] text-[#525252] num">
                     {[formatDate(listing.first_seen_at), listing.source].filter(Boolean).join(' · ')}
                   </p>
                   {listing.url && (
@@ -191,7 +176,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                       href={listing.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#2e2e2e] hover:text-[#525252] transition-colors"
+                      className="text-[#525252] hover:text-[#737373] transition-colors"
                       aria-label={`View on ${listing.source}`}
                     >
                       <ExternalLink className="w-3 h-3" />
@@ -199,7 +184,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
@@ -216,7 +201,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <span className="text-[13px] text-[#525252] num">
+          <span className="text-[13px] text-[#737373] num">
             Page {page + 1} of {totalPages}
           </span>
 

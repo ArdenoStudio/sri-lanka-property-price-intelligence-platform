@@ -55,18 +55,20 @@ function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChan
     <div className="px-1 py-2">
       <div className="flex items-center justify-between mb-4 text-[11px] text-[#a3a3a3]">
         <span>{localMin <= 0 ? 'Any' : fmtPriceLabel(sliderToPrice(localMin))}</span>
-        <span className="text-[#525252]">—</span>
+        <span className="text-[#737373]">—</span>
         <span>{localMax >= SLIDER_MAX ? 'Any' : fmtPriceLabel(sliderToPrice(localMax))}</span>
       </div>
-      <div className="relative h-5 flex items-center">
+      <div className="relative h-8 flex items-center">
         <div className="absolute inset-x-0 h-[2px] rounded-full bg-white/[0.08]" />
         <div className="absolute h-[2px] rounded-full bg-[#14b8a6]"
           style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
         <input type="range" min={0} max={SLIDER_MAX} step={1} value={localMin}
+          aria-label="Minimum price"
           onChange={e => { const v = Math.min(Number(e.target.value), localMax - 10); setLocalMin(v); commitMin(v); }}
           onPointerUp={e => (e.currentTarget as HTMLInputElement).blur()}
           className="price-range-input" style={{ zIndex: localMin > SLIDER_MAX - 50 ? 5 : 3 }} />
         <input type="range" min={0} max={SLIDER_MAX} step={1} value={localMax}
+          aria-label="Maximum price"
           onChange={e => { const v = Math.max(Number(e.target.value), localMin + 10); setLocalMax(v); commitMax(v); }}
           onPointerUp={e => (e.currentTarget as HTMLInputElement).blur()}
           className="price-range-input" style={{ zIndex: localMax < 50 ? 5 : 4 }} />
@@ -167,20 +169,22 @@ function SizeRangeSlider({ min, max, onMinChange, onMaxChange, unit }: {
     <div className="px-1 py-2">
       <div className="flex items-center justify-between mb-4 text-[11px] text-[#a3a3a3]">
         <span>{localMin <= 0 ? 'Any' : fmt(localMin)}</span>
-        <span className="text-[9px] uppercase tracking-widest text-[#525252]">
+        <span className="text-[9px] uppercase tracking-widest text-[#737373]">
           {unit === 'perches' ? 'Perches' : 'Sq ft'}
         </span>
         <span>{localMax >= MAX ? 'Any' : fmt(localMax)}</span>
       </div>
-      <div className="relative h-5 flex items-center">
+      <div className="relative h-8 flex items-center">
         <div className="absolute inset-x-0 h-[2px] rounded-full bg-white/[0.08]" />
         <div className="absolute h-[2px] rounded-full bg-[#14b8a6]"
           style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
         <input type="range" min={0} max={MAX} step={STEP} value={localMin}
+          aria-label={`Minimum size in ${unit}`}
           onChange={e => { const v = Math.min(Number(e.target.value), localMax - STEP); setLocalMin(v); commitMin(v); }}
           onPointerUp={e => (e.currentTarget as HTMLInputElement).blur()}
           className="price-range-input" style={{ zIndex: localMin > MAX * 0.95 ? 5 : 3 }} />
         <input type="range" min={0} max={MAX} step={STEP} value={localMax}
+          aria-label={`Maximum size in ${unit}`}
           onChange={e => { const v = Math.max(Number(e.target.value), localMin + STEP); setLocalMax(v); commitMax(v); }}
           onPointerUp={e => (e.currentTarget as HTMLInputElement).blur()}
           className="price-range-input" style={{ zIndex: localMax < MAX * 0.05 ? 5 : 4 }} />
