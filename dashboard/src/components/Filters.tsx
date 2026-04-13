@@ -110,7 +110,7 @@ function PriceDropdown({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChange 
         {open && (
           <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.13, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute z-50 mt-2 left-0 w-64 max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:w-auto max-sm:bottom-[72px] max-sm:top-auto bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.55)] p-4">
+            className="absolute z-50 top-full mt-2 left-0 w-64 max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:w-auto max-sm:bottom-[72px] max-sm:top-auto bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.55)] p-4">
             <PriceRangeSlider minPrice={minPrice} maxPrice={maxPrice}
               onMinPriceChange={onMinPriceChange} onMaxPriceChange={onMaxPriceChange} />
           </motion.div>
@@ -245,7 +245,7 @@ function SizeDropdown({
         {open && (
           <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.13, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute z-50 mt-2 left-0 w-64 max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:w-auto max-sm:bottom-[72px] max-sm:top-auto bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.55)] p-4">
+            className="absolute z-50 top-full mt-2 left-0 w-64 max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:w-auto max-sm:bottom-[72px] max-sm:top-auto bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.55)] p-4">
             <SizeRangeSlider
               key={unit}
               min={minVal} max={maxVal}
@@ -307,7 +307,7 @@ function RoomsDropdown({ minBeds, onMinBedsChange, minBaths, onMinBathsChange }:
         {open && (
           <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.13, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute z-50 mt-2 left-0 w-60 max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:w-auto max-sm:bottom-[72px] max-sm:top-auto bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.55)] p-4">
+            className="absolute z-50 top-full mt-2 left-0 w-60 max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:w-auto max-sm:bottom-[72px] max-sm:top-auto bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.55)] p-4">
 
             <p className="text-[10px] uppercase tracking-widest text-[#525252] mb-2.5">Bedrooms</p>
             <div className="flex gap-1.5 flex-wrap mb-4">
@@ -389,7 +389,7 @@ function MinimalSelect({ options, value, onChange, prefix }: {
         {open && (
           <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.13, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute z-50 mt-2 left-0 min-w-[160px] max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:w-auto max-sm:min-w-0 max-sm:bottom-[72px] max-sm:top-auto bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.55)] overflow-hidden">
+            className="absolute z-50 top-full mt-2 left-0 min-w-[160px] max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:w-auto max-sm:min-w-0 max-sm:bottom-[72px] max-sm:top-auto bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.55)] overflow-hidden">
             {options.map(opt => (
               <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpen(false); }}
                 className={`relative w-full flex items-center justify-between gap-2 px-4 py-2.5 text-[13px] text-left transition-colors cursor-pointer bg-transparent border-none ${
@@ -484,7 +484,7 @@ export function Filters({
   return (
     <div className="mb-8">
       {/* ── Row 1: Property type + listing type pills (scrollable on mobile) ── */}
-      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-3 -mx-2 px-2">
+      <div className="flex items-center gap-1 overflow-x-auto sm:overflow-visible no-scrollbar pb-3 -mx-2 px-2">
         <div className="flex items-center gap-1 flex-shrink-0">
           {PROPERTY_TYPES.map(opt => (
             <button key={opt.value} onClick={() => onTypeChange(opt.value)}
@@ -522,7 +522,7 @@ export function Filters({
       </div>
 
       {/* ── Row 2: Dropdowns + meta (scrollable on mobile) ── */}
-      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1 -mx-2 px-2">
+      <div className="flex items-center gap-3 overflow-x-auto sm:overflow-visible no-scrollbar pb-1 -mx-2 px-2">
         <MinimalSelect options={districtOptions} value={selectedDistrict}
           onChange={onDistrictChange} prefix="District" />
 
