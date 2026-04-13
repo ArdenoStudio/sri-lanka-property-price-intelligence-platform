@@ -114,9 +114,9 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                   </p>
                   <button
                     onClick={(e) => { e.preventDefault(); onCompareToggle(listing); }}
-                    className={`opacity-0 group-hover:opacity-100 transition-all text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border active:scale-90 ${
+                    className={`sm:opacity-0 sm:group-hover:opacity-100 transition-all text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border active:scale-90 ${
                       isCompared
-                        ? 'bg-[#14b8a6] text-black border-[#14b8a6] opacity-100'
+                        ? 'bg-[#14b8a6] text-black border-[#14b8a6] sm:opacity-100'
                         : 'text-[#737373] border-white/[0.12] hover:text-white hover:border-white/25 bg-transparent'
                     }`}
                     aria-label={isCompared ? 'Remove from comparison' : 'Add to comparison'}

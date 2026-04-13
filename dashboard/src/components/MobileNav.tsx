@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { InteractiveMenu } from './ui/modern-mobile-menu';
 import type { InteractiveMenuItem } from './ui/modern-mobile-menu';
-import { Home, Map, TrendingUp, LayoutGrid, MessageCircle } from 'lucide-react';
+import { Home, Map, TrendingUp, LayoutGrid } from 'lucide-react';
 
 export function MobileNav() {
   const menuItems: InteractiveMenuItem[] = useMemo(() => [
@@ -30,14 +30,6 @@ export function MobileNav() {
       icon: LayoutGrid,
       action: () => {
         document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      },
-    },
-    {
-      label: 'Chat',
-      icon: MessageCircle,
-      action: () => {
-        const fab = document.getElementById('propertylk-ai-fab');
-        if (fab) fab.click();
       },
     },
   ], []);

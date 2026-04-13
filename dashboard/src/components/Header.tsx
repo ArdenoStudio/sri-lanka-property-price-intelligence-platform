@@ -62,9 +62,9 @@ export function Header() {
             </span>
           </div>
 
-          {/* ── Tagline (collapses on scroll) ─────── */}
+          {/* ── Tagline (collapses on scroll, hidden on mobile) ─────── */}
           <motion.div
-            className="overflow-hidden shrink-0"
+            className="overflow-hidden shrink-0 hidden sm:block"
             style={{ width: taglineWidth }}
             aria-hidden="true"
           >

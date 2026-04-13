@@ -50,7 +50,7 @@ export function PipelineStatus({ status }: Props) {
     <section className="py-4">
       <div className="surface-1 rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
         {/* Single unified row */}
-        <div className="flex items-center divide-x divide-white/[0.06]">
+        <div className="flex items-center divide-x divide-white/[0.06] overflow-x-auto no-scrollbar">
 
           {/* Left label */}
           <div className="flex items-center gap-2 px-5 py-4 shrink-0">

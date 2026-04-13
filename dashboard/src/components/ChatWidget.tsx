@@ -154,6 +154,11 @@ const STYLES = `
     .aw-fab-wrapper   { right: 16px; bottom: 16px; }
     .aw-panel-wrapper { right: 10px; left: 10px; top: 12px; bottom: 104px; width: auto; max-width: none; height: auto; }
   }
+  @media (max-width: 639px) {
+    .aw-fab-wrapper   { display: none !important; }
+    .aw-panel-wrapper { display: none !important; }
+    .aw-backdrop      { display: none !important; }
+  }
 `;
 
 // ─── Message formatter ────────────────────────────────────────────────────────

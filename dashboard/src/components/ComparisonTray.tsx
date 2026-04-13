@@ -21,7 +21,7 @@ export function ComparisonTray({ selected, onRemove, onClear, onCompare }: Props
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: 40, opacity: 0, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
           transition={{ type: 'spring', stiffness: 260, damping: 26, mass: 0.7 }}
-          className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 pointer-events-none"
+          className="fixed bottom-0 max-sm:bottom-[72px] left-0 right-0 z-40 px-4 pb-4 pointer-events-none"
         >
           <div className="max-w-4xl mx-auto bg-[#111111] border-t border-white/[0.1] rounded-2xl shadow-2xl p-4 flex flex-col sm:flex-row items-center gap-4 pointer-events-auto">
             <div className="flex items-center gap-2 pr-4 border-b sm:border-b-0 sm:border-r border-border w-full sm:w-auto pb-2 sm:pb-0">
