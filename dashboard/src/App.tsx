@@ -13,6 +13,7 @@ import { PageLoader } from './components/PageLoader';
 import { NoiseOverlay } from './components/NoiseOverlay';
 import { ScrollProgressBar } from './components/ScrollProgressBar';
 import { RevealSection } from './components/RevealSection';
+import { MobileNav } from './components/MobileNav';
 import { Analytics } from '@vercel/analytics/react';
 
 // ── Lazy-loaded heavy components ──────────────────────────────────────────────
@@ -350,6 +351,7 @@ function App() {
           <Suspense fallback={<ChatSkeleton />}>
             <ChatWidget />
           </Suspense>
+          <MobileNav />
           <Footer />
           <Analytics />
         </div>
