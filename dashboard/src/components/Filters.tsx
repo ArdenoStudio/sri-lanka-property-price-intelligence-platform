@@ -482,9 +482,9 @@ export function Filters({
   };
 
   return (
-    <div className="mb-8">
+    <div className="mb-8 flex flex-col gap-3 sm:gap-0 sm:flex-row sm:items-center sm:flex-wrap">
       {/* ── Row 1: Property type + listing type pills (scrollable on mobile) ── */}
-      <div className="flex items-center gap-1 overflow-x-auto sm:overflow-visible no-scrollbar pb-3 -mx-2 px-2">
+      <div className="flex items-center gap-1 overflow-x-auto sm:overflow-visible no-scrollbar pb-3 sm:pb-0 -mx-2 px-2 sm:mx-0 sm:px-0">
         <div className="flex items-center gap-1 flex-shrink-0">
           {PROPERTY_TYPES.map(opt => (
             <button key={opt.value} onClick={() => onTypeChange(opt.value)}
@@ -521,8 +521,10 @@ export function Filters({
         </div>
       </div>
 
+      <div className="hidden sm:block w-px h-4 bg-white/[0.1] mx-4 opacity-50" />
+
       {/* ── Row 2: Dropdowns + meta (scrollable on mobile) ── */}
-      <div className="flex items-center gap-3 overflow-x-auto sm:overflow-visible no-scrollbar pb-1 -mx-2 px-2">
+      <div className="flex items-center gap-3 overflow-x-auto sm:overflow-visible no-scrollbar pb-1 sm:pb-0 -mx-2 px-2 sm:mx-0 sm:px-0">
         <MinimalSelect options={districtOptions} value={selectedDistrict}
           onChange={onDistrictChange} prefix="District" />
 
@@ -547,7 +549,7 @@ export function Filters({
 
         <MinimalSelect options={SORT_OPTIONS} value={sortBy} onChange={onSortChange} />
 
-        <div className="w-px h-4 bg-white/[0.1] flex-shrink-0" />
+        <div className="w-px h-4 bg-white/[0.1] flex-shrink-0 opacity-50 sm:mx-2" />
 
         <span className="text-[11px] text-[#525252] whitespace-nowrap flex-shrink-0 num">
           {totalResults.toLocaleString()} listings
@@ -555,7 +557,7 @@ export function Filters({
 
         {hasFilters && (
           <button onClick={clearAll}
-            className="flex items-center gap-1 text-[11px] text-[#14b8a6] whitespace-nowrap flex-shrink-0 cursor-pointer bg-transparent border-none p-0 hover:text-[#5eead4] transition-colors">
+            className="flex items-center gap-1 text-[11px] text-[#14b8a6] whitespace-nowrap flex-shrink-0 cursor-pointer bg-transparent border-none p-0 hover:text-[#5eead4] transition-colors ml-2">
             <X className="w-3 h-3" /> Clear
           </button>
         )}
