@@ -18,11 +18,11 @@ COPY . .
 
 # Set python path
 ENV PYTHONPATH=/app
+# PORT is injected by the host (Railway = 8080, Render = 10000). Default to 8080 for local.
 ENV PORT=8080
-# Unbuffer Python stdout/stderr so logs appear immediately in Railway
 ENV PYTHONUNBUFFERED=1
 
-EXPOSE 8080
+EXPOSE $PORT
 
-# Use shell form so $PORT is expanded by the shell — most reliable Railway pattern
+# Use shell form so $PORT is expanded by the shell
 CMD uvicorn api.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips='*'

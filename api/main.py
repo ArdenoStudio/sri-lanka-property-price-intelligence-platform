@@ -359,11 +359,26 @@ class PriceAggregator:
     def __init__(self, db: Session):
         self.db = db
 
+    @staticmethod
+    def _bedroom_bucket(bedrooms) -> str | None:
+        if bedrooms is None:
+            return None
+        if bedrooms <= 1:
+            return "1"
+        if bedrooms == 2:
+            return "2"
+        if bedrooms == 3:
+            return "3"
+        if bedrooms == 4:
+            return "4"
+        return "5+"
+
     def aggregate(self):
         """Calculates monthly stats and populates price_aggregates table."""
-        # We group by month/year and district/type
-        # In a real app we'd use a more complex median, but for now we'll use avg and count
-        results = (
+        now = datetime.utcnow()
+
+        # --- Broad aggregates: (district, property_type, period) ---
+        broad_results = (
             self.db.query(
                 Listing.district,
                 Listing.property_type,
@@ -382,32 +397,154 @@ class PriceAggregator:
             .all()
         )
 
-        for d, pt, y, m, avg_lkr, avg_perch, count in results:
+        for d, pt, y, m, avg_lkr, avg_perch, count in broad_results:
             stmt = insert(PriceAggregate).values(
                 district=d,
                 property_type=pt,
+                bedroom_bucket=None,
                 period_year=int(y),
                 period_month=int(m),
                 avg_price_lkr=avg_lkr,
-                median_price_lkr=avg_lkr, # Simplification for now
+                median_price_lkr=avg_lkr,
                 median_price_per_perch=avg_perch,
                 listing_count=count,
-                computed_at=datetime.utcnow()
+                computed_at=now,
             ).on_conflict_do_update(
                 index_elements=['district', 'property_type', 'period_year', 'period_month'],
+                index_where=PriceAggregate.bedroom_bucket.is_(None),
                 set_={
                     "avg_price_lkr": avg_lkr,
                     "median_price_lkr": avg_lkr,
                     "median_price_per_perch": avg_perch,
                     "listing_count": count,
-                    "computed_at": datetime.utcnow()
+                    "computed_at": now,
                 }
             )
             self.db.execute(stmt)
-        
+
+        # --- Bucketed aggregates: (district, property_type, bedroom_bucket, period) ---
+        # Only for houses/apartments — land/commercial don't have meaningful bedroom counts
+        bucketed_results = (
+            self.db.query(
+                Listing.district,
+                Listing.property_type,
+                Listing.bedrooms,
+                func.extract('year', Listing.scraped_at).label('year'),
+                func.extract('month', Listing.scraped_at).label('month'),
+                func.avg(Listing.price_lkr).label('avg_price'),
+                func.avg(Listing.price_per_perch).label('avg_perch'),
+                func.count(Listing.id).label('count')
+            )
+            .filter(
+                Listing.price_lkr.isnot(None),
+                Listing.district.isnot(None),
+                Listing.bedrooms.isnot(None),
+                Listing.property_type.in_(["house", "apartment", "villa"]),
+                Listing.is_outlier == False,
+            )
+            .group_by(Listing.district, Listing.property_type, Listing.bedrooms, 'year', 'month')
+            .all()
+        )
+
+        # Collapse individual bedroom counts into buckets, re-summing within each bucket
+        from collections import defaultdict
+        bucket_agg: dict = defaultdict(lambda: {"sum": 0.0, "count": 0, "perch_sum": 0.0})
+        for d, pt, beds, y, m, avg_lkr, avg_perch, cnt in bucketed_results:
+            if avg_lkr is None:
+                continue
+            bucket = self._bedroom_bucket(beds)
+            if bucket is None:
+                continue
+            key = (d, pt, bucket, int(y), int(m))
+            bucket_agg[key]["sum"] += float(avg_lkr) * cnt
+            bucket_agg[key]["count"] += cnt
+            if avg_perch:
+                bucket_agg[key]["perch_sum"] += float(avg_perch) * cnt
+
+        for (d, pt, bucket, y, m), agg in bucket_agg.items():
+            if agg["count"] < 3:
+                continue
+            avg_lkr = agg["sum"] / agg["count"]
+            avg_perch = agg["perch_sum"] / agg["count"] if agg["perch_sum"] else None
+            stmt = insert(PriceAggregate).values(
+                district=d,
+                property_type=pt,
+                bedroom_bucket=bucket,
+                period_year=y,
+                period_month=m,
+                avg_price_lkr=avg_lkr,
+                median_price_lkr=avg_lkr,
+                median_price_per_perch=avg_perch,
+                listing_count=agg["count"],
+                computed_at=now,
+            ).on_conflict_do_update(
+                index_elements=['district', 'property_type', 'bedroom_bucket', 'period_year', 'period_month'],
+                index_where=PriceAggregate.bedroom_bucket.isnot(None),
+                set_={
+                    "avg_price_lkr": avg_lkr,
+                    "median_price_lkr": avg_lkr,
+                    "median_price_per_perch": avg_perch,
+                    "listing_count": agg["count"],
+                    "computed_at": now,
+                }
+            )
+            self.db.execute(stmt)
+
         self.db.commit()
         self._update_deal_scores()
-        return len(results)
+        return len(broad_results)
+
+    def _latest_medians_query(self, with_bucket: bool):
+        """Returns the most recent aggregate rows, preferring current month with fallback."""
+        now = datetime.utcnow()
+        bucket_filter = (
+            PriceAggregate.bedroom_bucket.isnot(None)
+            if with_bucket
+            else PriceAggregate.bedroom_bucket.is_(None)
+        )
+        cols = [
+            PriceAggregate.district,
+            PriceAggregate.property_type,
+            PriceAggregate.median_price_lkr,
+            PriceAggregate.listing_count,
+        ]
+        if with_bucket:
+            cols.insert(2, PriceAggregate.bedroom_bucket)
+
+        rows = (
+            self.db.query(*cols)
+            .filter(
+                bucket_filter,
+                PriceAggregate.period_year == now.year,
+                PriceAggregate.period_month == now.month,
+                PriceAggregate.median_price_lkr.isnot(None),
+            )
+            .all()
+        )
+        if rows:
+            return rows
+
+        # Fall back to most recent available month
+        group_cols = [PriceAggregate.district, PriceAggregate.property_type]
+        if with_bucket:
+            group_cols.append(PriceAggregate.bedroom_bucket)
+        subq = (
+            self.db.query(
+                *group_cols,
+                func.max(PriceAggregate.period_year * 100 + PriceAggregate.period_month).label("ym"),
+            )
+            .filter(bucket_filter, PriceAggregate.median_price_lkr.isnot(None))
+            .group_by(*group_cols)
+            .subquery()
+        )
+        join_cond = (
+            (PriceAggregate.district == subq.c.district)
+            & (PriceAggregate.property_type == subq.c.property_type)
+            & (PriceAggregate.period_year * 100 + PriceAggregate.period_month == subq.c.ym)
+        )
+        if with_bucket:
+            join_cond = join_cond & (PriceAggregate.bedroom_bucket == subq.c.bedroom_bucket)
+        return self.db.query(*cols).filter(bucket_filter).join(subq, join_cond).all()
 
     def _update_deal_scores(self):
         """Stamps deal_score and market_median_lkr on each non-outlier listing.
@@ -415,60 +552,28 @@ class PriceAggregator:
         deal_score = 100 * (1 - price_lkr / market_median_lkr)
         Positive = below median (good deal), negative = above median.
         Clamped to [-100, 100].
+
+        Uses comparable-based pricing: compares against listings with the same
+        bedroom bucket (1/2/3/4/5+) in the same district+type (min 5 listings).
+        Falls back to broad district+type median if no bucket data.
         """
-        # Pull the latest aggregate median per (district, property_type)
-        now = datetime.utcnow()
-        latest_medians = (
-            self.db.query(
-                PriceAggregate.district,
-                PriceAggregate.property_type,
-                PriceAggregate.median_price_lkr,
-            )
-            .filter(
-                PriceAggregate.period_year == now.year,
-                PriceAggregate.period_month == now.month,
-                PriceAggregate.median_price_lkr.isnot(None),
-            )
-            .all()
-        )
+        MIN_BUCKET_COUNT = 5
 
-        # Fall back to the most recent available month if current month has no data
-        if not latest_medians:
-            subq = (
-                self.db.query(
-                    PriceAggregate.district,
-                    PriceAggregate.property_type,
-                    func.max(
-                        PriceAggregate.period_year * 100 + PriceAggregate.period_month
-                    ).label("ym"),
-                )
-                .filter(PriceAggregate.median_price_lkr.isnot(None))
-                .group_by(PriceAggregate.district, PriceAggregate.property_type)
-                .subquery()
-            )
-            latest_medians = (
-                self.db.query(
-                    PriceAggregate.district,
-                    PriceAggregate.property_type,
-                    PriceAggregate.median_price_lkr,
-                )
-                .join(
-                    subq,
-                    (PriceAggregate.district == subq.c.district)
-                    & (PriceAggregate.property_type == subq.c.property_type)
-                    & (
-                        PriceAggregate.period_year * 100 + PriceAggregate.period_month
-                        == subq.c.ym
-                    ),
-                )
-                .all()
-            )
+        # Build bucketed map: (district, property_type, bedroom_bucket) -> median
+        bucketed_map: dict = {}
+        for row in self._latest_medians_query(with_bucket=True):
+            d, pt, bucket, med, cnt = row
+            if med and cnt and cnt >= MIN_BUCKET_COUNT:
+                bucketed_map[(d, pt, bucket)] = float(med)
 
-        median_map: dict = {
-            (d, pt): float(med) for d, pt, med in latest_medians if med
-        }
+        # Build broad fallback map: (district, property_type) -> median
+        broad_map: dict = {}
+        for row in self._latest_medians_query(with_bucket=False):
+            d, pt, med, cnt = row
+            if med:
+                broad_map[(d, pt)] = float(med)
 
-        if not median_map:
+        if not broad_map and not bucketed_map:
             return
 
         listings = (
@@ -483,8 +588,14 @@ class PriceAggregator:
         )
 
         for listing in listings:
-            key = (listing.district, listing.property_type)
-            median = median_map.get(key)
+            # Try bucketed comparable first
+            bucket = self._bedroom_bucket(listing.bedrooms)
+            median = None
+            if bucket:
+                median = bucketed_map.get((listing.district, listing.property_type, bucket))
+            # Fall back to broad median
+            if not median:
+                median = broad_map.get((listing.district, listing.property_type))
             if not median or median <= 0:
                 continue
             listing.market_median_lkr = median

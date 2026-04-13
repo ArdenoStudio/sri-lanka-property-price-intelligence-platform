@@ -82,6 +82,7 @@ class PriceAggregate(Base):
     id = Column(BigInteger, primary_key=True)
     district = Column(String(50), nullable=False)
     property_type = Column(String(30), nullable=False)
+    bedroom_bucket = Column(String(5), nullable=True)
     period_year = Column(Integer, nullable=False)
     period_month = Column(Integer, nullable=False)
     median_price_lkr = Column(Numeric(15, 2))
@@ -93,7 +94,9 @@ class PriceAggregate(Base):
     computed_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
-        Index('idx_price_aggregates_main', 'district', 'property_type', 'period_year', 'period_month', unique=True),
+        # Partial indexes defined in migration 004 — model reflects them here for documentation
+        Index('idx_price_aggregates_broad', 'district', 'property_type', 'period_year', 'period_month'),
+        Index('idx_price_aggregates_bucketed', 'district', 'property_type', 'bedroom_bucket', 'period_year', 'period_month'),
     )
 
 class ScrapeRun(Base):
