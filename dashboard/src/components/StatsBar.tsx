@@ -80,9 +80,9 @@ export function StatsBar({ stats }: Props) {
         </p>
         <h1 className="text-[clamp(3rem,8vw,7rem)] font-bold tracking-[-0.04em] leading-[0.92] text-white">
           Market<br />
-          <span className="text-[#525252]">Intelligence</span>
+          <span className="text-[#737373]">Intelligence</span>
         </h1>
-        <p className="mt-7 text-[#a3a3a3] text-[15px] leading-relaxed max-w-[22rem] sm:whitespace-nowrap">
+        <p className="mt-7 text-[#a3a3a3] text-[15px] leading-relaxed text-center sm:whitespace-nowrap">
           Real-time property data across Sri Lanka. Updated daily from 5,000+ listings.
         </p>
       </div>
