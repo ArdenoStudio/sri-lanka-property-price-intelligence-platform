@@ -78,6 +78,8 @@ export function MapSection({ points, onDistrictSelect, selectedDistrict }: Props
 
       <div className="card overflow-hidden relative" style={{ height: 460 }}>
         <ComposableMap
+          width={800}
+          height={460}
           projection="geoMercator"
           projectionConfig={{ center: [80.7, 7.87], scale: 6200 }}
           style={{ width: '100%', height: '100%' }}
