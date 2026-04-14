@@ -1,7 +1,7 @@
 <div align="center">
   <img src="dashboard/public/ardeno-logo.svg" alt="Ardeno Studio" height="48" />
   <br /><br />
-  <img src="dashboard/public/favicon-property.svg" alt="Nilam" height="64" />
+  <img src="dashboard/public/favicon.svg" alt="Nilam" height="64" />
 
   <h1>Sri Lanka Property Price Intelligence Platform</h1>
   <p><strong>An Ardeno Studio Production</strong></p>
