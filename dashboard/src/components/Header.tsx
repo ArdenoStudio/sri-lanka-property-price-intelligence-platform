@@ -134,13 +134,11 @@ export function Header() {
                   exit={{ opacity: 0, y: -4, scale: 0.97 }}
                   transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-[0_24px_64px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.04)] backdrop-blur-2xl bg-white/[0.04]">
+                  <div className="relative overflow-hidden rounded-2xl border border-white/[0.10] shadow-[0_24px_64px_rgba(0,0,0,0.9)] bg-[#141414]">
                     {/* Teal accent bar */}
                     <div className="h-[2px] w-full bg-gradient-to-r from-[#14b8a6] to-[#0d9488]" />
-                    {/* Subtle inner glow */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none" />
 
-                    <div className="relative bg-[#0e0e0e]/70 backdrop-blur-xl p-4">
+                    <div className="relative p-4">
                       {/* Title */}
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-1 h-3.5 rounded-full bg-[#14b8a6]" />
