@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../api';
 
@@ -57,6 +58,14 @@ interface Props {
 
 export function ListingsGrid({ listings, loading, page, pageSize, total, onPageChange, onCompareToggle, selectedForComparison }: Props) {
   const totalPages = Math.ceil(total / pageSize);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  function handlePageChange(p: number) {
+    onPageChange(p);
+    setTimeout(() => {
+      topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }
 
   if (loading) {
     return (
@@ -87,7 +96,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
   }
 
   return (
-    <div>
+    <div ref={topRef}>
       <div className="listings-grid">
         {listings.map((listing, idx) => {
           const { text, suffix } = formatPrice(listing);
@@ -196,7 +205,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 mt-10">
           <button
-            onClick={() => onPageChange(Math.max(0, page - 1))}
+            onClick={() => handlePageChange(Math.max(0, page - 1))}
             disabled={page === 0}
             aria-label="Previous page"
             className="p-2 rounded-xl border border-white/[0.08] hover:border-white/[0.14] disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer text-[#a3a3a3] hover:text-white bg-transparent"
@@ -209,7 +218,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
           </span>
 
           <button
-            onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}
+            onClick={() => handlePageChange(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
             aria-label="Next page"
             className="p-2 rounded-xl border border-white/[0.08] hover:border-white/[0.14] disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer text-[#a3a3a3] hover:text-white bg-transparent"
