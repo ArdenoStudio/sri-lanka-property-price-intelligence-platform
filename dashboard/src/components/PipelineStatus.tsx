@@ -42,6 +42,7 @@ const LABELS: Record<string, string> = {
 export function PipelineStatus({ status }: Props) {
   const jobs = status?.jobs ?? [];
   const overall = status?.overall_status ?? 'delayed';
+  const loading = !status;
 
   const overallColor =
     overall === 'ok' ? '#10b981' : overall === 'running' ? '#f59e0b' : '#ef4444';
@@ -49,47 +50,48 @@ export function PipelineStatus({ status }: Props) {
   return (
     <section className="py-4">
       <div className="surface-1 rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-        {/* Single unified row */}
         <div className="flex items-center divide-x divide-white/[0.06] overflow-x-auto no-scrollbar">
 
           {/* Left label */}
           <div className="flex items-center gap-2 px-5 py-4 shrink-0">
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: overallColor }}
-            />
+            {loading ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-white/10 animate-pulse shrink-0" />
+            ) : (
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: overallColor }} />
+            )}
             <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#525252] whitespace-nowrap">
               Pipeline
             </span>
           </div>
 
-          {/* Jobs */}
-          {jobs.map((job) => {
-            const Icon = statusIcon(job.status);
-            const color = statusColor(job.status);
-            return (
-              <div
-                key={job.name}
-                className="flex-1 flex items-center gap-2.5 px-5 py-4 hover:bg-bg-card-hover/70 transition-colors"
-              >
-                <Icon
-                  className="w-3 h-3 shrink-0"
-                  style={{
-                    color,
-                    animation: job.status === 'running' ? 'spin 1s linear infinite' : undefined,
-                  }}
-                />
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-text-primary leading-none truncate">
-                    {LABELS[job.name] ?? job.name}
-                  </p>
-                  <p className="text-[10px] text-text-muted mt-0.5 leading-none">
-                    {formatDate(job.last_success)}
-                  </p>
+          {/* Skeleton jobs */}
+          {loading ? (
+            <>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex-1 flex items-center gap-2.5 px-5 py-4">
+                  <div className="w-3 h-3 rounded-full bg-white/[0.06] animate-pulse shrink-0" />
+                  <div className="min-w-0 flex flex-col gap-1.5">
+                    <div className="h-2.5 bg-white/[0.06] rounded animate-pulse w-12" />
+                    <div className="h-2 bg-white/[0.04] rounded animate-pulse w-8" />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </>
+          ) : (
+            jobs.map((job) => {
+              const Icon = statusIcon(job.status);
+              const color = statusColor(job.status);
+              return (
+                <div key={job.name} className="flex-1 flex items-center gap-2.5 px-5 py-4 hover:bg-bg-card-hover/70 transition-colors">
+                  <Icon className="w-3 h-3 shrink-0" style={{ color, animation: job.status === 'running' ? 'spin 1s linear infinite' : undefined }} />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-text-primary leading-none truncate">{LABELS[job.name] ?? job.name}</p>
+                    <p className="text-[10px] text-text-muted mt-0.5 leading-none">{formatDate(job.last_success)}</p>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </section>

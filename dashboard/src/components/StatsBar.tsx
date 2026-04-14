@@ -68,10 +68,10 @@ export function StatsBar({ stats }: Props) {
         .join(' · ')
     : 'Land · House · Apartment · Commercial';
 
+  const loading = !stats;
+
   return (
     <section className="pt-4 pb-10">
-      {/* ---- Hero editorial headline ---- */}
-      {/* Replaced motion.div with CSS transition for simple mount animation */}
       <div
         className="mb-16 text-center flex flex-col items-center css-fade-in"
       >
@@ -88,7 +88,6 @@ export function StatsBar({ stats }: Props) {
       </div>
 
       {/* ---- Bento stats grid ---- */}
-      {/* Replaced motion.div with CSS transition */}
       <div className="css-fade-in css-fade-in-delay">
         <div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 rounded-3xl overflow-hidden"
@@ -100,33 +99,31 @@ export function StatsBar({ stats }: Props) {
         >
           {/* ---- Hero card: Avg Price (span 2 on lg) ---- */}
           <div className="relative bg-[#111111] p-8 lg:col-span-2 flex flex-col justify-between min-h-[180px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
-            {/* Teal top accent stripe */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#14b8a6] to-[#0d9488]" />
-            {/* Subtle radial teal glow — hero card only */}
-            <div
-              className="absolute top-0 left-0 w-full h-full pointer-events-none"
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none"
               style={{ background: 'radial-gradient(ellipse 60% 50% at 20% 0%, rgba(20,184,166,0.07) 0%, transparent 70%)' }}
             />
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">
-                Average Price
-              </p>
-              <p className="text-[clamp(2.5rem,5vw,4rem)] font-bold text-white tracking-[-0.04em] leading-none num">
-                {formatPrice(avgRaw || null)}
-              </p>
-              {changePct !== null && (
-                <span
-                  className={`mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full num ${
-                    changePct >= 0
-                      ? 'bg-emerald-950 text-emerald-400'
-                      : 'bg-red-950 text-red-400'
-                  }`}
-                >
-                  <span className="text-[14px] leading-none" aria-hidden="true">
-                    {changePct >= 0 ? '▲' : '▼'}
-                  </span>
-                  {changePct >= 0 ? '+' : ''}{changePct}% vs last month
-                </span>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">Average Price</p>
+              {loading ? (
+                <div className="animate-pulse">
+                  <div className="h-12 bg-white/[0.06] rounded-lg w-48 mb-4" />
+                  <div className="h-6 bg-white/[0.04] rounded-full w-36" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-[clamp(2.5rem,5vw,4rem)] font-bold text-white tracking-[-0.04em] leading-none num">
+                    {formatPrice(avgRaw || null)}
+                  </p>
+                  {changePct !== null && (
+                    <span className={`mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full num ${
+                      changePct >= 0 ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'
+                    }`}>
+                      <span className="text-[14px] leading-none" aria-hidden="true">{changePct >= 0 ? '▲' : '▼'}</span>
+                      {changePct >= 0 ? '+' : ''}{changePct}% vs last month
+                    </span>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -134,46 +131,59 @@ export function StatsBar({ stats }: Props) {
           {/* ---- Total Listings ---- */}
           <div className="relative bg-[#111111] p-8 flex flex-col justify-between min-h-[140px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">
-                Listings
-              </p>
-              <p className="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-white tracking-[-0.03em] leading-none num">
-                {totalRaw.toLocaleString()}
-              </p>
-              <p className="text-[11px] text-[#737373] mt-3">
-                +{weeklyNew.toLocaleString()} this week
-              </p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">Listings</p>
+              {loading ? (
+                <div className="animate-pulse">
+                  <div className="h-9 bg-white/[0.06] rounded-lg w-28 mb-3" />
+                  <div className="h-3 bg-white/[0.04] rounded w-20" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-white tracking-[-0.03em] leading-none num">
+                    {totalRaw.toLocaleString()}
+                  </p>
+                  <p className="text-[11px] text-[#737373] mt-3">+{weeklyNew.toLocaleString()} this week</p>
+                </>
+              )}
             </div>
           </div>
 
           {/* ---- Districts ---- */}
           <div className="relative bg-[#111111] p-8 flex flex-col justify-between min-h-[140px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">
-                Districts
-              </p>
-              <p className="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-white tracking-[-0.03em] leading-none num">
-                {districtsRaw}
-              </p>
-              <p className="text-[11px] text-[#737373] mt-3">
-                Across Sri Lanka
-              </p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">Districts</p>
+              {loading ? (
+                <div className="animate-pulse">
+                  <div className="h-9 bg-white/[0.06] rounded-lg w-16 mb-3" />
+                  <div className="h-3 bg-white/[0.04] rounded w-24" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-white tracking-[-0.03em] leading-none num">
+                    {districtsRaw}
+                  </p>
+                  <p className="text-[11px] text-[#737373] mt-3">Across Sri Lanka</p>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {/* Subline */}
         <p className="text-[#737373] text-[11px] mt-4 leading-relaxed flex items-center gap-2 flex-wrap">
-          {stats?.total_listings?.toLocaleString() ?? '...'} listings across {typeBreakdown}
-          {stats?.last_updated && (
+          {loading ? (
+            <span className="animate-pulse inline-block h-3 bg-white/[0.05] rounded w-64" />
+          ) : (
             <>
-              <span className="text-[#737373]"> · Updated {formatDate(stats.last_updated)}</span>
-              <span className="inline-flex items-center gap-1.5 shrink-0">
-                <span
-                  className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-dot shrink-0"
-                  aria-label="Live data"
-                />
-              </span>
+              {stats?.total_listings?.toLocaleString()} listings across {typeBreakdown}
+              {stats?.last_updated && (
+                <>
+                  <span> · Updated {formatDate(stats.last_updated)}</span>
+                  <span className="inline-flex items-center gap-1.5 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-dot shrink-0" aria-label="Live data" />
+                  </span>
+                </>
+              )}
             </>
           )}
         </p>
