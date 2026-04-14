@@ -216,9 +216,11 @@ class LPWScraper:
                                     }
                                 )
 
-                                res = self.db.execute(stmt.returning(text("(xmax = 0) AS is_new")))
-                                row = res.fetchone()
-                                if row and row.is_new:
+                                exists = self.db.query(RawListing.id).filter_by(
+                                    source=self.SOURCE, source_id=source_id
+                                ).first()
+                                self.db.execute(stmt)
+                                if not exists:
                                     total_new += 1
                                 total_found += 1
 

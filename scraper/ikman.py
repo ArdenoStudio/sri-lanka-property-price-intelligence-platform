@@ -252,6 +252,8 @@ class IkmanScraper:
 
                         except Exception as e:
                             log.error("listing_parse_error", source=self.SOURCE, error=str(e))
+                            self.db.rollback()
+                            self.db.expire_all()
 
                     # Batch commit all 25 rows together to completely remove DB lag!
                     self.db.commit()

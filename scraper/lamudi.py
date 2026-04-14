@@ -265,9 +265,11 @@ class LamudiScraper:
                         "raw_size": item.get("raw_size"),
                     }
                 )
-                result = self.db.execute(raw_stmt.returning(text("(xmax = 0) AS is_new")))
-                row = result.fetchone()
-                if row and row.is_new:
+                exists = self.db.query(RawListing.id).filter_by(
+                    source=self.SOURCE, source_id=item["source_id"]
+                ).first()
+                self.db.execute(raw_stmt)
+                if not exists:
                     new_count += 1
             except Exception as e:
                 log.error("houseLk_upsert_error", source_id=item.get("source_id"), error=str(e))
