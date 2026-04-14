@@ -127,7 +127,6 @@ export function Footer() {
       style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#000000' }}
     >
       <BlueprintGrid />
-      <CornerOrnaments />
 
       <motion.div
         className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8"
