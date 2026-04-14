@@ -100,7 +100,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
           return (
             <div
               key={listing.id}
-              className="group relative bg-[#141414] hover:bg-[#1a1a1a] transition-colors duration-200 css-listing-fade-in"
+              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in"
               style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
             >
               {/* Left accent line — teal on hover */}
@@ -109,7 +109,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
               <div className="p-6 flex flex-col h-full">
                 {/* Type + location + compare button */}
                 <div className="flex items-start justify-between mb-3">
-                  <p className="text-[11px] uppercase tracking-[0.12em] text-[#888888] leading-none">
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-[#737373] leading-none">
                     {[listing.property_type, listing.district].filter(Boolean).join(' · ') || 'Property'}
                   </p>
                   <button
@@ -137,14 +137,14 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
 
                 {/* Details */}
                 {detailParts.length > 0 && (
-                  <p className="text-[13px] text-[#b3b3b3] mb-2">
+                  <p className="text-[13px] text-[#a3a3a3] mb-2">
                     {detailParts.join(' · ')}
                   </p>
                 )}
 
                 {/* Title */}
                 {listing.title && (
-                  <p className="text-[13px] text-[#888888] line-clamp-1 mb-2">
+                  <p className="text-[13px] text-[#737373] line-clamp-1 mb-2">
                     {listing.title}
                   </p>
                 )}
@@ -168,7 +168,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
 
                 {/* Footer — meta + link */}
                 <div className="mt-auto pt-3 flex items-center justify-between">
-                  <p className="text-[11px] text-[#666666] num">
+                  <p className="text-[11px] text-[#525252] num">
                     {[formatDate(listing.first_seen_at), listing.source].filter(Boolean).join(' · ')}
                   </p>
                   {listing.url && (
