@@ -14,7 +14,7 @@ export function MobileNav() {
       label: 'Map',
       icon: Map,
       action: () => {
-        const el = document.querySelector('.leaflet-container')?.closest('section');
+        const el = document.querySelector('.rsm-svg')?.closest('section');
         el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       },
     },

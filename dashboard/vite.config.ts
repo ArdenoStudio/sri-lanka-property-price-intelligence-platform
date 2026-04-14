@@ -23,7 +23,7 @@ export default defineConfig({
           if (id.includes('node_modules/framer-motion')) {
             return 'vendor-motion';
           }
-          if (id.includes('node_modules/leaflet') || id.includes('node_modules/react-leaflet')) {
+          if (id.includes('node_modules/react-simple-maps') || id.includes('node_modules/d3-geo') || id.includes('node_modules/topojson')) {
             return 'vendor-map';
           }
           if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) {

@@ -130,6 +130,68 @@ export const sendChatMessage = (message: string, history: any[] = []) =>
 export const getPipelineStatus = () =>
   fetchJSON<PipelineStatusResponse>('/public/pipeline');
 
+// --- Listing Detail ---
+
+export interface ListingDetail extends Listing {
+  source_id?: string;
+  description?: string | null;
+  price_per_sqft?: number | null;
+  last_seen_at?: string | null;
+}
+
+export interface PriceSnapshot {
+  date: string | null;
+  raw_price: string | null;
+}
+
+export interface SimilarListing {
+  id: number;
+  source: string;
+  title: string | null;
+  price_lkr: number | null;
+  deal_score: number | null;
+  price_per_perch: number | null;
+  district: string | null;
+  city: string | null;
+  property_type: string | null;
+  listing_type: string | null;
+  size_perches: number | null;
+  size_sqft: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  url: string | null;
+  first_seen_at: string | null;
+  days_on_market: number | null;
+}
+
+export const getListingDetail = (id: number) =>
+  fetchJSON<ListingDetail>(`/listings/${id}`);
+
+export const getListingSimilar = (id: number) =>
+  fetchJSON<SimilarListing[]>(`/listings/${id}/similar`);
+
+export const getListingPriceHistory = (id: number) =>
+  fetchJSON<PriceSnapshot[]>(`/listings/${id}/price-history`);
+
+// --- Price Estimate ---
+
+export interface EstimateResult {
+  estimated_low: number | null;
+  estimated_median: number | null;
+  estimated_high: number | null;
+  comparable_count: number;
+  confidence: 'high' | 'medium' | 'low' | 'none';
+  comparables: SimilarListing[];
+}
+
+export const getEstimate = (params: {
+  district: string;
+  property_type: string;
+  size_perches?: number;
+  size_sqft?: number;
+  bedrooms?: number;
+}) => fetchJSON<EstimateResult>('/estimate', params, 'POST');
+
 async function fetchJSON<T>(
   path: string, 
   params?: Record<string, string | number | boolean | any[] | undefined>,
