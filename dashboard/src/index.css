@@ -313,6 +313,22 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -0.03em; }
 }
 .leaflet-popup-tip { background: #161616 !important; }
 
+/* District name labels (permanent tooltips) */
+.map-district-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #aaaaaa !important;
+  font-size: 9px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.04em !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+  padding: 0 !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7) !important;
+}
+.map-district-label::before { display: none !important; }
+
 /* ============================================================
    SCROLLBAR UTILITIES
    ============================================================ */

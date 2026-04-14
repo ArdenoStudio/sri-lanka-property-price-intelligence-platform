@@ -270,6 +270,7 @@ function App() {
                 <MapSection
                   points={heatmap}
                   onDistrictSelect={(d) => setSelectedDistrict(d)}
+                  selectedDistrict={selectedDistrict}
                 />
               </Suspense>
             </RevealSection>
