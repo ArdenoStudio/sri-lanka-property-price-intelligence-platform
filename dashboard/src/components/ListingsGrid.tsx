@@ -61,12 +61,15 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
   if (loading) {
     return (
       <div className="listings-grid">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="bg-[#111111] p-6 animate-pulse">
-            <div className="h-2 bg-white/[0.05] rounded w-1/3 mb-6" />
-            <div className="h-8 bg-white/[0.05] rounded w-2/3 mb-3" />
-            <div className="h-2.5 bg-white/[0.05] rounded w-1/2 mb-2" />
-            <div className="h-2.5 bg-white/[0.05] rounded w-3/4" />
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="bg-[#111111] p-6 animate-pulse min-h-[160px] flex flex-col justify-between">
+            <div>
+              <div className="h-2 bg-white/[0.05] rounded w-1/3 mb-5" />
+              <div className="h-8 bg-white/[0.05] rounded w-2/3 mb-3" />
+              <div className="h-2.5 bg-white/[0.05] rounded w-1/2 mb-2" />
+              <div className="h-2.5 bg-white/[0.05] rounded w-3/4" />
+            </div>
+            <div className="h-2 bg-white/[0.04] rounded w-1/4 mt-4" />
           </div>
         ))}
       </div>
