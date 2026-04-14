@@ -71,37 +71,6 @@ function BlueprintGrid() {
   );
 }
 
-// ── Corner crosshair ornaments ─────────────────────────────────────────────
-const CROSS_COLOR = 'rgba(20,184,166,0.22)';
-const ARM = 10;
-const CR  = 3;
-
-function Crosshair() {
-  return (
-    <svg
-      width={ARM * 2 + 2}
-      height={ARM * 2 + 2}
-      viewBox={`${-ARM - 1} ${-ARM - 1} ${ARM * 2 + 2} ${ARM * 2 + 2}`}
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <line x1={-ARM} y1="0" x2={ARM} y2="0" stroke={CROSS_COLOR} strokeWidth="1" />
-      <line x1="0" y1={-ARM} x2="0" y2={ARM} stroke={CROSS_COLOR} strokeWidth="1" />
-      <circle cx="0" cy="0" r={CR} fill="none" stroke={CROSS_COLOR} strokeWidth="0.75" />
-    </svg>
-  );
-}
-
-function CornerOrnaments() {
-  return (
-    <>
-      <div className="absolute top-6 left-6 pointer-events-none z-[1]"><Crosshair /></div>
-      <div className="absolute top-6 right-6 pointer-events-none z-[1]"><Crosshair /></div>
-      <div className="absolute bottom-6 left-6 pointer-events-none z-[1]"><Crosshair /></div>
-      <div className="absolute bottom-6 right-6 pointer-events-none z-[1]"><Crosshair /></div>
-    </>
-  );
-}
 
 
 // ── Variants ───────────────────────────────────────────────────────────────
