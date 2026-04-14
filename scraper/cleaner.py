@@ -517,6 +517,7 @@ class DataCleaner:
         # Strip trailing qualifiers before parsing
         clean_str = raw_price
         for suffix in ("Negotiable", "Fixed Price", "ONO", "Per Month", "per month",
+                        "Per Night", "per night", "Per Day", "per day",
                         "Per Perch", "PSF", "per perch"):
             clean_str = clean_str.replace(suffix, "")
         # Strip brackets e.g. "[1396396 PSF]"
@@ -639,6 +640,31 @@ class DataCleaner:
 
         return district, city, confidence
 
+    _SHORT_TERM_PRICE_SIGNALS = [
+        "per night", "per day", "/night", "/day", "nightly", "daily rate",
+    ]
+    _SHORT_TERM_TEXT_SIGNALS = [
+        "per night", "per day", "/night", "/day", "nightly", "daily rate",
+        "holiday home", "holiday villa", "holiday bungalow", "holiday cabin",
+        "vacation home", "vacation villa", "vacation rental",
+        "short stay", "short-stay", "short term rental", "short-term rental",
+        "airbnb",
+    ]
+
+    def detect_short_term(self, raw_price: str, title: str, description: str = "") -> bool:
+        """Returns True if the listing appears to be a short-term/vacation rental.
+        These should be excluded from monthly rental price aggregations."""
+        price_text = (raw_price or "").lower()
+        body_text = ((title or "") + " " + (description or "")).lower()
+
+        for signal in self._SHORT_TERM_PRICE_SIGNALS:
+            if signal in price_text:
+                return True
+        for signal in self._SHORT_TERM_TEXT_SIGNALS:
+            if signal in body_text:
+                return True
+        return False
+
     def detect_outliers(self, listing: Listing):
         """Flags listing as outlier if price/size are suspicious.
         Uses different thresholds for sale vs rent listings."""
@@ -720,6 +746,9 @@ class DataCleaner:
 
                 # 2. Build values dict
                 is_outlier, outlier_reason = False, None
+                is_short_term = self.detect_short_term(
+                    raw.raw_price, raw.title, raw.description
+                )
                 dummy = Listing(
                     source=raw.source, source_id=raw.source_id,
                     scraped_at=raw.scraped_at, price_lkr=price_lkr,
@@ -729,6 +758,7 @@ class DataCleaner:
                     listing_type=raw.listing_type, size_perches=size_perches,
                     size_sqft=size_sqft, bedrooms=bedrooms, raw_id=raw.id,
                     location_id=location_id, lat=lat, lng=lng,
+                    is_short_term=is_short_term,
                 )
                 self.detect_outliers(dummy)
                 if dummy.is_outlier:
@@ -752,6 +782,7 @@ class DataCleaner:
                     location_id=location_id, lat=lat, lng=lng,
                     is_outlier=dummy.is_outlier, outlier_reason=dummy.outlier_reason,
                     is_duplicate=dummy.is_duplicate, duplicate_of=dummy.duplicate_of,
+                    is_short_term=is_short_term,
                 ).on_conflict_do_update(
                     index_elements=["source", "source_id"],
                     set_={
@@ -762,6 +793,7 @@ class DataCleaner:
                         "raw_location": raw.raw_location,
                         "district": district,
                         "city": city,
+                        "is_short_term": is_short_term,
                     }
                 )
                 # Retry once on statement timeout before giving up

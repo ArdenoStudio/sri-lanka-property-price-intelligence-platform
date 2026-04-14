@@ -391,7 +391,8 @@ class PriceAggregator:
             .filter(
                 Listing.price_lkr.isnot(None),
                 Listing.district.isnot(None),
-                Listing.is_outlier == False
+                Listing.is_outlier == False,
+                Listing.is_short_term == False,
             )
             .group_by(Listing.district, Listing.property_type, 'year', 'month')
             .all()
@@ -441,6 +442,7 @@ class PriceAggregator:
                 Listing.bedrooms.isnot(None),
                 Listing.property_type.in_(["house", "apartment", "villa"]),
                 Listing.is_outlier == False,
+                Listing.is_short_term == False,
             )
             .group_by(Listing.district, Listing.property_type, Listing.bedrooms, 'year', 'month')
             .all()

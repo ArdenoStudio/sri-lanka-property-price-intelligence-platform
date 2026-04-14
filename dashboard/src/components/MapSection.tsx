@@ -1,19 +1,17 @@
-import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import type { HeatmapPoint } from '../api';
 
-// Sri Lanka tight bounds
-const SL_BOUNDS: [[number, number], [number, number]] = [[5.9, 79.5], [9.9, 81.9]];
-const SL_CENTER: [number, number] = [7.8731, 80.7718];
-const SL_ZOOM = 7.5;
+const GEO_URL = '/lk-districts.geojson';
 
-function MapController() {
-  const map = useMap();
-  useEffect(() => {
-    map.invalidateSize();
-    map.fitBounds(SL_BOUNDS, { padding: [16, 16] });
-  }, [map]);
-  return null;
+// Thermal gradient: blue (cheap) → teal → amber → red (expensive)
+function getColorByPrice(price: number | null, minPrice: number, maxPrice: number): string {
+  if (!price || maxPrice === minPrice) return '#2a3a4a';
+  const ratio = (price - minPrice) / (maxPrice - minPrice);
+  if (ratio > 0.72) return '#e84545';
+  if (ratio > 0.45) return '#f5a623';
+  if (ratio > 0.22) return '#47c29a';
+  return '#4f8ef7';
 }
 
 function formatPrice(price: number | null): string {
@@ -23,28 +21,12 @@ function formatPrice(price: number | null): string {
   return `Rs ${price.toFixed(0)}`;
 }
 
-// Color = avg price (thermal: blue → teal → amber → red)
-function getColorByPrice(price: number | null, minPrice: number, maxPrice: number): string {
-  if (!price || maxPrice === minPrice) return '#4f8ef7';
-  const ratio = (price - minPrice) / (maxPrice - minPrice);
-  if (ratio > 0.72) return '#e84545'; // Hot — most expensive
-  if (ratio > 0.45) return '#f5a623'; // High
-  if (ratio > 0.22) return '#47c29a'; // Med
-  return '#4f8ef7';                   // Low — cheapest
-}
-
-// Size = listing volume
-function getRadius(count: number, maxCount: number): number {
-  const ratio = count / maxCount;
-  return Math.max(7, Math.min(27, ratio * 30 + 7));
-}
-
-function getFillOpacity(count: number, maxCount: number): number {
-  const ratio = count / maxCount;
-  if (ratio > 0.72) return 0.84;
-  if (ratio > 0.45) return 0.74;
-  if (ratio > 0.22) return 0.66;
-  return 0.58;
+interface TooltipState {
+  x: number;
+  y: number;
+  district: string;
+  count: number;
+  avg_price: number | null;
 }
 
 interface Props {
@@ -54,10 +36,18 @@ interface Props {
 }
 
 export function MapSection({ points, onDistrictSelect, selectedDistrict }: Props) {
-  const maxCount = Math.max(...points.map((p) => p.count), 1);
-  const prices = points.map((p) => p.avg_price).filter((p): p is number => p != null);
-  const minPrice = prices.length ? Math.min(...prices) : 0;
-  const maxPrice = prices.length ? Math.max(...prices) : 1;
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+
+  const { pointByDistrict, minPrice, maxPrice } = useMemo(() => {
+    const map: Record<string, HeatmapPoint> = {};
+    for (const p of points) map[p.district] = p;
+    const prices = points.map((p) => p.avg_price).filter((p): p is number => p != null);
+    return {
+      pointByDistrict: map,
+      minPrice: prices.length ? Math.min(...prices) : 0,
+      maxPrice: prices.length ? Math.max(...prices) : 1,
+    };
+  }, [points]);
 
   return (
     <section className="mt-4 mb-8">
@@ -65,7 +55,7 @@ export function MapSection({ points, onDistrictSelect, selectedDistrict }: Props
         <div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-1">Market Heatmap</p>
           <p className="text-xs text-[#525252]">
-            Color = avg price &middot; Size = volume. Click a district to filter.
+            Color = avg price. Click a district to filter.
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -86,81 +76,106 @@ export function MapSection({ points, onDistrictSelect, selectedDistrict }: Props
         </div>
       </div>
 
-      <div className="card overflow-hidden" style={{ height: 420 }}>
-        <MapContainer
-          center={SL_CENTER}
-          zoom={SL_ZOOM}
-          scrollWheelZoom={true}
-          style={{ height: '100%', width: '100%' }}
-          zoomControl={true}
+      <div className="card overflow-hidden relative" style={{ height: 460 }}>
+        <ComposableMap
+          projection="geoMercator"
+          projectionConfig={{ center: [80.7, 7.87], scale: 6200 }}
+          style={{ width: '100%', height: '100%' }}
         >
-          <MapController />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {points.map((pt) => {
-            const radius = getRadius(pt.count, maxCount);
-            const color = getColorByPrice(pt.avg_price, minPrice, maxPrice);
-            const fillOpacity = getFillOpacity(pt.count, maxCount);
-            const isSelected = selectedDistrict === pt.district;
+          <Geographies geography={GEO_URL}>
+            {({ geographies }) =>
+              geographies.map((geo) => {
+                const name = (geo.properties.shapeName as string).replace(' District', '');
+                const pt = pointByDistrict[name];
+                const isSelected = selectedDistrict === name;
+                const fill = getColorByPrice(pt?.avg_price ?? null, minPrice, maxPrice);
 
-            return (
-              <CircleMarker
-                key={pt.district}
-                center={[pt.lat, pt.lng]}
-                radius={isSelected ? radius + 4 : radius}
-                pathOptions={{
-                  fillColor: color,
-                  fillOpacity,
-                  color: isSelected ? '#ffffff' : color,
-                  weight: isSelected ? 3 : 1.5,
-                  opacity: 0.96,
-                }}
-                eventHandlers={{
-                  mouseover: (e) => {
-                    (e.target as any).setStyle({
-                      weight: isSelected ? 3 : 2.2,
-                      fillOpacity: Math.min(0.92, fillOpacity + 0.1),
-                    });
-                    (e.target as any).openPopup();
-                  },
-                  mouseout: (e) => {
-                    (e.target as any).setStyle({
-                      weight: isSelected ? 3 : 1.5,
-                      fillOpacity,
-                    });
-                    (e.target as any).closePopup();
-                  },
-                  click: () => onDistrictSelect(pt.district),
-                }}
-              >
-                <Tooltip permanent direction="top" offset={[0, -(radius + 4)]} className="map-district-label">
-                  {pt.district}
-                </Tooltip>
-                <Popup>
-                  <div className="text-sm min-w-[140px]">
-                    <p className="font-bold text-base mb-1">{pt.district}</p>
-                    <p className="text-text-secondary">
-                      <span className="font-semibold text-text-primary">{pt.count}</span> listings
-                    </p>
-                    {pt.avg_price && (
-                      <p className="text-text-secondary">
-                        Avg: <span className="font-semibold text-accent-light">{formatPrice(pt.avg_price)}</span>
-                      </p>
-                    )}
-                    <button
-                      className="mt-2 text-xs text-accent-light hover:underline cursor-pointer bg-transparent border-none p-0"
-                      onClick={() => onDistrictSelect(pt.district)}
-                    >
-                      View listings &rarr;
-                    </button>
-                  </div>
-                </Popup>
-              </CircleMarker>
-            );
-          })}
-        </MapContainer>
+                return (
+                  <Geography
+                    key={geo.rsmKey}
+                    geography={geo}
+                    onClick={() => pt && onDistrictSelect(name)}
+                    onMouseEnter={(e) => {
+                      if (!pt) return;
+                      const rect = (e.target as SVGElement)
+                        .closest('svg')!
+                        .getBoundingClientRect();
+                      setTooltip({
+                        x: e.clientX - rect.left,
+                        y: e.clientY - rect.top,
+                        district: name,
+                        count: pt.count,
+                        avg_price: pt.avg_price,
+                      });
+                    }}
+                    onMouseMove={(e) => {
+                      if (!pt) return;
+                      const rect = (e.target as SVGElement)
+                        .closest('svg')!
+                        .getBoundingClientRect();
+                      setTooltip((prev) =>
+                        prev ? { ...prev, x: e.clientX - rect.left, y: e.clientY - rect.top } : prev
+                      );
+                    }}
+                    onMouseLeave={() => setTooltip(null)}
+                    style={{
+                      default: {
+                        fill,
+                        stroke: isSelected ? '#ffffff' : '#0d0d0d',
+                        strokeWidth: isSelected ? 1.5 : 0.5,
+                        outline: 'none',
+                      },
+                      hover: {
+                        fill,
+                        stroke: '#ffffff',
+                        strokeWidth: 1.2,
+                        outline: 'none',
+                        cursor: pt ? 'pointer' : 'default',
+                      },
+                      pressed: {
+                        fill,
+                        stroke: '#ffffff',
+                        strokeWidth: 1.5,
+                        outline: 'none',
+                      },
+                    }}
+                  />
+                );
+              })
+            }
+          </Geographies>
+        </ComposableMap>
+
+        {/* Tooltip */}
+        {tooltip && (
+          <div
+            className="pointer-events-none absolute z-10 rounded-xl border border-white/[0.08] px-3 py-2 text-xs shadow-xl"
+            style={{
+              left: tooltip.x + 12,
+              top: tooltip.y - 10,
+              background: '#161616',
+              color: '#f5f5f5',
+              minWidth: 140,
+              transform: tooltip.x > 900 ? 'translateX(-110%)' : undefined,
+            }}
+          >
+            <p className="font-bold text-sm mb-1">{tooltip.district}</p>
+            <p className="text-[#888]">
+              <span className="font-semibold text-white">{tooltip.count}</span> listings
+            </p>
+            <p className="text-[#888]">
+              Avg: <span className="font-semibold" style={{ color: getColorByPrice(tooltip.avg_price, minPrice, maxPrice) }}>
+                {formatPrice(tooltip.avg_price)}
+              </span>
+            </p>
+            <button
+              className="mt-1.5 text-[10px] text-[#aaa] hover:text-white pointer-events-auto"
+              onClick={() => onDistrictSelect(tooltip.district)}
+            >
+              View listings →
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

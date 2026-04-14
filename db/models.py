@@ -67,6 +67,7 @@ class Listing(Base):
     outlier_reason = Column(Text)
     is_duplicate = Column(Boolean, default=False)
     duplicate_of = Column(BigInteger, ForeignKey('listings.id'))
+    is_short_term = Column(Boolean, default=False)
 
     __table_args__ = (
         Index('idx_listings_source_source_id', 'source', 'source_id', unique=True),
