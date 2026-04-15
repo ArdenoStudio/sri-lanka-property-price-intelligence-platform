@@ -23,14 +23,14 @@ function formatPrice(price: number | null): string {
   return `Rs ${price.toFixed(0)}`;
 }
 
-// Color = avg price (thermal: blue → teal → amber → red)
+// Color = avg price — muted palette that reads well on dark map tiles
 function getColorByPrice(price: number | null, minPrice: number, maxPrice: number): string {
-  if (!price || maxPrice === minPrice) return '#4f8ef7';
+  if (!price || maxPrice === minPrice) return '#7c9cbf';
   const ratio = (price - minPrice) / (maxPrice - minPrice);
-  if (ratio > 0.72) return '#e84545'; // Hot — most expensive
-  if (ratio > 0.45) return '#f5a623'; // High
-  if (ratio > 0.22) return '#47c29a'; // Med
-  return '#4f8ef7';                   // Low — cheapest
+  if (ratio > 0.72) return '#e05c5c'; // Hot   — dusty red
+  if (ratio > 0.45) return '#d4924a'; // High  — muted amber
+  if (ratio > 0.22) return '#4fae8a'; // Med   — muted teal
+  return '#7c9cbf';                   // Low   — slate blue
 }
 
 // Size = listing volume
@@ -70,10 +70,10 @@ export function MapSection({ points, onDistrictSelect, selectedDistrict }: Props
         </div>
         <div className="flex items-center gap-1.5">
           {([
-            { label: 'Low',  color: '#4f8ef7' },
-            { label: 'Med',  color: '#47c29a' },
-            { label: 'High', color: '#f5a623' },
-            { label: 'Hot',  color: '#e84545' },
+            { label: 'Low',  color: '#7c9cbf' },
+            { label: 'Med',  color: '#4fae8a' },
+            { label: 'High', color: '#d4924a' },
+            { label: 'Hot',  color: '#e05c5c' },
           ] as { label: string; color: string }[]).map(({ label, color }) => (
             <span
               key={label}
