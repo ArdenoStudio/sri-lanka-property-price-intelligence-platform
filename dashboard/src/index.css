@@ -264,9 +264,70 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -0.03em; }
 .animate-live-dot { animation: live-pulse 3s ease-in-out infinite; }
 
 /* ============================================================
-   SVG CHOROPLETH MAP
+   LEAFLET — dark theme overrides
    ============================================================ */
-.rsm-geography:focus { outline: none; }
+.leaflet-container {
+  background: #000000 !important;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+.leaflet-top, .leaflet-bottom { z-index: 800 !important; }
+.leaflet-tile-pane {
+  filter: brightness(0.68) contrast(1.1) grayscale(0.92) invert(1) hue-rotate(180deg);
+}
+.leaflet-control-zoom {
+  border: none !important;
+  margin: 16px !important;
+}
+.leaflet-control-zoom a {
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+  background: rgba(10, 10, 10, 0.95) !important;
+  color: #f5f5f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  margin-bottom: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+  transition: transform var(--motion-fast) var(--ease-spring), border-color var(--motion-fast) ease;
+  font-weight: 600;
+}
+.leaflet-control-zoom a:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5) !important;
+}
+.leaflet-control-zoom a:active { transform: translateY(0); }
+.leaflet-popup-content-wrapper {
+  background: #161616 !important;
+  color: #f5f5f5 !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6) !important;
+}
+.leaflet-popup-tip { background: #161616 !important; }
+
+/* District name labels (permanent tooltips) */
+.map-district-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #aaaaaa !important;
+  font-size: 9px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.04em !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+  padding: 0 !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7) !important;
+}
+.map-district-label::before { display: none !important; }
 
 /* ============================================================
    SCROLLBAR UTILITIES
