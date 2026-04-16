@@ -310,6 +310,7 @@ class LamudiScraper:
                 user_agent=ua,
                 viewport={"width": 1280, "height": 800},
                 locale="en-US",
+                ignore_https_errors=True,
             )
             await context.add_init_script(
                 "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"

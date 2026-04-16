@@ -112,7 +112,7 @@ class LPWScraper:
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True, proxy=proxy_settings)
-            context = await browser.new_context(user_agent=random.choice(USER_AGENTS))
+            context = await browser.new_context(user_agent=random.choice(USER_AGENTS), ignore_https_errors=True)
             page = await context.new_page()
 
             # Block heavy resources to speed things up
@@ -300,7 +300,7 @@ async def scrape_lpw_districts(db: Session, max_pages: int = 50):
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, proxy=proxy_settings)
-        context = await browser.new_context(user_agent=random.choice(USER_AGENTS))
+        context = await browser.new_context(user_agent=random.choice(USER_AGENTS), ignore_https_errors=True)
         page = await context.new_page()
         await page.route("**/*", lambda route: route.abort()
             if route.request.resource_type in ["image", "media", "font", "stylesheet"]
