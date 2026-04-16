@@ -43,9 +43,10 @@ THIN_DISTRICTS = [
 ]
 
 # Extra category URLs for data gaps
+# Disabled: these URLs return 404 on ikman.lk
 EXTRA_TARGETS = [
-    {"url": "https://ikman.lk/en/ads/sri-lanka/property-for-rent?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "rent",       "property_type": "house"},
-    {"url": "https://ikman.lk/en/ads/sri-lanka/commercial-property?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "sale",     "property_type": "commercial"},
+    # {"url": "https://ikman.lk/en/ads/sri-lanka/property-for-rent?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "rent",       "property_type": "house"},
+    # {"url": "https://ikman.lk/en/ads/sri-lanka/commercial-property?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "sale",     "property_type": "commercial"},
 ]
 
 class IkmanScraper:
