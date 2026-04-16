@@ -23,8 +23,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Install Playwright system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+            libdrm2 libgbm1 libgtk-3-0 libnspr4 libnss3 libxcomposite1 \
+            libxdamage1 libxfixes3 libxkbcommon0 libxrandr2 xvfb
+
       - name: Install Playwright browsers
-        run: python -m playwright install chromium --with-deps
+        run: python -m playwright install chromium
 
       - name: Run all scrapers
         env:
