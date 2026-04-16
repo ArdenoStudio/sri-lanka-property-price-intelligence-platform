@@ -1,0 +1,47 @@
+name: Daily Property Scraper
+
+on:
+  schedule:
+    - cron: '0 20 * * *'   # 2 AM Sri Lanka time (UTC+5:30 → 8:30 PM UTC prev day ≈ 20:00 UTC)
+  workflow_dispatch:        # Allow manual trigger from GitHub UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: python -m playwright install chromium --with-deps
+
+      - name: Run all scrapers
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NOMINATIM_USER_AGENT: ${{ secrets.NOMINATIM_USER_AGENT }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SCRAPER_MAX_RETRIES: 3
+          SCRAPER_BACKOFF_BASE_SECONDS: 5
+          SCRAPER_BACKOFF_MAX_SECONDS: 60
+          SCRAPER_STOP_AFTER_BLOCKS: 3
+          LOG_LEVEL: INFO
+        run: python3 run_all_scrapers.py --full
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-logs
+          path: logs/
+          retention-days: 7
