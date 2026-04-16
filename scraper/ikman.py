@@ -111,6 +111,7 @@ class IkmanScraper:
             ctx_kwargs = {"user_agent": random.choice(USER_AGENTS)}
             if storage_state and os.path.exists(storage_state):
                 ctx_kwargs["storage_state"] = storage_state
+            ctx_kwargs["ignore_https_errors"] = True
             context = await browser.new_context(**ctx_kwargs)
             page = await context.new_page()
 
@@ -319,7 +320,7 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=headless, proxy=proxy_settings)
-        context = await browser.new_context(user_agent=random.choice(USER_AGENTS))
+        context = await browser.new_context(user_agent=random.choice(USER_AGENTS), ignore_https_errors=True)
         page = await context.new_page()
         await page.route("**/*", lambda route: route.abort()
             if route.request.resource_type in ["image", "media", "stylesheet", "font"]
