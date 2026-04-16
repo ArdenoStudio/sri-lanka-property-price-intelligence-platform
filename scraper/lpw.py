@@ -35,7 +35,7 @@ BASE_URLS = [
     {"url": f"{BASE}/sale/index.php",       "type": "house",     "listing_type": "sale"},
     {"url": f"{BASE}/land/index.php",       "type": "land",      "listing_type": "sale"},
     {"url": f"{BASE}/rentals/index.php",    "type": "house",     "listing_type": "rent"},
-    {"url": f"{BASE}/apartment/index.php",  "type": "apartment", "listing_type": "sale"},
+    {"url": f"{BASE}/condo/index.php",       "type": "apartment", "listing_type": "sale"},
 ]
 
 # Thin districts to target with srch_words filter
