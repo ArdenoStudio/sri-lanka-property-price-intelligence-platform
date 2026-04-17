@@ -317,7 +317,12 @@ async def scrape_lpw_districts(db: Session, max_pages: int = 50):
                 full_url = f"{base_url}{page_num}"
                 try:
                     await page.goto(full_url, wait_until="domcontentloaded", timeout=30000)
-                    await page.wait_for_selector("article.listing-item", timeout=12000)
+                    try:
+                        await page.wait_for_selector("article.listing-item", timeout=12000)
+                    except Exception:
+                        # Selector never appeared — district has no listings on this page
+                        log.info("lpw_district_no_results", district=district, url=full_url)
+                        break
                     cards = await page.query_selector_all("article.listing-item")
                     if not cards:
                         break

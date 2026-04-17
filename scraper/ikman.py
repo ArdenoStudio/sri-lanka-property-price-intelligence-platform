@@ -81,6 +81,15 @@ class IkmanScraper:
                 if response is not None and response.status >= 400:
                     raise RuntimeError(f"http_{response.status}")
                 return True
+            except RuntimeError as e:
+                if str(e) == "http_404":
+                    # 404 is definitive — the URL doesn't exist, no point retrying
+                    log.warning("url_not_found", source=self.SOURCE, url=url)
+                    return False
+                delay = min(self.backoff_base * (2 ** attempt), self.backoff_max)
+                delay += random.uniform(0, self.backoff_base * 0.2)
+                log.warning("page_retry", source=self.SOURCE, url=url, attempt=attempt + 1, delay=round(delay, 2), error=str(e))
+                await asyncio.sleep(delay)
             except Exception as e:
                 delay = min(self.backoff_base * (2 ** attempt), self.backoff_max)
                 delay += random.uniform(0, self.backoff_base * 0.2)
@@ -326,7 +335,7 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
             if route.request.resource_type in ["image", "media", "stylesheet", "font"]
             else route.continue_())
 
-        async def _scrape_url(base_url, max_p, override_type=None, override_listing=None):
+        async def _scrape_url(base_url, max_p, override_type=None, override_listing=None, required=True):
             nonlocal grand_total_found, grand_total_new
             total_found = 0
             total_new = 0
@@ -340,7 +349,11 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
                         consecutive_blocks += 1
                         log.error("page_blocked", source="ikman", page=page_num, url=url, blocks=consecutive_blocks)
                         if consecutive_blocks >= scraper.stop_after_blocks:
-                            raise RuntimeError("blocked_by_site")
+                            if required:
+                                raise RuntimeError("blocked_by_site")
+                            else:
+                                log.warning("extra_target_skipped", source="ikman", url=base_url, reason="too_many_blocks")
+                                return
                         continue
                     consecutive_blocks = 0
                     try:
@@ -447,11 +460,12 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
             district_base = f"https://ikman.lk/en/ads/{district}/property?sort=date&order=desc&buy_now=0&urgent=0&page="
             await _scrape_url(district_base, district_pages)
 
-        # 3. Extra categories (rent, commercial)
+        # 3. Extra categories (rent, commercial) — optional, skip on dead/blocked URLs
         for target in EXTRA_TARGETS:
             await _scrape_url(target["url"], extra_pages,
                               override_type=target["property_type"],
-                              override_listing=target["listing_type"])
+                              override_listing=target["listing_type"],
+                              required=False)
 
         from db.models import ScrapeRun
         db.add(ScrapeRun(source="ikman", started_at=datetime.utcnow(),
