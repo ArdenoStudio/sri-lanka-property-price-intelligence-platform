@@ -306,7 +306,7 @@ async def scrape_ikman(db: Session, max_pages: int = 20, location: str = "sri-la
     scraper = IkmanScraper(db)
     return await scraper.scrape(max_pages=max_pages, location=location)
 
-async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 20, extra_pages: int = 10, headless: bool = False):
+async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 50, extra_pages: int = 10, headless: bool = False):
     """
     Full scrape: main feed + thin districts + rent/commercial categories.
     Runs sequentially to avoid hammering the site.
