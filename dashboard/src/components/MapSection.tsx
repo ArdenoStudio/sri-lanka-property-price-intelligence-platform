@@ -90,7 +90,7 @@ export function MapSection({ points, onDistrictSelect, selectedDistrict }: Props
         <MapContainer
           center={SL_CENTER}
           zoom={SL_ZOOM}
-          scrollWheelZoom={true}
+          scrollWheelZoom={false}
           style={{ height: '100%', width: '100%' }}
           zoomControl={true}
         >
