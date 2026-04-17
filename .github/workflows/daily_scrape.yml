@@ -8,7 +8,7 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 35
 
     steps:
       - name: Checkout code
@@ -44,7 +44,7 @@ jobs:
           SCRAPER_BACKOFF_MAX_SECONDS: 60
           SCRAPER_STOP_AFTER_BLOCKS: 3
           LOG_LEVEL: INFO
-        run: python3 run_all_scrapers.py --full
+        run: python3 run_all_scrapers.py --full --district-pages 50
 
       - name: Upload logs on failure
         if: failure()

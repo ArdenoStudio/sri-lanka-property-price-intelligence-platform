@@ -43,9 +43,10 @@ THIN_DISTRICTS = [
 ]
 
 # Extra category URLs for data gaps
+# Rentals are mixed into the main /property feed — ikman has no separate rental category URL.
+# Only add URLs here that are verified to exist on ikman.lk.
 EXTRA_TARGETS = [
-    {"url": "https://ikman.lk/en/ads/sri-lanka/property-for-rent?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "rent",       "property_type": "house"},
-    {"url": "https://ikman.lk/en/ads/sri-lanka/commercial-property?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "sale",     "property_type": "commercial"},
+    {"url": "https://ikman.lk/en/ads/sri-lanka/commercial-property?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "sale", "property_type": "commercial"},
 ]
 
 class IkmanScraper:
@@ -306,7 +307,7 @@ async def scrape_ikman(db: Session, max_pages: int = 20, location: str = "sri-la
     scraper = IkmanScraper(db)
     return await scraper.scrape(max_pages=max_pages, location=location)
 
-async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 20, extra_pages: int = 10, headless: bool = False):
+async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 50, extra_pages: int = 10, headless: bool = False):
     """
     Full scrape: main feed + thin districts + rent/commercial categories.
     Runs sequentially to avoid hammering the site.
