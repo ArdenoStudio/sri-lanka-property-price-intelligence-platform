@@ -22,6 +22,7 @@ import structlog
 load_dotenv()
 
 from db.connection import SessionLocal
+from db.models import JobRun
 from scraper.ikman import scrape_ikman, scrape_ikman_full
 from scraper.lpw import scrape_lpw, scrape_lpw_districts
 from scraper.lamudi import LamudiScraper
@@ -92,18 +93,62 @@ async def run_lamudi(max_pages: int = 20):
         db.close()
 
 
+def _start_job_run(db, name: str) -> JobRun:
+    run = JobRun(job_name=name, started_at=datetime.utcnow(), status="running")
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+    return run
+
+
+def _finish_job_run(db, run: JobRun, status: str, stats=None, error: str = None):
+    run.status = status
+    run.finished_at = datetime.utcnow()
+    run.stats = stats
+    run.error_message = error
+    db.commit()
+
+
 async def run_data_processing():
-    """Run data cleaning and geocoding with its own DB session."""
+    """Run data cleaning, geocoding, and aggregate computation with its own DB session."""
     db = SessionLocal()
     log.info("processing_starting")
     try:
-        cleaner = DataCleaner(db)
-        clean_stats = cleaner.process_all()
-        log.info("cleaning_complete", stats=clean_stats)
+        # --- Clean ---
+        clean_run = _start_job_run(db, "clean_listings")
+        try:
+            cleaner = DataCleaner(db)
+            clean_stats = cleaner.process_all()
+            log.info("cleaning_complete", stats=clean_stats)
+            _finish_job_run(db, clean_run, "success", stats=clean_stats)
+        except Exception as e:
+            log.error("cleaning_failed", error=str(e))
+            _finish_job_run(db, clean_run, "failed", error=str(e))
+            clean_stats = {}
 
-        geocoder = Geocoder(db)
-        geo_stats = geocoder.geocode_listings()
-        log.info("geocoding_complete", stats=geo_stats)
+        # --- Geocode ---
+        geo_run = _start_job_run(db, "geocode_listings")
+        try:
+            geocoder = Geocoder(db)
+            geo_stats = geocoder.geocode_listings()
+            log.info("geocoding_complete", stats=geo_stats)
+            _finish_job_run(db, geo_run, "success", stats=geo_stats)
+        except Exception as e:
+            log.error("geocoding_failed", error=str(e))
+            _finish_job_run(db, geo_run, "failed", error=str(e))
+            geo_stats = {}
+
+        # --- Aggregates ---
+        agg_run = _start_job_run(db, "compute_aggregates")
+        try:
+            from api.main import PriceAggregator
+            aggregator = PriceAggregator(db)
+            count = aggregator.aggregate()
+            log.info("aggregates_complete", count=count)
+            _finish_job_run(db, agg_run, "success", stats={"aggregates": count})
+        except Exception as e:
+            log.error("aggregates_failed", error=str(e))
+            _finish_job_run(db, agg_run, "failed", error=str(e))
 
         return {"cleaned": clean_stats, "geocoded": geo_stats, "success": True}
     except Exception as e:
