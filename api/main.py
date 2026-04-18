@@ -865,7 +865,7 @@ def get_listings(
         total = query.count()
 
         if sort == "newest":
-            query = query.order_by(desc(Listing.first_seen_at))
+            query = query.order_by(desc(Listing.last_seen_at))
         elif sort == "price_asc":
             query = query.order_by(Listing.price_lkr.asc().nullslast())
         elif sort == "price_desc":
@@ -994,6 +994,242 @@ def get_prices(
         }
         for a in aggregates
     ]
+
+
+# ---------------------------------------------------------------------------
+# Single listing detail
+# ---------------------------------------------------------------------------
+
+@app.get("/listings/{listing_id}")
+def get_listing_detail(listing_id: int, db: Session = Depends(get_db)):
+    row = (
+        db.query(Listing, RawListing.title, RawListing.url, RawListing.raw_price, RawListing.description)
+        .outerjoin(RawListing, Listing.raw_id == RawListing.id)
+        .filter(Listing.id == listing_id)
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    l, raw_title, raw_url, raw_price, description = row
+    now_utc = datetime.utcnow()
+    return {
+        "id": l.id,
+        "source": l.source,
+        "source_id": l.source_id,
+        "title": raw_title or l.source_id,
+        "description": description,
+        "price_lkr": float(l.price_lkr) if l.price_lkr else None,
+        "original_price_lkr": float(l.original_price_lkr) if l.original_price_lkr else None,
+        "price_drop_pct": (
+            round((1 - float(l.price_lkr) / float(l.original_price_lkr)) * 100, 1)
+            if l.price_lkr and l.original_price_lkr and float(l.original_price_lkr) > 0
+               and float(l.price_lkr) < float(l.original_price_lkr)
+            else None
+        ),
+        "deal_score": float(l.deal_score) if l.deal_score is not None else None,
+        "market_median_lkr": float(l.market_median_lkr) if l.market_median_lkr else None,
+        "days_on_market": (
+            (now_utc - l.first_seen_at.replace(tzinfo=None)).days
+            if l.first_seen_at else None
+        ),
+        "price_per_perch": float(l.price_per_perch) if l.price_per_perch else None,
+        "price_per_sqft": float(l.price_per_sqft) if l.price_per_sqft else None,
+        "raw_price": raw_price,
+        "district": l.district,
+        "city": l.city,
+        "raw_location": l.raw_location,
+        "property_type": l.property_type,
+        "listing_type": l.listing_type,
+        "size_perches": float(l.size_perches) if l.size_perches else None,
+        "size_sqft": float(l.size_sqft) if l.size_sqft else None,
+        "bedrooms": l.bedrooms,
+        "bathrooms": l.bathrooms,
+        "url": raw_url,
+        "first_seen_at": l.first_seen_at.isoformat() if l.first_seen_at else None,
+        "last_seen_at": l.last_seen_at.isoformat() if l.last_seen_at else None,
+        "lat": float(l.lat) if l.lat else None,
+        "lng": float(l.lng) if l.lng else None,
+    }
+
+
+@app.get("/listings/{listing_id}/similar")
+def get_similar_listings(listing_id: int, limit: int = Query(6, le=12), db: Session = Depends(get_db)):
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    query = (
+        db.query(Listing, RawListing.title, RawListing.url, RawListing.raw_price)
+        .outerjoin(RawListing, Listing.raw_id == RawListing.id)
+        .filter(
+            Listing.id != listing_id,
+            Listing.is_outlier == False,
+            Listing.district == listing.district,
+        )
+    )
+
+    if listing.property_type:
+        query = query.filter(Listing.property_type == listing.property_type)
+
+    if listing.price_lkr:
+        price = float(listing.price_lkr)
+        query = query.filter(
+            Listing.price_lkr >= price * 0.5,
+            Listing.price_lkr <= price * 2.0,
+        )
+
+    if listing.bedrooms:
+        query = query.filter(
+            Listing.bedrooms >= max(0, listing.bedrooms - 1),
+            Listing.bedrooms <= listing.bedrooms + 1,
+        )
+
+    results = query.order_by(desc(Listing.first_seen_at)).limit(limit).all()
+    now_utc = datetime.utcnow()
+
+    return [
+        {
+            "id": l.id,
+            "source": l.source,
+            "title": raw_title or l.source_id,
+            "price_lkr": float(l.price_lkr) if l.price_lkr else None,
+            "deal_score": float(l.deal_score) if l.deal_score is not None else None,
+            "price_per_perch": float(l.price_per_perch) if l.price_per_perch else None,
+            "district": l.district,
+            "city": l.city,
+            "property_type": l.property_type,
+            "listing_type": l.listing_type,
+            "size_perches": float(l.size_perches) if l.size_perches else None,
+            "size_sqft": float(l.size_sqft) if l.size_sqft else None,
+            "bedrooms": l.bedrooms,
+            "bathrooms": l.bathrooms,
+            "url": raw_url,
+            "first_seen_at": l.first_seen_at.isoformat() if l.first_seen_at else None,
+            "days_on_market": (
+                (now_utc - l.first_seen_at.replace(tzinfo=None)).days
+                if l.first_seen_at else None
+            ),
+        }
+        for l, raw_title, raw_url, raw_price in results
+    ]
+
+
+@app.get("/listings/{listing_id}/price-history")
+def get_listing_price_history(listing_id: int, db: Session = Depends(get_db)):
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    snapshots = (
+        db.query(ListingSnapshot)
+        .filter(
+            ListingSnapshot.source == listing.source,
+            ListingSnapshot.source_id == listing.source_id,
+        )
+        .order_by(ListingSnapshot.scraped_at.asc())
+        .all()
+    )
+
+    return [
+        {
+            "date": s.scraped_at.isoformat() if s.scraped_at else None,
+            "raw_price": s.raw_price,
+        }
+        for s in snapshots
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Price Estimate Tool
+# ---------------------------------------------------------------------------
+
+class EstimateRequest(BaseModel):
+    district: str
+    property_type: str
+    size_perches: Optional[float] = None
+    size_sqft: Optional[float] = None
+    bedrooms: Optional[int] = None
+
+@app.post("/estimate")
+def estimate_price(req: EstimateRequest, db: Session = Depends(get_db)):
+    query = db.query(Listing).filter(
+        Listing.district == req.district,
+        Listing.property_type == req.property_type,
+        Listing.price_lkr.isnot(None),
+        Listing.price_lkr > 0,
+        Listing.is_outlier == False,
+    )
+
+    if req.size_perches:
+        query = query.filter(
+            Listing.size_perches >= req.size_perches * 0.5,
+            Listing.size_perches <= req.size_perches * 2.0,
+        )
+    if req.size_sqft:
+        query = query.filter(
+            Listing.size_sqft >= req.size_sqft * 0.5,
+            Listing.size_sqft <= req.size_sqft * 2.0,
+        )
+    if req.bedrooms is not None and req.bedrooms > 0:
+        query = query.filter(
+            Listing.bedrooms >= max(0, req.bedrooms - 1),
+            Listing.bedrooms <= req.bedrooms + 1,
+        )
+
+    comparables = query.order_by(desc(Listing.first_seen_at)).limit(50).all()
+    prices = sorted([float(c.price_lkr) for c in comparables if c.price_lkr])
+
+    if not prices:
+        return {
+            "estimated_low": None,
+            "estimated_median": None,
+            "estimated_high": None,
+            "comparable_count": 0,
+            "confidence": "none",
+            "comparables": [],
+        }
+
+    n = len(prices)
+    p25 = prices[int(n * 0.25)] if n >= 4 else prices[0]
+    median = prices[n // 2]
+    p75 = prices[int(n * 0.75)] if n >= 4 else prices[-1]
+
+    confidence = "high" if n >= 20 else ("medium" if n >= 5 else "low")
+
+    now_utc = datetime.utcnow()
+    top_comparables = comparables[:6]
+    comp_list = []
+    for c in top_comparables:
+        raw = db.query(RawListing).filter(RawListing.id == c.raw_id).first() if c.raw_id else None
+        comp_list.append({
+            "id": c.id,
+            "title": (raw.title if raw else None) or c.source_id,
+            "price_lkr": float(c.price_lkr) if c.price_lkr else None,
+            "district": c.district,
+            "city": c.city,
+            "property_type": c.property_type,
+            "size_perches": float(c.size_perches) if c.size_perches else None,
+            "size_sqft": float(c.size_sqft) if c.size_sqft else None,
+            "bedrooms": c.bedrooms,
+            "bathrooms": c.bathrooms,
+            "deal_score": float(c.deal_score) if c.deal_score is not None else None,
+            "url": (raw.url if raw else None),
+            "first_seen_at": c.first_seen_at.isoformat() if c.first_seen_at else None,
+            "days_on_market": (
+                (now_utc - c.first_seen_at.replace(tzinfo=None)).days
+                if c.first_seen_at else None
+            ),
+        })
+
+    return {
+        "estimated_low": round(p25, 2),
+        "estimated_median": round(median, 2),
+        "estimated_high": round(p75, 2),
+        "comparable_count": n,
+        "confidence": confidence,
+        "comparables": comp_list,
+    }
 
 
 # ---------------------------------------------------------------------------

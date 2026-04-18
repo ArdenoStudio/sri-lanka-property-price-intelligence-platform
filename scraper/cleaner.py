@@ -794,6 +794,8 @@ class DataCleaner:
                         "district": district,
                         "city": city,
                         "is_short_term": is_short_term,
+                        "scraped_at": raw.scraped_at,
+                        "last_seen_at": datetime.utcnow(),
                     }
                 )
                 # Retry once on statement timeout before giving up
