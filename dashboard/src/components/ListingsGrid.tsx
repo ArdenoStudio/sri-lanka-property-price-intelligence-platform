@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../api';
 import { PriceHistoryChart } from './PriceHistoryChart';
@@ -59,7 +59,6 @@ interface Props {
 }
 
 export function ListingsGrid({ listings, loading, page, pageSize, total, onPageChange, onCompareToggle, selectedForComparison }: Props) {
-  const navigate = useNavigate();
   const totalPages = Math.ceil(total / pageSize);
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -115,13 +114,10 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
           ].filter(Boolean);
 
           return (
-            <div
+            <Link
               key={listing.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => navigate(`/listing/${listing.id}`)}
-              onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/listing/${listing.id}`); }}
-              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in cursor-pointer"
+              to={`/listing/${listing.id}`}
+              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in block no-underline cursor-pointer"
               style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
             >
               {/* Left accent line — teal on hover */}
@@ -224,7 +220,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                   )}
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
