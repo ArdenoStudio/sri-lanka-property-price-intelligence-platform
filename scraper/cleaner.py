@@ -780,15 +780,15 @@ class DataCleaner:
                     property_type=raw.property_type, listing_type=raw.listing_type,
                     size_perches=size_perches, size_sqft=size_sqft, bedrooms=bedrooms,
                     location_id=location_id, lat=lat, lng=lng,
-                    is_outlier=dummy.is_outlier, outlier_reason=dummy.outlier_reason,
-                    is_duplicate=dummy.is_duplicate, duplicate_of=dummy.duplicate_of,
+                    is_outlier=dummy.is_outlier or False, outlier_reason=dummy.outlier_reason,
+                    is_duplicate=dummy.is_duplicate or False, duplicate_of=dummy.duplicate_of,
                     is_short_term=is_short_term,
                 ).on_conflict_do_update(
                     index_elements=["source", "source_id"],
                     set_={
                         "price_lkr": price_lkr,
                         "price_per_perch": price_per_perch,
-                        "is_outlier": dummy.is_outlier,
+                        "is_outlier": dummy.is_outlier or False,
                         "outlier_reason": dummy.outlier_reason,
                         "raw_location": raw.raw_location,
                         "district": district,
