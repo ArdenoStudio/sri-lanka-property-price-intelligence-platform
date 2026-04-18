@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { District } from '../api';
 import { MinimalSelect } from './ui/MinimalSelect';
 import type { SelectOption } from './ui/MinimalSelect';
+import { useCurrency } from '../hooks/useCurrency';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Price slider  (log scale: 100K – 500M LKR)
@@ -37,6 +38,7 @@ function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChan
   const [localMin, setLocalMin] = useState(() => minPrice === '' ? 0 : priceToSlider(minPrice as number));
   const [localMax, setLocalMax] = useState(() => maxPrice === '' ? SLIDER_MAX : priceToSlider(maxPrice as number));
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { formatConverted, currency } = useCurrency();
 
   useEffect(() => { if (minPrice === '') setLocalMin(0); }, [minPrice]);
   useEffect(() => { if (maxPrice === '') setLocalMax(SLIDER_MAX); }, [maxPrice]);
@@ -53,13 +55,19 @@ function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChan
   const minPct = (localMin / SLIDER_MAX) * 100;
   const maxPct = (localMax / SLIDER_MAX) * 100;
 
+  const labelMin = localMin <= 0 ? 'Any' : formatConverted(sliderToPrice(localMin));
+  const labelMax = localMax >= SLIDER_MAX ? 'Any' : formatConverted(sliderToPrice(localMax));
+
   return (
     <div className="px-1 py-2">
       <div className="flex items-center justify-between mb-4 text-[11px] text-[#a3a3a3]">
-        <span>{localMin <= 0 ? 'Any' : fmtPriceLabel(sliderToPrice(localMin))}</span>
+        <span>{labelMin}</span>
         <span className="text-[#737373]">—</span>
-        <span>{localMax >= SLIDER_MAX ? 'Any' : fmtPriceLabel(sliderToPrice(localMax))}</span>
+        <span>{labelMax}</span>
       </div>
+      {currency !== 'LKR' && (
+        <p className="text-[10px] text-[#404040] mb-2">Filter values in LKR</p>
+      )}
       <div className="relative h-8 flex items-center">
         <div className="absolute inset-x-0 h-[2px] rounded-full bg-white/[0.08]" />
         <div className="absolute h-[2px] rounded-full bg-[#14b8a6]"

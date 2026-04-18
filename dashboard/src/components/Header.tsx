@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
+import { CurrencySwitcher } from './CurrencySwitcher';
 
 const GITHUB_REPO = 'ArdenoStudio/sri-lanka-property-price-intelligence-platform';
 const GITHUB_URL  = `https://github.com/${GITHUB_REPO}`;
@@ -101,6 +102,7 @@ export function Header() {
             >
               Estimate
             </Link>
+            <CurrencySwitcher />
           </div>
 
           {/* ── Separator ────────────────────────── */}
