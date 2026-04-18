@@ -200,6 +200,42 @@ export const getEstimate = (params: {
   bedrooms?: number;
 }) => fetchJSON<EstimateResult>('/estimate', params, 'POST');
 
+// --- Exchange Rates ---
+
+export interface ExchangeRates {
+  rates: Record<string, number>;
+  base: string;
+  source: string;
+  updated_at: string;
+}
+
+export const getExchangeRates = () => fetchJSON<ExchangeRates>('/exchange-rates');
+
+// --- Rental Yield ---
+
+export interface RentalYieldResult {
+  available: boolean;
+  reason?: string;
+  rental_yield_pct?: number | null;
+  monthly_rent_estimate?: number | null;
+  annual_rent_estimate?: number | null;
+  sale_price_median?: number | null;
+  data_confidence?: 'high' | 'medium' | 'low';
+  sale_sample_count?: number;
+  rent_sample_count?: number;
+  investment_score?: number;
+  district?: string;
+  property_type?: string;
+  bedrooms?: number | null;
+}
+
+export const getRentalYield = (params: {
+  district: string;
+  property_type: string;
+  bedrooms?: number | null;
+  deal_score?: number | null;
+}) => fetchJSON<RentalYieldResult>('/analytics/rental-yield', params as Record<string, string | number | undefined>);
+
 async function fetchJSON<T>(
   path: string, 
   params?: Record<string, string | number | boolean | any[] | undefined>,

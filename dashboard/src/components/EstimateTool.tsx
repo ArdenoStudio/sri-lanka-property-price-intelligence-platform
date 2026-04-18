@@ -8,6 +8,7 @@ import { Header } from './Header';
 import { Footer } from './Footer';
 import { MobileNav } from './MobileNav';
 import { MinimalSelect } from './ui/MinimalSelect';
+import { useCurrency } from '../hooks/useCurrency';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -43,14 +44,14 @@ const CONFIDENCE_STYLES: Record<string, string> = {
 // Comparable card (reuses SimilarCard aesthetic)
 // ---------------------------------------------------------------------------
 
-function ComparableCard({ listing }: { listing: SimilarListing }) {
+function ComparableCard({ listing, formatConverted }: { listing: SimilarListing; formatConverted: (n: number | null | undefined) => string }) {
   return (
     <Link
       to={`/listing/${listing.id}`}
       className="block bg-[#161616] border border-white/[0.06] rounded-2xl p-4 hover:border-white/[0.12] transition-colors no-underline group"
     >
       <p className="text-[16px] font-bold text-white num mb-1">
-        {formatPrice(listing.price_lkr)}
+        {listing.price_lkr != null ? formatConverted(listing.price_lkr) : '—'}
       </p>
       <p className="text-[11px] text-[#525252] mb-2 line-clamp-1">
         {listing.city || listing.raw_location || listing.district}
@@ -78,6 +79,7 @@ function ComparableCard({ listing }: { listing: SimilarListing }) {
 
 export function EstimateTool() {
   const navigate = useNavigate();
+  const { formatConverted } = useCurrency();
   const [districts, setDistricts] = useState<District[]>([]);
 
   // Form state
@@ -307,15 +309,15 @@ export function EstimateTool() {
                     <div className="grid grid-cols-3 gap-4 mb-6">
                       <div className="text-center">
                         <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-1">Low (p25)</p>
-                        <p className="text-[1.4rem] font-bold text-white num">{formatPrice(result.estimated_low)}</p>
+                        <p className="text-[1.4rem] font-bold text-white num">{formatConverted(result.estimated_low)}</p>
                       </div>
                       <div className="text-center border-x border-white/[0.06]">
                         <p className="text-[10px] uppercase tracking-[0.15em] text-[#14b8a6] mb-1">Median</p>
-                        <p className="text-[1.8rem] font-bold text-white num">{formatPrice(result.estimated_median)}</p>
+                        <p className="text-[1.8rem] font-bold text-white num">{formatConverted(result.estimated_median)}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-1">High (p75)</p>
-                        <p className="text-[1.4rem] font-bold text-white num">{formatPrice(result.estimated_high)}</p>
+                        <p className="text-[1.4rem] font-bold text-white num">{formatConverted(result.estimated_high)}</p>
                       </div>
                     </div>
 
@@ -335,7 +337,7 @@ export function EstimateTool() {
                       <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Top Comparable Listings</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {result.comparables.map(c => (
-                          <ComparableCard key={c.id} listing={c} />
+                          <ComparableCard key={c.id} listing={c} formatConverted={formatConverted} />
                         ))}
                       </div>
                     </div>

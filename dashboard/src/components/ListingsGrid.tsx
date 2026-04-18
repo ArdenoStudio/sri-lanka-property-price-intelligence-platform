@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../api';
 import { PriceHistoryChart } from './PriceHistoryChart';
+import { useCurrency } from '../hooks/useCurrency';
+import { EMITeaser } from './EMITeaser';
 
 function PlusCheckIcon({ checked }: { checked: boolean }) {
   return (
@@ -22,17 +24,6 @@ function PlusCheckIcon({ checked }: { checked: boolean }) {
   );
 }
 
-function formatNum(p: number): string {
-  if (p >= 1_000_000) return `Rs ${(p / 1_000_000).toFixed(1)}M`;
-  if (p >= 1_000) return `Rs ${(p / 1_000).toFixed(0)}K`;
-  return `Rs ${p.toFixed(0)}`;
-}
-
-function formatPrice(listing: Listing): { text: string; suffix: string } {
-  if (listing.price_lkr) return { text: formatNum(listing.price_lkr), suffix: '' };
-  if (listing.price_per_perch) return { text: formatNum(listing.price_per_perch), suffix: '/ perch' };
-  return { text: listing.raw_price || 'Price N/A', suffix: '' };
-}
 
 function formatDate(iso: string | null): string {
   if (!iso) return '';
@@ -61,6 +52,7 @@ interface Props {
 export function ListingsGrid({ listings, loading, page, pageSize, total, onPageChange, onCompareToggle, selectedForComparison }: Props) {
   const totalPages = Math.ceil(total / pageSize);
   const topRef = useRef<HTMLDivElement>(null);
+  const { formatConverted } = useCurrency();
 
   function handlePageChange(p: number) {
     onPageChange(p);
@@ -101,7 +93,12 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
     <div ref={topRef}>
       <div className="listings-grid">
         {listings.map((listing, idx) => {
-          const { text, suffix } = formatPrice(listing);
+          const priceText = listing.price_lkr
+            ? formatConverted(listing.price_lkr)
+            : listing.price_per_perch
+              ? formatConverted(listing.price_per_perch)
+              : listing.raw_price || 'Price N/A';
+          const priceSuffix = (!listing.price_lkr && listing.price_per_perch) ? '/ perch' : '';
           const isCompared = selectedForComparison.includes(listing.id);
           const hasPriceDrop = listing.price_drop_pct != null && listing.price_drop_pct > 0
             && listing.original_price_lkr != null && listing.price_lkr != null;
@@ -150,10 +147,10 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                 {/* PRICE — HERO */}
                 <div className="mb-2">
                   <p className="text-[1.75rem] font-bold text-white tracking-tight leading-none num">
-                    {text}
+                    {priceText}
                   </p>
-                  {suffix && (
-                    <p className="text-[11px] text-[#737373] mt-1">{suffix}</p>
+                  {priceSuffix && (
+                    <p className="text-[11px] text-[#737373] mt-1">{priceSuffix}</p>
                   )}
                 </div>
 
@@ -187,6 +184,9 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                     )}
                   </div>
                 )}
+
+                {/* EMI teaser */}
+                <EMITeaser priceLkr={listing.price_lkr} listingType={listing.listing_type} />
 
                 {/* Price drop sparkline */}
                 {hasPriceDrop && (

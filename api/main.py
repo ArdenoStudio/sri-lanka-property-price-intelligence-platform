@@ -10,6 +10,7 @@ from db.models import Listing, RawListing, ScrapeRun, PriceAggregate, JobRun, Li
 from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel
 import os
+import httpx
 
 app = FastAPI(title="Sri Lanka Property Price Intelligence Platform")
 
@@ -1268,6 +1269,205 @@ def estimate_price(req: EstimateRequest, db: Session = Depends(get_db)):
         "comparables": comp_list,
     }
 
+
+# ---------------------------------------------------------------------------
+# Exchange Rates
+# ---------------------------------------------------------------------------
+
+EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY", "")
+
+_FALLBACK_RATES = {
+    "LKR": 1.0,
+    "USD": 0.00306,
+    "AUD": 0.00471,
+    "GBP": 0.00242,
+    "CAD": 0.00417,
+}
+
+_exchange_rate_cache: dict = {"rates": _FALLBACK_RATES.copy(), "fetched_at": None, "source": "hardcoded"}
+
+@app.get("/exchange-rates")
+def get_exchange_rates():
+    now = datetime.now(timezone.utc)
+    cache_stale = (
+        _exchange_rate_cache["fetched_at"] is None
+        or (now - _exchange_rate_cache["fetched_at"]).total_seconds() > 3600
+    )
+
+    if cache_stale and EXCHANGE_RATE_API_KEY:
+        try:
+            resp = httpx.get(
+                f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/LKR",
+                timeout=5.0,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            conv = data.get("conversion_rates", {})
+            rates = {
+                "LKR": 1.0,
+                "USD": conv.get("USD", _FALLBACK_RATES["USD"]),
+                "AUD": conv.get("AUD", _FALLBACK_RATES["AUD"]),
+                "GBP": conv.get("GBP", _FALLBACK_RATES["GBP"]),
+                "CAD": conv.get("CAD", _FALLBACK_RATES["CAD"]),
+            }
+            _exchange_rate_cache["rates"] = rates
+            _exchange_rate_cache["fetched_at"] = now
+            _exchange_rate_cache["source"] = "exchangerate-api"
+        except Exception:
+            _exchange_rate_cache["fetched_at"] = now  # avoid hammering on error
+
+    return {
+        "rates": _exchange_rate_cache["rates"],
+        "base": "LKR",
+        "source": _exchange_rate_cache["source"],
+        "updated_at": (_exchange_rate_cache["fetched_at"] or now).isoformat(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Rental Yield Analytics
+# ---------------------------------------------------------------------------
+
+def _bedroom_bucket(bedrooms: Optional[int]) -> Optional[str]:
+    if bedrooms is None:
+        return None
+    if bedrooms <= 1:
+        return "1"
+    if bedrooms == 2:
+        return "2"
+    if bedrooms == 3:
+        return "3"
+    if bedrooms == 4:
+        return "4"
+    return "5+"
+
+def _median_of(values: list) -> Optional[float]:
+    if not values:
+        return None
+    s = sorted(values)
+    n = len(s)
+    mid = n // 2
+    return float(s[mid]) if n % 2 == 1 else float((s[mid - 1] + s[mid]) / 2)
+
+@app.get("/analytics/rental-yield")
+def get_rental_yield(
+    district: str = Query(...),
+    property_type: str = Query(...),
+    bedrooms: Optional[int] = Query(None),
+    deal_score: Optional[float] = Query(None),
+    db: Session = Depends(get_db),
+):
+    if property_type not in ("house", "apartment", "villa"):
+        return {"available": False, "reason": "Rental yield only available for house, apartment, and villa listings"}
+
+    bucket = _bedroom_bucket(bedrooms)
+
+    def _price_rows(listing_type: str):
+        q = db.query(Listing.price_lkr, Listing.days_on_market).filter(
+            Listing.district == district,
+            Listing.property_type == property_type,
+            Listing.listing_type == listing_type,
+            Listing.price_lkr.isnot(None),
+            Listing.is_outlier == False,
+        )
+        if bucket and bedrooms is not None:
+            lo = int(bucket.rstrip("+")) if "+" not in bucket else 5
+            if bucket == "5+":
+                q = q.filter(Listing.bedrooms >= 5)
+            else:
+                q = q.filter(Listing.bedrooms == lo)
+        return q.all()
+
+    sale_rows = _price_rows("sale")
+    rent_rows = _price_rows("rent")
+
+    sale_count = len(sale_rows)
+    rent_count = len(rent_rows)
+
+    if rent_count < 2:
+        return {"available": False, "reason": f"Insufficient rental data for {property_type} in {district}"}
+
+    sale_prices = [float(r.price_lkr) for r in sale_rows if r.price_lkr]
+    rent_prices = [float(r.price_lkr) for r in rent_rows if r.price_lkr]
+
+    sale_median = _median_of(sale_prices)
+    rent_median = _median_of(rent_prices)
+
+    if not rent_median:
+        return {"available": False, "reason": "Could not compute rent estimate"}
+
+    monthly_rent = rent_median
+    annual_rent = monthly_rent * 12
+
+    rental_yield_pct = None
+    if sale_median and sale_median > 0:
+        rental_yield_pct = round((annual_rent / sale_median) * 100, 2)
+
+    if sale_count >= 15 and rent_count >= 8:
+        confidence = "high"
+    elif sale_count >= 5 and rent_count >= 3:
+        confidence = "medium"
+    else:
+        confidence = "low"
+
+    # Price trend: compare 3-month-old aggregate vs current for this district+type
+    now = datetime.now(timezone.utc)
+    current_month_agg = db.query(PriceAggregate).filter(
+        PriceAggregate.district == district,
+        PriceAggregate.property_type == property_type,
+        PriceAggregate.bedroom_bucket.is_(None),
+    ).order_by(desc(PriceAggregate.period_year), desc(PriceAggregate.period_month)).first()
+
+    old_date = now - timedelta(days=90)
+    old_agg = db.query(PriceAggregate).filter(
+        PriceAggregate.district == district,
+        PriceAggregate.property_type == property_type,
+        PriceAggregate.bedroom_bucket.is_(None),
+        PriceAggregate.period_year * 100 + PriceAggregate.period_month <= old_date.year * 100 + old_date.month,
+    ).order_by(desc(PriceAggregate.period_year), desc(PriceAggregate.period_month)).first()
+
+    price_trend_pct = None
+    if current_month_agg and old_agg and old_agg.median_price_lkr and current_month_agg.median_price_lkr:
+        price_trend_pct = float(
+            (current_month_agg.median_price_lkr - old_agg.median_price_lkr) / old_agg.median_price_lkr * 100
+        )
+
+    # Avg days on market for sale comparables
+    dom_values = [r.days_on_market for r in sale_rows if r.days_on_market is not None]
+    avg_dom = sum(dom_values) / len(dom_values) if dom_values else None
+
+    # Investment score
+    score = 0
+    if rental_yield_pct is not None:
+        score += min(40, int(rental_yield_pct / 10 * 40))
+    if deal_score is not None:
+        score += max(0, min(30, int((deal_score + 100) / 200 * 30)))
+    else:
+        score += 15
+    if avg_dom is not None:
+        score += max(0, int(20 - (avg_dom / 180 * 20)))
+    else:
+        score += 10
+    if price_trend_pct is not None:
+        score += max(0, min(10, int((price_trend_pct + 10) / 20 * 10)))
+    else:
+        score += 5
+    investment_score = min(100, max(0, score))
+
+    return {
+        "available": True,
+        "rental_yield_pct": rental_yield_pct,
+        "monthly_rent_estimate": round(monthly_rent, 2),
+        "annual_rent_estimate": round(annual_rent, 2),
+        "sale_price_median": round(sale_median, 2) if sale_median else None,
+        "data_confidence": confidence,
+        "sale_sample_count": sale_count,
+        "rent_sample_count": rent_count,
+        "investment_score": investment_score,
+        "district": district,
+        "property_type": property_type,
+        "bedrooms": bedrooms,
+    }
 
 
 # ---------------------------------------------------------------------------

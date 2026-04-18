@@ -13,6 +13,9 @@ import { Footer } from './Footer';
 import { MobileNav } from './MobileNav';
 import { PriceHistoryChart } from './PriceHistoryChart';
 import { ShareButton } from './ShareButton';
+import { MortgageCalculator } from './MortgageCalculator';
+import { RentalYieldPanel } from './RentalYieldPanel';
+import { useCurrency } from '../hooks/useCurrency';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -284,6 +287,7 @@ export function ListingDetail() {
     );
   }
 
+  const { formatConverted } = useCurrency();
   const typeClass = TYPE_COLORS[detail.property_type || ''] || 'bg-white/[0.05] text-[#a3a3a3] border-white/10';
   const descTrimmed = detail.description && detail.description.length > 300 && !descExpanded
     ? detail.description.slice(0, 300) + '…'
@@ -321,7 +325,7 @@ export function ListingDetail() {
 
             <h1 className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-white tracking-tight leading-tight mb-3">
               {detail.price_lkr != null
-                ? `Rs ${formatNum(detail.price_lkr)}`
+                ? formatConverted(detail.price_lkr)
                 : detail.raw_price || '—'}
               {detail.price_per_perch && detail.property_type === 'land' && (
                 <span className="text-[#525252] text-base font-normal ml-2">/ perch</span>
@@ -333,7 +337,7 @@ export function ListingDetail() {
                 <TrendingDown className="w-4 h-4 text-amber-400" />
                 <span className="text-[13px] text-amber-400 font-medium">
                   {detail.price_drop_pct.toFixed(1)}% price drop from{' '}
-                  {detail.original_price_lkr ? `Rs ${formatNum(detail.original_price_lkr)}` : 'original'}
+                  {detail.original_price_lkr ? formatConverted(detail.original_price_lkr) : 'original'}
                 </span>
               </div>
             )}
@@ -371,7 +375,7 @@ export function ListingDetail() {
             { icon: BedDouble, label: 'Bedrooms', value: detail.bedrooms != null ? `${detail.bedrooms} BR` : null },
             { icon: Bath, label: 'Bathrooms', value: detail.bathrooms != null ? `${detail.bathrooms} BA` : null },
             { icon: Ruler, label: 'Size', value: detail.size_perches ? `${detail.size_perches} perches` : detail.size_sqft ? `${detail.size_sqft?.toLocaleString()} sqft` : null },
-            { icon: Home, label: 'Price/Perch', value: detail.price_per_perch ? `Rs ${formatNum(detail.price_per_perch)}` : null },
+            { icon: Home, label: 'Price/Perch', value: detail.price_per_perch ? formatConverted(detail.price_per_perch) : null },
             { icon: Calendar, label: 'Listed', value: detail.days_on_market != null ? `${detail.days_on_market} days` : detail.first_seen_at ? formatTimeAgo(detail.first_seen_at) : null },
           ].filter(d => d.value != null).map(({ icon: Icon, label, value }) => (
             <div key={label} className="bg-[#111111] border border-white/[0.06] rounded-2xl p-4">
@@ -384,7 +388,7 @@ export function ListingDetail() {
             <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-4">
               <TrendingDown className="w-4 h-4 text-[#525252] mb-2" />
               <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-0.5">Market Median</p>
-              <p className="text-[14px] font-bold text-white num">Rs {formatNum(detail.market_median_lkr)}</p>
+              <p className="text-[14px] font-bold text-white num">{formatConverted(detail.market_median_lkr)}</p>
             </div>
           )}
         </div>
@@ -434,6 +438,27 @@ export function ListingDetail() {
             <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-6">
               <PriceHistoryChart size="full" snapshots={detail.price_history} />
             </div>
+          </div>
+        )}
+
+        {/* ── Rental Yield & Investment Analysis ───────────────────────── */}
+        {(detail.property_type === 'apartment' || detail.property_type === 'house') &&
+          detail.listing_type === 'sale' && detail.district && (
+          <div className="mb-12">
+            <RentalYieldPanel
+              district={detail.district}
+              propertyType={detail.property_type}
+              listingType={detail.listing_type}
+              bedrooms={detail.bedrooms}
+              dealScore={detail.deal_score}
+            />
+          </div>
+        )}
+
+        {/* ── Mortgage Calculator ───────────────────────────────────────── */}
+        {detail.listing_type !== 'rent' && detail.price_lkr && (
+          <div className="mb-12">
+            <MortgageCalculator listingPrice={detail.price_lkr} listingType={detail.listing_type} />
           </div>
         )}
 
