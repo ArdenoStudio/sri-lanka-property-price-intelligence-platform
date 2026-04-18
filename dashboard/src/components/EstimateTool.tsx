@@ -14,18 +14,6 @@ import { useCurrency } from '../hooks/useCurrency';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatNum(n: number | null | undefined): string {
-  if (n == null) return '—';
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toLocaleString();
-}
-
-function formatPrice(n: number | null): string {
-  return n != null ? `Rs ${formatNum(n)}` : '—';
-}
-
 const PROPERTY_TYPES = [
   { value: 'land', label: 'Land' },
   { value: 'house', label: 'House' },
