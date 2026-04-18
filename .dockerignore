@@ -1,43 +1,43 @@
 # flyctl launch added from .gitignore
-**\.env
-**\__pycache__
-**\*.pyc
-**\.pytest_cache
-**\postgres_data
-**\*.egg-info
-**\dist
-**\.venv
-**\venv
+**/.env
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/postgres_data
+**/*.egg-info
+**/dist
+**/.venv
+**/venv
 
-# flyctl launch added from .pytest_cache\.gitignore
+# flyctl launch added from .pytest_cache/.gitignore
 # Created by pytest automatically.
-.pytest_cache\**\*
+.pytest_cache/**/*
 
-# flyctl launch added from dashboard\.gitignore
+# flyctl launch added from dashboard/.gitignore
 # Logs
-dashboard\**\logs
-dashboard\**\*.log
-dashboard\**\npm-debug.log*
-dashboard\**\yarn-debug.log*
-dashboard\**\yarn-error.log*
-dashboard\**\pnpm-debug.log*
-dashboard\**\lerna-debug.log*
+dashboard/**/logs
+dashboard/**/*.log
+dashboard/**/npm-debug.log*
+dashboard/**/yarn-debug.log*
+dashboard/**/yarn-error.log*
+dashboard/**/pnpm-debug.log*
+dashboard/**/lerna-debug.log*
 
-dashboard\**\node_modules
-dashboard\**\dist
-dashboard\**\dist-ssr
-dashboard\**\*.local
+dashboard/**/node_modules
+dashboard/**/dist
+dashboard/**/dist-ssr
+dashboard/**/*.local
 
 # Editor directories and files
-dashboard\**\.vscode\*
-!dashboard\**\.vscode\extensions.json
-dashboard\**\.idea
-dashboard\**\.DS_Store
-dashboard\**\*.suo
-dashboard\**\*.ntvs*
-dashboard\**\*.njsproj
-dashboard\**\*.sln
-dashboard\**\*.sw?
+dashboard/**/.vscode/*
+!dashboard/**/.vscode/extensions.json
+dashboard/**/.idea
+dashboard/**/.DS_Store
+dashboard/**/*.suo
+dashboard/**/*.ntvs*
+dashboard/**/*.njsproj
+dashboard/**/*.sln
+dashboard/**/*.sw?
 
-dashboard\**\.vercel
+dashboard/**/.vercel
 fly.toml
