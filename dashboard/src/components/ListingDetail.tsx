@@ -1,286 +1,407 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, MapPin, Calendar, TrendingDown, Share2, Bed, Bath, Maximize, Tag } from 'lucide-react';
-import { getListingDetail, getListingSimilar, getListingPriceHistory } from '../api';
-import type { ListingDetail as ListingDetailType, SimilarListing, PriceSnapshot } from '../api';
+import { ChevronLeft, ExternalLink, MapPin, Home, BedDouble, Bath, Ruler, Calendar, TrendingDown } from 'lucide-react';
+import { getListingDetail, getListingSimilar } from '../api';
+import type { ListingDetail as ListingDetailType, SimilarListing } from '../api';
+import { Header } from './Header';
+import { Footer } from './Footer';
+import { MobileNav } from './MobileNav';
+import { PriceHistoryChart } from './PriceHistoryChart';
+import { ShareButton } from './ShareButton';
 
-function formatNum(p: number): string {
-  if (p >= 1_000_000) return `Rs ${(p / 1_000_000).toFixed(1)}M`;
-  if (p >= 1_000) return `Rs ${(p / 1_000).toFixed(0)}K`;
-  return `Rs ${p.toFixed(0)}`;
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatNum(n: number | null | undefined): string {
+  if (n == null) return '—';
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+  return n.toLocaleString();
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return '';
-  return new Date(iso).toLocaleDateString('en-LK', { year: 'numeric', month: 'short', day: 'numeric' });
+function formatTimeAgo(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  try {
+    const diff = Date.now() - new Date(iso).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days < 1) return 'today';
+    if (days === 1) return '1 day ago';
+    if (days < 30) return `${days} days ago`;
+    if (days < 365) return `${Math.floor(days / 30)} mo ago`;
+    return `${Math.floor(days / 365)}yr ago`;
+  } catch {
+    return iso;
+  }
 }
 
-function DealGauge({ score }: { score: number }) {
-  // score: -100 (overpriced) to +100 (great deal)
-  const clamped = Math.max(-50, Math.min(50, score));
-  const pct = ((clamped + 50) / 100) * 100;
-  const color = score >= 15 ? '#14b8a6' : score >= 5 ? '#47c29a' : score >= -5 ? '#f5a623' : '#e84545';
-  const label = score >= 15 ? 'Great Deal' : score >= 5 ? 'Below Market' : score >= -5 ? 'Fair Price' : 'Above Market';
+const TYPE_COLORS: Record<string, string> = {
+  land:       'bg-amber-500/[0.12] text-amber-400 border-amber-500/20',
+  house:      'bg-blue-500/[0.12] text-blue-400 border-blue-500/20',
+  apartment:  'bg-purple-500/[0.12] text-purple-400 border-purple-500/20',
+  commercial: 'bg-orange-500/[0.12] text-orange-400 border-orange-500/20',
+  villa:      'bg-emerald-500/[0.12] text-emerald-400 border-emerald-500/20',
+};
+
+// ---------------------------------------------------------------------------
+// Deal Score Gauge
+// ---------------------------------------------------------------------------
+
+function DealScoreGauge({ score }: { score: number | null | undefined }) {
+  if (score == null) return null;
+  const clamped = Math.max(-100, Math.min(100, score));
+  const angle = ((clamped + 100) / 200) * 180;
+  const rad = (angle - 90) * (Math.PI / 180);
+  const cx = 60, cy = 60, r = 44;
+  const nx = cx + r * Math.cos(rad);
+  const ny = cy + r * Math.sin(rad);
+
+  const isGood = clamped >= 0;
+  const color = clamped >= 20 ? '#10b981' : clamped >= 0 ? '#14b8a6' : clamped >= -20 ? '#f59e0b' : '#ef4444';
+  const label = clamped >= 20 ? 'Great deal' : clamped >= 0 ? 'Fair price' : clamped >= -20 ? 'Slightly high' : 'Overpriced';
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[#737373]">Overpriced</span>
-        <span className="font-semibold" style={{ color }}>{label}</span>
-        <span className="text-[#737373]">Great Deal</span>
-      </div>
-      <div className="relative h-2 rounded-full bg-white/[0.06] overflow-hidden">
-        <div className="absolute inset-0 rounded-full" style={{
-          background: 'linear-gradient(to right, #e84545, #f5a623 40%, #47c29a 60%, #14b8a6)'
-        }} />
-        <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 shadow-lg transition-all duration-700"
-          style={{ left: `calc(${pct}% - 6px)`, borderColor: color }} />
+    <div className="flex flex-col items-center gap-2">
+      <svg width="120" height="70" viewBox="0 0 120 70" className="overflow-visible">
+        <path
+          d="M 16 60 A 44 44 0 0 1 104 60"
+          fill="none"
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth="8"
+          strokeLinecap="round"
+        />
+        {clamped !== -100 && (
+          <path
+            d={`M 16 60 A 44 44 0 ${angle > 90 ? '1' : '0'} 1 ${nx.toFixed(1)} ${ny.toFixed(1)}`}
+            fill="none"
+            stroke={color}
+            strokeWidth="8"
+            strokeLinecap="round"
+            opacity="0.8"
+          />
+        )}
+        <circle cx={nx.toFixed(1)} cy={ny.toFixed(1)} r="5" fill={color} />
+      </svg>
+      <div className="text-center">
+        <p className="text-[11px] uppercase tracking-[0.15em] text-[#525252]">Deal Score</p>
+        <p className="text-[22px] font-bold num" style={{ color }}>
+          {isGood ? '+' : ''}{clamped.toFixed(0)}
+        </p>
+        <p className="text-[10px]" style={{ color }}>{label}</p>
       </div>
     </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Similar listing card
+// ---------------------------------------------------------------------------
+
 function SimilarCard({ listing }: { listing: SimilarListing }) {
+  const typeClass = TYPE_COLORS[listing.property_type || ''] || 'bg-white/[0.05] text-[#a3a3a3] border-white/10';
   return (
-    <Link to={`/listing/${listing.id}`}
-      className="block bg-[#111111] hover:bg-[#161616] transition-colors p-4 group no-underline">
-      <p className="text-[10px] uppercase tracking-[0.12em] text-[#737373] mb-1">
-        {[listing.property_type, listing.district].filter(Boolean).join(' · ')}
-      </p>
-      <p className="text-lg font-bold text-white num mb-1">
-        {listing.price_lkr ? formatNum(listing.price_lkr) : 'Price N/A'}
-      </p>
-      <p className="text-[12px] text-[#a3a3a3] line-clamp-1">{listing.title}</p>
-      {listing.deal_score !== null && listing.deal_score >= 5 && (
-        <span className="inline-block mt-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 num">
-          {listing.deal_score.toFixed(0)}% below market
+    <Link
+      to={`/listing/${listing.id}`}
+      className="block bg-[#111111] border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.16] transition-colors no-underline group"
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${typeClass} capitalize`}>
+          {listing.property_type}
         </span>
+        {listing.deal_score != null && listing.deal_score > 0 && (
+          <span className="text-[10px] text-emerald-400 font-medium bg-emerald-400/[0.08] px-2 py-0.5 rounded-full border border-emerald-400/20">
+            +{listing.deal_score.toFixed(0)}% deal
+          </span>
+        )}
+      </div>
+      <p className="text-[18px] font-bold text-white num mb-1">
+        {listing.price_lkr != null ? `Rs ${formatNum(listing.price_lkr)}` : listing.raw_price || '—'}
+      </p>
+      <p className="text-[12px] text-[#525252] mb-2 line-clamp-1">
+        {listing.city || listing.raw_location || listing.district}
+      </p>
+      {(listing.size_perches || listing.bedrooms) && (
+        <p className="text-[11px] text-[#404040]">
+          {listing.size_perches ? `${listing.size_perches}p` : ''}
+          {listing.size_perches && listing.bedrooms ? ' · ' : ''}
+          {listing.bedrooms ? `${listing.bedrooms}BR` : ''}
+          {listing.days_on_market != null ? ` · ${listing.days_on_market}d` : ''}
+        </p>
       )}
+      <p className="text-[10px] text-[#525252] mt-2 group-hover:text-[#a3a3a3] transition-colors">
+        View details →
+      </p>
     </Link>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Loading skeleton
+// ---------------------------------------------------------------------------
+
+function Skeleton() {
+  return (
+    <div className="min-h-screen bg-black">
+      <Header />
+      <main className="max-w-5xl mx-auto px-6 lg:px-8 pt-28 pb-32">
+        <div className="h-4 w-24 bg-white/[0.06] rounded animate-pulse mb-8" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="h-12 w-3/4 bg-white/[0.06] rounded animate-pulse" />
+            <div className="h-6 w-1/3 bg-white/[0.06] rounded animate-pulse" />
+            <div className="h-4 w-1/2 bg-white/[0.06] rounded animate-pulse" />
+          </div>
+          <div className="h-32 bg-white/[0.06] rounded-2xl animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 bg-white/[0.04] rounded-2xl animate-pulse" />
+          ))}
+        </div>
+        <div className="h-[200px] bg-white/[0.04] rounded-2xl animate-pulse mb-12" />
+      </main>
+      <MobileNav />
+      <Footer />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
 export function ListingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [listing, setListing] = useState<ListingDetailType | null>(null);
+  const [detail, setDetail] = useState<ListingDetailType | null>(null);
   const [similar, setSimilar] = useState<SimilarListing[]>([]);
-  const [priceHistory, setPriceHistory] = useState<PriceSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const reqRef = useRef(0);
+
+  const numId = id ? parseInt(id, 10) : NaN;
 
   useEffect(() => {
-    if (!id) return;
-    const numId = Number(id);
+    if (isNaN(numId)) { setError(true); setLoading(false); return; }
+    const reqId = ++reqRef.current;
     setLoading(true);
-    setError(null);
+    setError(false);
 
     Promise.all([
-      getListingDetail(numId).catch(() => null),
-      getListingSimilar(numId).catch(() => []),
-      getListingPriceHistory(numId).catch(() => []),
-    ]).then(([detail, sim, history]) => {
-      if (!detail) {
-        setError('Listing not found');
-      } else {
-        setListing(detail);
-        document.title = `${detail.title || 'Property'} — PropertyLK`;
-      }
-      setSimilar(sim);
-      setPriceHistory(history);
-      setLoading(false);
-    });
-  }, [id]);
+      getListingDetail(numId),
+      getListingSimilar(numId),
+    ])
+      .then(([d, s]) => {
+        if (reqRef.current !== reqId) return;
+        setDetail(d);
+        setSimilar(s);
+        setLoading(false);
+        document.title = `${d.title || 'Listing'} — PropertyLK`;
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', d.title || 'Property — PropertyLK');
+        document.querySelector('meta[property="og:url"]')?.setAttribute('content', window.location.href);
+        if (d.price_lkr) {
+          document.querySelector('meta[property="og:description"]')?.setAttribute(
+            'content',
+            `${d.property_type} in ${d.district} for Rs ${formatNum(d.price_lkr)}${d.deal_score && d.deal_score > 0 ? ` · ${d.deal_score.toFixed(0)}% below market` : ''}`
+          );
+        }
+        document.querySelector('meta[property="og:image"]')?.setAttribute(
+          'content', `/api/og-image/${d.id}`
+        );
+      })
+      .catch(() => {
+        if (reqRef.current !== reqId) return;
+        setError(true);
+        setLoading(false);
+      });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen relative">
-        <div className="max-w-4xl mx-auto px-6 pt-24 pb-32">
-          <div className="h-4 w-20 bg-white/[0.05] rounded mb-8" />
-          <div className="h-10 w-2/3 bg-white/[0.05] rounded mb-4" />
-          <div className="h-6 w-1/3 bg-white/[0.05] rounded mb-8" />
-          <div className="grid grid-cols-2 gap-4">
-            {[1,2,3,4].map(i => <div key={i} className="h-24 bg-white/[0.05] rounded-2xl animate-pulse" />)}
-          </div>
-        </div>
-      </div>
-    );
-  }
+    return () => {
+      document.title = 'PropertyLK — Sri Lanka Property Price Intelligence';
+    };
+  }, [numId]);
 
-  if (error || !listing) {
+  if (loading) return <Skeleton />;
+
+  if (error || !detail) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-[#737373] text-lg mb-4">{error || 'Something went wrong'}</p>
-          <button onClick={() => navigate('/')}
-            className="text-[#14b8a6] hover:text-[#5eead4] transition-colors bg-transparent border-none cursor-pointer text-sm">
-            ← Back to listings
+      <div className="min-h-screen bg-black">
+        <Header />
+        <main className="max-w-5xl mx-auto px-6 pt-32 pb-32 text-center">
+          <p className="text-[#525252] text-[13px] uppercase tracking-widest mb-4">Not Found</p>
+          <h1 className="text-2xl font-bold text-white mb-6">This listing doesn't exist</h1>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2.5 bg-[#14b8a6] text-black text-[13px] font-bold rounded-xl cursor-pointer border-none hover:bg-[#0d9488] transition-colors"
+          >
+            Back to listings
           </button>
-        </div>
+        </main>
+        <MobileNav />
+        <Footer />
       </div>
     );
   }
 
-  const detailItems = [
-    listing.size_perches && { icon: Maximize, label: 'Size', value: `${listing.size_perches} perches` },
-    listing.size_sqft && { icon: Maximize, label: 'Size', value: `${listing.size_sqft.toLocaleString()} sqft` },
-    listing.bedrooms && { icon: Bed, label: 'Bedrooms', value: `${listing.bedrooms}` },
-    listing.bathrooms && { icon: Bath, label: 'Bathrooms', value: `${listing.bathrooms}` },
-    listing.listing_type && { icon: Tag, label: 'Type', value: listing.listing_type === 'rent' ? 'For Rent' : 'For Sale' },
-    listing.days_on_market !== null && { icon: Calendar, label: 'On Market', value: `${listing.days_on_market} days` },
-  ].filter(Boolean) as { icon: React.ElementType; label: string; value: string }[];
+  const typeClass = TYPE_COLORS[detail.property_type || ''] || 'bg-white/[0.05] text-[#a3a3a3] border-white/10';
+  const descTrimmed = detail.description && detail.description.length > 300 && !descExpanded
+    ? detail.description.slice(0, 300) + '…'
+    : detail.description;
 
   return (
-    <div className="min-h-screen relative">
-      <div className="max-w-4xl mx-auto px-6 lg:px-8 pt-24 pb-32">
+    <div className="min-h-screen bg-black">
+      <Header />
 
-        {/* Back + Share */}
-        <div className="flex items-center justify-between mb-8">
-          <button onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-[13px] text-[#737373] hover:text-white transition-colors bg-transparent border-none cursor-pointer p-0">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-          <button
-            onClick={() => navigator.share?.({ title: listing.title || 'Property', url: window.location.href }) ?? navigator.clipboard.writeText(window.location.href)}
-            className="flex items-center gap-1.5 text-[13px] text-[#737373] hover:text-white transition-colors bg-transparent border-none cursor-pointer p-0"
-          >
-            <Share2 className="w-4 h-4" /> Share
-          </button>
+      <main className="max-w-5xl mx-auto px-6 lg:px-8 pt-28 pb-32">
+        {/* Back navigation */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-[12px] text-[#525252] hover:text-white transition-colors cursor-pointer bg-transparent border-none p-0 mb-8 group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          Back to listings
+        </button>
+
+        {/* ── Hero ─────────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium border capitalize ${typeClass}`}>
+                {detail.property_type}
+              </span>
+              {detail.listing_type && (
+                <span className="text-[11px] text-[#525252] border border-white/[0.08] px-2.5 py-1 rounded-full capitalize">
+                  For {detail.listing_type}
+                </span>
+              )}
+            </div>
+
+            <h1 className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-white tracking-tight leading-tight mb-3">
+              {detail.price_lkr != null
+                ? `Rs ${formatNum(detail.price_lkr)}`
+                : detail.raw_price || '—'}
+              {detail.price_per_perch && detail.property_type === 'land' && (
+                <span className="text-[#525252] text-base font-normal ml-2">/ perch</span>
+              )}
+            </h1>
+
+            {detail.price_drop_pct != null && detail.price_drop_pct > 0 && (
+              <div className="flex items-center gap-1.5 mb-3">
+                <TrendingDown className="w-4 h-4 text-amber-400" />
+                <span className="text-[13px] text-amber-400 font-medium">
+                  {detail.price_drop_pct.toFixed(1)}% price drop from{' '}
+                  {detail.original_price_lkr ? `Rs ${formatNum(detail.original_price_lkr)}` : 'original'}
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 text-[13px] text-[#525252] mb-6">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span>{[detail.city, detail.district].filter(Boolean).join(', ') || detail.raw_location || '—'}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {detail.url && (
+                <a
+                  href={detail.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#14b8a6] text-black text-[13px] font-bold rounded-xl hover:bg-[#0d9488] transition-colors no-underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  View on {detail.source === 'lpw' ? 'LPW' : detail.source === 'lamudi' ? 'house.lk' : detail.source}
+                </a>
+              )}
+              <ShareButton listing={detail} />
+            </div>
+          </div>
+
+          {/* Deal score gauge */}
+          <div className="bg-[#111111] border border-white/[0.08] rounded-2xl p-6 flex items-center justify-center">
+            <DealScoreGauge score={detail.deal_score} />
+          </div>
         </div>
 
-        {/* Hero */}
-        <div className="mb-8">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-2">
-            {[listing.property_type, listing.source].filter(Boolean).join(' · ')}
-          </p>
+        {/* ── Details Grid ─────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-12">
+          {[
+            { icon: BedDouble, label: 'Bedrooms', value: detail.bedrooms != null ? `${detail.bedrooms} BR` : null },
+            { icon: Bath, label: 'Bathrooms', value: detail.bathrooms != null ? `${detail.bathrooms} BA` : null },
+            { icon: Ruler, label: 'Size', value: detail.size_perches ? `${detail.size_perches} perches` : detail.size_sqft ? `${detail.size_sqft?.toLocaleString()} sqft` : null },
+            { icon: Home, label: 'Price/Perch', value: detail.price_per_perch ? `Rs ${formatNum(detail.price_per_perch)}` : null },
+            { icon: Calendar, label: 'Listed', value: detail.days_on_market != null ? `${detail.days_on_market} days` : detail.first_seen_at ? formatTimeAgo(detail.first_seen_at) : null },
+          ].filter(d => d.value != null).map(({ icon: Icon, label, value }) => (
+            <div key={label} className="bg-[#111111] border border-white/[0.06] rounded-2xl p-4">
+              <Icon className="w-4 h-4 text-[#525252] mb-2" />
+              <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-0.5">{label}</p>
+              <p className="text-[14px] font-bold text-white num">{value}</p>
+            </div>
+          ))}
+          {detail.market_median_lkr && (
+            <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-4">
+              <TrendingDown className="w-4 h-4 text-[#525252] mb-2" />
+              <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-0.5">Market Median</p>
+              <p className="text-[14px] font-bold text-white num">Rs {formatNum(detail.market_median_lkr)}</p>
+            </div>
+          )}
+        </div>
 
-          <div className="flex items-baseline gap-3 flex-wrap mb-2">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white num tracking-tight">
-              {listing.price_lkr ? formatNum(listing.price_lkr) : listing.raw_price || 'Price N/A'}
-            </h1>
-            {listing.price_per_perch && (
-              <span className="text-[13px] text-[#737373] num">{formatNum(listing.price_per_perch)}/perch</span>
+        {/* ── Description ─────────────────────────────────────────────── */}
+        {detail.description && (
+          <div className="mb-12">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Description</p>
+            <p className="text-[14px] text-[#a3a3a3] leading-relaxed whitespace-pre-line">{descTrimmed}</p>
+            {detail.description.length > 300 && (
+              <button
+                onClick={() => setDescExpanded(e => !e)}
+                className="text-[12px] text-[#14b8a6] hover:text-[#5eead4] mt-3 cursor-pointer bg-transparent border-none p-0 transition-colors"
+              >
+                {descExpanded ? 'Show less' : 'Read more'}
+              </button>
             )}
           </div>
+        )}
 
-          {/* Price drop */}
-          {listing.original_price_lkr && listing.price_drop_pct && listing.price_drop_pct > 0 && (
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingDown className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-[13px] text-amber-400 num">
-                Reduced from {formatNum(listing.original_price_lkr)} (↓{listing.price_drop_pct.toFixed(0)}%)
-              </span>
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 text-[#a3a3a3] text-sm">
-            <MapPin className="w-3.5 h-3.5" />
-            <span>{[listing.city, listing.district].filter(Boolean).join(', ') || listing.raw_location || 'Location N/A'}</span>
-          </div>
-
-          {listing.title && (
-            <p className="text-[15px] text-[#737373] mt-3 leading-relaxed">{listing.title}</p>
-          )}
-        </div>
-
-        {/* Deal Score */}
-        {listing.deal_score !== null && listing.market_median_lkr && (
-          <div className="card p-6 mb-6">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[#525252] mb-4">Market Position</p>
-            <DealGauge score={listing.deal_score} />
-            <div className="flex items-center justify-between mt-4 text-[12px]">
-              <span className="text-[#525252]">Market median: <span className="text-[#a3a3a3] num">{formatNum(listing.market_median_lkr)}</span></span>
-              <span className="font-semibold num" style={{
-                color: listing.deal_score >= 5 ? '#14b8a6' : listing.deal_score >= -5 ? '#f5a623' : '#e84545'
-              }}>
-                {listing.deal_score > 0 ? `${listing.deal_score.toFixed(0)}% below` : listing.deal_score < 0 ? `${Math.abs(listing.deal_score).toFixed(0)}% above` : 'At market'}
-              </span>
+        {/* ── Price History Chart ──────────────────────────────────────── */}
+        {detail.price_history && detail.price_history.length > 0 && (
+          <div className="mb-12">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Price History</p>
+            <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-6">
+              <PriceHistoryChart size="full" snapshots={detail.price_history} />
             </div>
           </div>
         )}
 
-        {/* Details Grid */}
-        {detailItems.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-            {detailItems.map((item, i) => (
-              <div key={i} className="card p-4">
-                <div className="flex items-center gap-2 text-[#525252] mb-1">
-                  <item.icon className="w-3.5 h-3.5" />
-                  <span className="text-[10px] uppercase tracking-widest">{item.label}</span>
-                </div>
-                <p className="text-lg font-semibold text-white num">{item.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Description */}
-        {listing.description && (
-          <div className="card p-6 mb-6">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[#525252] mb-3">Description</p>
-            <p className="text-[14px] text-[#a3a3a3] leading-relaxed whitespace-pre-line">{listing.description}</p>
-          </div>
-        )}
-
-        {/* Price History */}
-        {priceHistory.length > 1 && (
-          <div className="card p-6 mb-6">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[#525252] mb-4">Price History</p>
-            <div className="space-y-2">
-              {priceHistory.map((snap, i) => (
-                <div key={i} className="flex items-center justify-between text-[13px] py-2 border-b border-white/[0.04] last:border-0">
-                  <span className="text-[#737373]">{snap.date ? formatDate(snap.date) : '—'}</span>
-                  <span className="text-white font-medium num">{snap.raw_price || '—'}</span>
-                </div>
-              ))}
+        {/* ── Map ──────────────────────────────────────────────────────── */}
+        {detail.lat && detail.lng && (
+          <div className="mb-12">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Location</p>
+            <div className="h-[240px] rounded-2xl overflow-hidden border border-white/[0.06]">
+              <iframe
+                title="Property location"
+                width="100%"
+                height="100%"
+                style={{ border: 0, filter: 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1)' }}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${detail.lng - 0.01},${detail.lat - 0.008},${detail.lng + 0.01},${detail.lat + 0.008}&layer=mapnik&marker=${detail.lat},${detail.lng}`}
+              />
             </div>
           </div>
         )}
 
-        {/* Map */}
-        {listing.lat && listing.lng && (
-          <div className="card overflow-hidden mb-6" style={{ height: 240 }}>
-            <iframe
-              title="Property location"
-              width="100%"
-              height="100%"
-              style={{ border: 0, filter: 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1)' }}
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${listing.lng - 0.01},${listing.lat - 0.008},${listing.lng + 0.01},${listing.lat + 0.008}&layer=mapnik&marker=${listing.lat},${listing.lng}`}
-            />
-          </div>
-        )}
-
-        {/* CTA */}
-        <div className="flex gap-3 mb-12">
-          {listing.url && (
-            <a href={listing.url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#14b8a6] text-black font-semibold text-sm hover:bg-[#5eead4] transition-colors no-underline">
-              View on {listing.source} <ExternalLink className="w-4 h-4" />
-            </a>
-          )}
-          <button onClick={() => navigate(`/?district=${listing.district || ''}&type=${listing.property_type || ''}`)}
-            className="px-6 py-3 rounded-xl border border-white/[0.1] text-[#a3a3a3] text-sm hover:text-white hover:border-white/[0.2] transition-colors bg-transparent cursor-pointer">
-            Browse similar
-          </button>
-        </div>
-
-        {/* Similar Listings */}
+        {/* ── Similar Listings ─────────────────────────────────────────── */}
         {similar.length > 0 && (
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[#525252] mb-4">Similar Properties</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/[0.04]">
+          <div className="mb-12">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Similar Listings</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {similar.map(s => <SimilarCard key={s.id} listing={s} />)}
             </div>
           </div>
         )}
+      </main>
 
-        {/* Timeline footer */}
-        <div className="mt-12 text-[11px] text-[#525252] flex items-center gap-4">
-          {listing.first_seen_at && <span>First seen: {formatDate(listing.first_seen_at)}</span>}
-          {listing.last_seen_at && <span>Last seen: {formatDate(listing.last_seen_at)}</span>}
-          <span>Source: {listing.source}</span>
-        </div>
-      </div>
+      <MobileNav />
+      <Footer />
     </div>
   );
 }

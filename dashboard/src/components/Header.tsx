@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
 
@@ -94,6 +95,12 @@ export function Header() {
                 {label}
               </a>
             ))}
+            <Link
+              to="/estimate"
+              className="text-[13px] text-[#14b8a6] hover:text-[#5eead4] transition-colors px-3 py-1 rounded-full hover:bg-[#14b8a6]/[0.08] no-underline font-medium"
+            >
+              Estimate
+            </Link>
           </div>
 
           {/* ── Separator ────────────────────────── */}
