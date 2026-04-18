@@ -1009,7 +1009,40 @@ def get_listing_detail(listing_id: int, db: Session = Depends(get_db)):
         .first()
     )
     if not row:
-        raise HTTPException(status_code=404, detail="Listing not found")
+        # Fallback: serve from raw_listings when no clean data exists yet
+        raw = db.query(RawListing).filter(RawListing.id == listing_id).first()
+        if not raw:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        return {
+            "id": raw.id,
+            "source": raw.source,
+            "source_id": raw.source_id,
+            "title": raw.title,
+            "description": raw.description,
+            "price_lkr": None,
+            "original_price_lkr": None,
+            "price_drop_pct": None,
+            "deal_score": None,
+            "market_median_lkr": None,
+            "days_on_market": None,
+            "price_per_perch": None,
+            "price_per_sqft": None,
+            "raw_price": raw.raw_price,
+            "district": None,
+            "city": None,
+            "raw_location": raw.raw_location,
+            "property_type": raw.property_type,
+            "listing_type": raw.listing_type,
+            "size_perches": None,
+            "size_sqft": None,
+            "bedrooms": None,
+            "bathrooms": None,
+            "url": raw.url,
+            "first_seen_at": raw.scraped_at.isoformat() if raw.scraped_at else None,
+            "last_seen_at": None,
+            "lat": None,
+            "lng": None,
+        }
 
     l, raw_title, raw_url, raw_price, description = row
     now_utc = datetime.utcnow()
@@ -1057,7 +1090,11 @@ def get_listing_detail(listing_id: int, db: Session = Depends(get_db)):
 def get_similar_listings(listing_id: int, limit: int = Query(6, le=12), db: Session = Depends(get_db)):
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
-        raise HTTPException(status_code=404, detail="Listing not found")
+        # No clean listing — return empty similar list for raw fallback
+        raw = db.query(RawListing).filter(RawListing.id == listing_id).first()
+        if not raw:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        return []
 
     query = (
         db.query(Listing, RawListing.title, RawListing.url, RawListing.raw_price)
