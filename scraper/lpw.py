@@ -35,7 +35,7 @@ BASE_URLS = [
     {"url": f"{BASE}/sale/index.php",       "type": "house",     "listing_type": "sale"},
     {"url": f"{BASE}/land/index.php",       "type": "land",      "listing_type": "sale"},
     {"url": f"{BASE}/rentals/index.php",    "type": "house",     "listing_type": "rent"},
-    {"url": f"{BASE}/apartment/index.php",  "type": "apartment", "listing_type": "sale"},
+    {"url": f"{BASE}/condo/index.php",       "type": "apartment", "listing_type": "sale"},
 ]
 
 # Thin districts to target with srch_words filter
@@ -112,7 +112,7 @@ class LPWScraper:
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True, proxy=proxy_settings)
-            context = await browser.new_context(user_agent=random.choice(USER_AGENTS))
+            context = await browser.new_context(user_agent=random.choice(USER_AGENTS), ignore_https_errors=True)
             page = await context.new_page()
 
             # Block heavy resources to speed things up
@@ -300,7 +300,7 @@ async def scrape_lpw_districts(db: Session, max_pages: int = 50):
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, proxy=proxy_settings)
-        context = await browser.new_context(user_agent=random.choice(USER_AGENTS))
+        context = await browser.new_context(user_agent=random.choice(USER_AGENTS), ignore_https_errors=True)
         page = await context.new_page()
         await page.route("**/*", lambda route: route.abort()
             if route.request.resource_type in ["image", "media", "font", "stylesheet"]
@@ -317,7 +317,12 @@ async def scrape_lpw_districts(db: Session, max_pages: int = 50):
                 full_url = f"{base_url}{page_num}"
                 try:
                     await page.goto(full_url, wait_until="domcontentloaded", timeout=30000)
-                    await page.wait_for_selector("article.listing-item", timeout=12000)
+                    try:
+                        await page.wait_for_selector("article.listing-item", timeout=12000)
+                    except Exception:
+                        # Selector never appeared — district has no listings on this page
+                        log.info("lpw_district_no_results", district=district, url=full_url)
+                        break
                     cards = await page.query_selector_all("article.listing-item")
                     if not cards:
                         break

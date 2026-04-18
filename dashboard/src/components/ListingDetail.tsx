@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, ExternalLink, MapPin, Home, BedDouble, Bath, Ruler, Calendar, TrendingDown } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { getListingDetail, getListingSimilar } from '../api';
 import type { ListingDetail as ListingDetailType, SimilarListing } from '../api';
 import { Header } from './Header';
@@ -52,7 +51,6 @@ const TYPE_COLORS: Record<string, string> = {
 function DealScoreGauge({ score }: { score: number | null | undefined }) {
   if (score == null) return null;
   const clamped = Math.max(-100, Math.min(100, score));
-  // Map -100..+100 → 0..180 degrees
   const angle = ((clamped + 100) / 200) * 180;
   const rad = (angle - 90) * (Math.PI / 180);
   const cx = 60, cy = 60, r = 44;
@@ -66,7 +64,6 @@ function DealScoreGauge({ score }: { score: number | null | undefined }) {
   return (
     <div className="flex flex-col items-center gap-2">
       <svg width="120" height="70" viewBox="0 0 120 70" className="overflow-visible">
-        {/* Background arc */}
         <path
           d="M 16 60 A 44 44 0 0 1 104 60"
           fill="none"
@@ -74,7 +71,6 @@ function DealScoreGauge({ score }: { score: number | null | undefined }) {
           strokeWidth="8"
           strokeLinecap="round"
         />
-        {/* Colored arc */}
         {clamped !== -100 && (
           <path
             d={`M 16 60 A 44 44 0 ${angle > 90 ? '1' : '0'} 1 ${nx.toFixed(1)} ${ny.toFixed(1)}`}
@@ -85,7 +81,6 @@ function DealScoreGauge({ score }: { score: number | null | undefined }) {
             opacity="0.8"
           />
         )}
-        {/* Needle dot */}
         <circle cx={nx.toFixed(1)} cy={ny.toFixed(1)} r="5" fill={color} />
       </svg>
       <div className="text-center">
@@ -203,7 +198,6 @@ export function ListingDetail() {
         setDetail(d);
         setSimilar(s);
         setLoading(false);
-        // Update page title and OG meta
         document.title = `${d.title || 'Listing'} — PropertyLK`;
         document.querySelector('meta[property="og:title"]')?.setAttribute('content', d.title || 'Property — PropertyLK');
         document.querySelector('meta[property="og:url"]')?.setAttribute('content', window.location.href);
@@ -369,7 +363,7 @@ export function ListingDetail() {
           </div>
         )}
 
-        {/* ── Price History Chart ───────────────────────────────────────── */}
+        {/* ── Price History Chart ──────────────────────────────────────── */}
         {detail.price_history && detail.price_history.length > 0 && (
           <div className="mb-12">
             <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Price History</p>
@@ -384,20 +378,13 @@ export function ListingDetail() {
           <div className="mb-12">
             <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Location</p>
             <div className="h-[240px] rounded-2xl overflow-hidden border border-white/[0.06]">
-              <MapContainer
-                center={[detail.lat, detail.lng]}
-                zoom={14}
-                style={{ height: '100%', width: '100%' }}
-                zoomControl={false}
-              >
-                <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                  attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-                />
-                <Marker position={[detail.lat, detail.lng]}>
-                  <Popup>{detail.title || 'Listing'}</Popup>
-                </Marker>
-              </MapContainer>
+              <iframe
+                title="Property location"
+                width="100%"
+                height="100%"
+                style={{ border: 0, filter: 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1)' }}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${detail.lng - 0.01},${detail.lat - 0.008},${detail.lng + 0.01},${detail.lat + 0.008}&layer=mapnik&marker=${detail.lat},${detail.lng}`}
+              />
             </div>
           </div>
         )}

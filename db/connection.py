@@ -8,7 +8,7 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set. Please set it in Railway settings.")
+    raise ValueError("DATABASE_URL environment variable is not set. Please set it in your .env file or Fly.io secrets.")
 
 # SQLAlchemy 1.4+ requires 'postgresql://' instead of 'postgres://'
 if DATABASE_URL.startswith("postgres://"):
