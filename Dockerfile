@@ -18,7 +18,7 @@ COPY . .
 
 # Set python path
 ENV PYTHONPATH=/app
-# PORT is injected by the host (Railway = 8080, Render = 10000). Default to 8080 for local.
+# PORT is injected by the host (Fly.io = 8080). Default to 8080 for local.
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
 
