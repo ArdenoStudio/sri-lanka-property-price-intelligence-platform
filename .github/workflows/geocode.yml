@@ -1,0 +1,42 @@
+name: Geocode Listings
+
+on:
+  schedule:
+    - cron: '0 22 * * *'    # 3:30 AM Sri Lanka time (UTC+5:30), after cleaner finishes
+  workflow_dispatch:          # Manual trigger from GitHub UI
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  geocode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60       # Nominatim rate-limits to ~1 req/sec — allow extra time
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run geocoder
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NOMINATIM_USER_AGENT: ${{ secrets.NOMINATIM_USER_AGENT }}
+          LOG_LEVEL: INFO
+        run: python run_geocode.py
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geocode-logs
+          path: logs/
+          retention-days: 7
