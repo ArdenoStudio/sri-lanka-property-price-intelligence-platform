@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import type { FilterState } from './hooks/useSavedSearches';
+import { Routes, Route } from 'react-router-dom';
 import { getStats, getDistricts, getHeatmap, getListings, getPipelineStatus } from './api';
 import type { Stats, District, HeatmapPoint, Listing, PipelineStatusResponse } from './api';
 import { Header } from './components/Header';
@@ -28,6 +30,15 @@ const ComparisonModal = lazy(() =>
 );
 const ChatWidget = lazy(() =>
   import('./components/ChatWidget').then(m => ({ default: m.ChatWidget }))
+);
+const ListingDetail = lazy(() =>
+  import('./components/ListingDetail').then(m => ({ default: m.ListingDetail }))
+);
+const EstimateTool = lazy(() =>
+  import('./components/EstimateTool').then(m => ({ default: m.EstimateTool }))
+);
+const SavedSearches = lazy(() =>
+  import('./components/SavedSearches').then(m => ({ default: m.SavedSearches }))
 );
 
 // ── Skeleton fallbacks ────────────────────────────────────────────────────────
@@ -67,6 +78,10 @@ function ChatSkeleton() {
   return null; // Chat FAB appears on demand, no visual skeleton needed
 }
 
+function PageSkeleton() {
+  return <div className="min-h-screen bg-black" />;
+}
+
 function readURLFilters() {
   const p = new URLSearchParams(window.location.search);
   const n = (k: string) => p.get(k) ? Number(p.get(k)) : ('' as number | '');
@@ -87,7 +102,8 @@ function readURLFilters() {
   };
 }
 
-function App() {
+// ── Dashboard (home route) ────────────────────────────────────────────────────
+function Dashboard() {
   // Data state
   const [stats, setStats] = useState<Stats | null>(null);
   const [districts, setDistricts] = useState<District[]>([]);
@@ -98,22 +114,42 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(false);
 
-  // Filter state — seeded from URL on mount
-  const initialFilters = readURLFilters();
-  const [selectedDistrict, setSelectedDistrict] = useState(initialFilters.district);
-  const [selectedType, setSelectedType] = useState(initialFilters.type);
-  const [listingType, setListingType] = useState(initialFilters.listingType);
-  const [minPrice, setMinPrice] = useState<number | ''>(initialFilters.minPrice);
-  const [maxPrice, setMaxPrice] = useState<number | ''>(initialFilters.maxPrice);
-  const [minBeds, setMinBeds] = useState(initialFilters.minBeds);
-  const [minBaths, setMinBaths] = useState(initialFilters.minBaths);
-  const [minSizePerches, setMinSizePerches] = useState<number | ''>(initialFilters.minSizePerches);
-  const [maxSizePerches, setMaxSizePerches] = useState<number | ''>(initialFilters.maxSizePerches);
-  const [minSizeSqft, setMinSizeSqft] = useState<number | ''>(initialFilters.minSizeSqft);
-  const [maxSizeSqft, setMaxSizeSqft] = useState<number | ''>(initialFilters.maxSizeSqft);
-  const [sortBy, setSortBy] = useState(initialFilters.sortBy);
-  const [selectedSource, setSelectedSource] = useState(initialFilters.source);
+  // Filter state — seeded from URL on mount (lazy initializers avoid re-reading on re-render)
+  const [selectedDistrict, setSelectedDistrict] = useState(() => readURLFilters().district);
+  const [selectedType, setSelectedType] = useState(() => readURLFilters().type);
+  const [listingType, setListingType] = useState(() => readURLFilters().listingType);
+  const [minPrice, setMinPrice] = useState<number | ''>(() => readURLFilters().minPrice);
+  const [maxPrice, setMaxPrice] = useState<number | ''>(() => readURLFilters().maxPrice);
+  const [minBeds, setMinBeds] = useState(() => readURLFilters().minBeds);
+  const [minBaths, setMinBaths] = useState(() => readURLFilters().minBaths);
+  const [minSizePerches, setMinSizePerches] = useState<number | ''>(() => readURLFilters().minSizePerches);
+  const [maxSizePerches, setMaxSizePerches] = useState<number | ''>(() => readURLFilters().maxSizePerches);
+  const [minSizeSqft, setMinSizeSqft] = useState<number | ''>(() => readURLFilters().minSizeSqft);
+  const [maxSizeSqft, setMaxSizeSqft] = useState<number | ''>(() => readURLFilters().maxSizeSqft);
+  const [sortBy, setSortBy] = useState(() => readURLFilters().sortBy);
+  const [selectedSource, setSelectedSource] = useState(() => readURLFilters().source);
   const [page, setPage] = useState(0);
+
+  // Saved searches panel state
+  const [isSavedSearchesOpen, setIsSavedSearchesOpen] = useState(false);
+
+  // Memoized current filter state for saved searches
+  const currentFilters = useMemo(() => ({
+    district: selectedDistrict,
+    type: selectedType,
+    listingType,
+    minPrice,
+    maxPrice,
+    minBeds,
+    minBaths,
+    minSizePerches,
+    maxSizePerches,
+    minSizeSqft,
+    maxSizeSqft,
+    sortBy,
+    source: selectedSource,
+  }), [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths,
+      minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource]);
 
   // Keep URL in sync with filters
   useEffect(() => {
@@ -186,8 +222,6 @@ function App() {
   }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource, page]);
 
   // Initial data load + polling
-  // Critical fetches: stats, districts, listings
-  // Deferred fetches: heatmap, pipeline (loaded after first paint via requestIdleCallback)
   const loadCritical = useCallback(async () => {
     try {
       const [s, d] = await Promise.all([
@@ -215,11 +249,9 @@ function App() {
   }, [selectedType, listingType]);
 
   useEffect(() => {
-    // Critical data immediately
     loadCritical();
     loadListings();
 
-    // Deferred data after idle
     const scheduleDeferred = () => {
       if ('requestIdleCallback' in window) {
         (window as any).requestIdleCallback(() => loadDeferred());
@@ -243,12 +275,26 @@ function App() {
     setPage(0);
   }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource]);
 
+  // Apply a saved search — restores all filter state
+  const applySearch = useCallback((f: FilterState) => {
+    setSelectedDistrict(f.district);
+    setSelectedType(f.type);
+    setListingType(f.listingType);
+    setMinPrice(f.minPrice);
+    setMaxPrice(f.maxPrice);
+    setMinBeds(f.minBeds);
+    setMinBaths(f.minBaths);
+    setMinSizePerches(f.minSizePerches);
+    setMaxSizePerches(f.maxSizePerches);
+    setMinSizeSqft(f.minSizeSqft);
+    setMaxSizeSqft(f.maxSizeSqft);
+    setSortBy(f.sortBy);
+    setSelectedSource(f.source);
+    setIsSavedSearchesOpen(false);
+  }, []);
+
   return (
     <>
-      {/* Global ambient components — always rendered */}
-      <NoiseOverlay />
-      <ScrollProgressBar />
-
       <PageLoader
         minDuration={1800}
         onComplete={() => setLoading(false)}
@@ -314,6 +360,7 @@ function App() {
                   selectedSource={selectedSource}
                   onSourceChange={setSelectedSource}
                   totalResults={totalListings}
+                  onOpenSavedSearches={() => setIsSavedSearchesOpen(true)}
                 />
 
                 <ListingsGrid
@@ -349,14 +396,52 @@ function App() {
             />
           </Suspense>
 
+          <Suspense fallback={null}>
+            <SavedSearches
+              isOpen={isSavedSearchesOpen}
+              onClose={() => setIsSavedSearchesOpen(false)}
+              currentFilters={currentFilters}
+              onApplySearch={applySearch}
+            />
+          </Suspense>
+
           <Suspense fallback={<ChatSkeleton />}>
             <ChatWidget />
           </Suspense>
           <MobileNav />
           <Footer />
-          <Analytics />
         </div>
       )}
+    </>
+  );
+}
+
+// ── App shell with routing ────────────────────────────────────────────────────
+function App() {
+  return (
+    <>
+      <NoiseOverlay />
+      <ScrollProgressBar />
+      <Analytics />
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route
+          path="/listing/:id"
+          element={
+            <Suspense fallback={<PageSkeleton />}>
+              <ListingDetail />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/estimate"
+          element={
+            <Suspense fallback={<PageSkeleton />}>
+              <EstimateTool />
+            </Suspense>
+          }
+        />
+      </Routes>
     </>
   );
 }

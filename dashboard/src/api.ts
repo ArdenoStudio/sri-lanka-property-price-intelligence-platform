@@ -137,6 +137,7 @@ export interface ListingDetail extends Listing {
   description?: string | null;
   price_per_sqft?: number | null;
   last_seen_at?: string | null;
+  price_history?: PriceSnapshot[];
 }
 
 export interface PriceSnapshot {
@@ -149,10 +150,15 @@ export interface SimilarListing {
   source: string;
   title: string | null;
   price_lkr: number | null;
+  original_price_lkr: number | null;
+  price_drop_pct: number | null;
   deal_score: number | null;
+  market_median_lkr: number | null;
   price_per_perch: number | null;
+  raw_price?: string | null;
   district: string | null;
   city: string | null;
+  raw_location: string | null;
   property_type: string | null;
   listing_type: string | null;
   size_perches: number | null;
@@ -162,6 +168,8 @@ export interface SimilarListing {
   url: string | null;
   first_seen_at: string | null;
   days_on_market: number | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 export const getListingDetail = (id: number) =>

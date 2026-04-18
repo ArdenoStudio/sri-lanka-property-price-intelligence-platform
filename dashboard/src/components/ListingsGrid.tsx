@@ -1,6 +1,8 @@
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../api';
+import { PriceHistoryChart } from './PriceHistoryChart';
 
 function PlusCheckIcon({ checked }: { checked: boolean }) {
   return (
@@ -57,6 +59,7 @@ interface Props {
 }
 
 export function ListingsGrid({ listings, loading, page, pageSize, total, onPageChange, onCompareToggle, selectedForComparison }: Props) {
+  const navigate = useNavigate();
   const totalPages = Math.ceil(total / pageSize);
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +104,8 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
         {listings.map((listing, idx) => {
           const { text, suffix } = formatPrice(listing);
           const isCompared = selectedForComparison.includes(listing.id);
+          const hasPriceDrop = listing.price_drop_pct != null && listing.price_drop_pct > 0
+            && listing.original_price_lkr != null && listing.price_lkr != null;
 
           const detailParts = [
             listing.size_perches && `${listing.size_perches} perch`,
@@ -112,11 +117,20 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
           return (
             <div
               key={listing.id}
-              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate(`/listing/${listing.id}`)}
+              onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/listing/${listing.id}`); }}
+              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in cursor-pointer"
               style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
             >
               {/* Left accent line — teal on hover */}
               <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-transparent group-hover:bg-[#14b8a6]/50 transition-colors duration-300" />
+
+              {/* Hover indicator */}
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#14b8a6] text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                →
+              </div>
 
               <div className="p-6 flex flex-col h-full">
                 {/* Type + location + compare button */}
@@ -125,7 +139,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                     {[listing.property_type, listing.district].filter(Boolean).join(' · ') || 'Property'}
                   </p>
                   <button
-                    onClick={(e) => { e.preventDefault(); onCompareToggle(listing); }}
+                    onClick={(e) => { e.stopPropagation(); onCompareToggle(listing); }}
                     className={`sm:opacity-0 sm:group-hover:opacity-100 transition-all text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border active:scale-90 ${
                       isCompared
                         ? 'bg-[#14b8a6] text-black border-[#14b8a6] sm:opacity-100'
@@ -178,6 +192,19 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                   </div>
                 )}
 
+                {/* Price drop sparkline */}
+                {hasPriceDrop && (
+                  <div className="mb-2 opacity-70">
+                    <PriceHistoryChart
+                      size="sparkline"
+                      data={[
+                        { date: 'original', price: listing.original_price_lkr },
+                        { date: 'current', price: listing.price_lkr },
+                      ]}
+                    />
+                  </div>
+                )}
+
                 {/* Footer — meta + link */}
                 <div className="mt-auto pt-3 flex items-center justify-between">
                   <p className="text-[11px] text-[#525252] num">
@@ -188,6 +215,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                       href={listing.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       className="text-[#525252] hover:text-[#737373] transition-colors"
                       aria-label={`View on ${listing.source}`}
                     >
