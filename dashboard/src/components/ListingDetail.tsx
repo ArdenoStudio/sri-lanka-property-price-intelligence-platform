@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, ExternalLink, MapPin, Home, BedDouble, Bath, Ruler, Calendar, TrendingDown } from 'lucide-react';
+import {
+  ChevronLeft, ExternalLink, MapPin, Home, BedDouble, Bath, Ruler, Calendar, TrendingDown,
+  Waves, Car, Wind, Shield, Trees, Sofa, Building2, ArrowUpDown, Dumbbell, Sun, Droplet,
+  Refrigerator, Flame, Sparkles,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { getListingDetail, getListingSimilar } from '../api';
 import type { ListingDetail as ListingDetailType, SimilarListing } from '../api';
 import { Header } from './Header';
@@ -51,9 +56,9 @@ const TYPE_COLORS: Record<string, string> = {
 function DealScoreGauge({ score }: { score: number | null | undefined }) {
   if (score == null) return null;
   const clamped = Math.max(-100, Math.min(100, score));
-  const angle = ((clamped + 100) / 200) * 180;
-  const rad = (angle - 90) * (Math.PI / 180);
   const cx = 60, cy = 60, r = 44;
+  const progress = (clamped + 100) / 200;           // 0..1, left → right
+  const rad = -Math.PI + progress * Math.PI;        // -π..0 (top-half arc, screen coords)
   const nx = cx + r * Math.cos(rad);
   const ny = cy + r * Math.sin(rad);
 
@@ -62,7 +67,7 @@ function DealScoreGauge({ score }: { score: number | null | undefined }) {
   const label = clamped >= 20 ? 'Great deal' : clamped >= 0 ? 'Fair price' : clamped >= -20 ? 'Slightly high' : 'Overpriced';
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-3">
       <svg width="120" height="70" viewBox="0 0 120 70" className="overflow-visible">
         <path
           d="M 16 60 A 44 44 0 0 1 104 60"
@@ -73,7 +78,7 @@ function DealScoreGauge({ score }: { score: number | null | undefined }) {
         />
         {clamped !== -100 && (
           <path
-            d={`M 16 60 A 44 44 0 ${angle > 90 ? '1' : '0'} 1 ${nx.toFixed(1)} ${ny.toFixed(1)}`}
+            d={`M 16 60 A 44 44 0 0 1 ${nx.toFixed(1)} ${ny.toFixed(1)}`}
             fill="none"
             stroke={color}
             strokeWidth="8"
@@ -92,6 +97,41 @@ function DealScoreGauge({ score }: { score: number | null | undefined }) {
       </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Amenities extractor
+// ---------------------------------------------------------------------------
+
+const AMENITY_RULES: { pattern: RegExp; label: string; icon: LucideIcon }[] = [
+  { pattern: /\bswimming pool|\bpool\b/i, label: 'Pool', icon: Waves },
+  { pattern: /\b(car\s*park|parking|garage)\b/i, label: 'Parking', icon: Car },
+  { pattern: /\b(air\s*cond(ition(ing|ed)?)?|a\/c|a\.c\.?|aircon)\b/i, label: 'Air Conditioning', icon: Wind },
+  { pattern: /\b(cctv|24\s*hr\s*security|24\/7\s*security|security)\b/i, label: 'Security', icon: Shield },
+  { pattern: /\b(garden|lawn|landscaped)\b/i, label: 'Garden', icon: Trees },
+  { pattern: /\bfully\s*furnished|\bfurnished\b(?!\s*un)/i, label: 'Furnished', icon: Sofa },
+  { pattern: /\bsemi[-\s]*furnished\b/i, label: 'Semi-furnished', icon: Sofa },
+  { pattern: /\bunfurnished\b/i, label: 'Unfurnished', icon: Sofa },
+  { pattern: /\bbalcon(y|ies)\b/i, label: 'Balcony', icon: Building2 },
+  { pattern: /\b(lift|elevator)\b/i, label: 'Elevator', icon: ArrowUpDown },
+  { pattern: /\bgym(nasium)?\b/i, label: 'Gym', icon: Dumbbell },
+  { pattern: /\bsolar\b/i, label: 'Solar', icon: Sun },
+  { pattern: /\b(hot\s*water|water\s*heater)\b/i, label: 'Hot water', icon: Flame },
+  { pattern: /\b(well\s*water|tube\s*well|water\s*supply)\b/i, label: 'Water supply', icon: Droplet },
+  { pattern: /\b(servant|maid|servant'?s\s*room|maid'?s\s*room)\b/i, label: 'Servant room', icon: BedDouble },
+  { pattern: /\b(pantry|modern\s*kitchen|kitchenette)\b/i, label: 'Pantry', icon: Refrigerator },
+  { pattern: /\b(rooftop|roof\s*top|sky\s*deck)\b/i, label: 'Rooftop', icon: Building2 },
+  { pattern: /\bbrand\s*new\b|\bnewly\s*built\b/i, label: 'Brand new', icon: Sparkles },
+];
+
+function extractAmenities(text: string | null | undefined): { label: string; icon: LucideIcon }[] {
+  if (!text) return [];
+  const found = new Map<string, LucideIcon>();
+  for (const { pattern, label, icon } of AMENITY_RULES) {
+    if (pattern.test(text) && !found.has(label)) found.set(label, icon);
+    if (found.size >= 12) break;
+  }
+  return Array.from(found, ([label, icon]) => ({ label, icon }));
 }
 
 // ---------------------------------------------------------------------------
@@ -248,6 +288,8 @@ export function ListingDetail() {
   const descTrimmed = detail.description && detail.description.length > 300 && !descExpanded
     ? detail.description.slice(0, 300) + '…'
     : detail.description;
+  const amenities = extractAmenities(detail.description);
+  const locationText = [detail.city, detail.district].filter(Boolean).join(', ') || detail.raw_location || null;
 
   return (
     <div className="min-h-screen bg-black">
@@ -347,21 +389,43 @@ export function ListingDetail() {
           )}
         </div>
 
-        {/* ── Description ─────────────────────────────────────────────── */}
-        {detail.description && (
+        {/* ── Amenities ────────────────────────────────────────────────── */}
+        {amenities.length > 0 && (
           <div className="mb-12">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Description</p>
-            <p className="text-[14px] text-[#a3a3a3] leading-relaxed whitespace-pre-line">{descTrimmed}</p>
-            {detail.description.length > 300 && (
-              <button
-                onClick={() => setDescExpanded(e => !e)}
-                className="text-[12px] text-[#14b8a6] hover:text-[#5eead4] mt-3 cursor-pointer bg-transparent border-none p-0 transition-colors"
-              >
-                {descExpanded ? 'Show less' : 'Read more'}
-              </button>
-            )}
+            <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Amenities</p>
+            <div className="flex flex-wrap gap-2">
+              {amenities.map(({ label, icon: Icon }) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1.5 bg-[#111111] border border-white/[0.08] rounded-full px-3 py-1.5 text-[12px] text-[#a3a3a3]"
+                >
+                  <Icon className="w-3.5 h-3.5 text-[#14b8a6]" />
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
         )}
+
+        {/* ── Description ─────────────────────────────────────────────── */}
+        <div className="mb-12">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Description</p>
+          {detail.description ? (
+            <>
+              <p className="text-[14px] text-[#a3a3a3] leading-relaxed whitespace-pre-line">{descTrimmed}</p>
+              {detail.description.length > 300 && (
+                <button
+                  onClick={() => setDescExpanded(e => !e)}
+                  className="text-[12px] text-[#14b8a6] hover:text-[#5eead4] mt-3 cursor-pointer bg-transparent border-none p-0 transition-colors"
+                >
+                  {descExpanded ? 'Show less' : 'Read more'}
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="text-[13px] text-[#525252] italic">No description provided by source.</p>
+          )}
+        </div>
 
         {/* ── Price History Chart ──────────────────────────────────────── */}
         {detail.price_history && detail.price_history.length > 0 && (
@@ -374,30 +438,53 @@ export function ListingDetail() {
         )}
 
         {/* ── Map ──────────────────────────────────────────────────────── */}
-        {detail.lat && detail.lng && (
-          <div className="mb-12">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Location</p>
-            <div className="h-[240px] rounded-2xl overflow-hidden border border-white/[0.06]">
-              <iframe
-                title="Property location"
-                width="100%"
-                height="100%"
-                style={{ border: 0, filter: 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1)' }}
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${detail.lng - 0.01},${detail.lat - 0.008},${detail.lng + 0.01},${detail.lat + 0.008}&layer=mapnik&marker=${detail.lat},${detail.lng}`}
-              />
+        <div className="mb-12">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Location</p>
+          {detail.lat && detail.lng ? (
+            <>
+              <div className="h-[400px] lg:h-[480px] rounded-2xl overflow-hidden border border-white/[0.06]">
+                <iframe
+                  title="Property location"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0, filter: 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1)' }}
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${detail.lng - 0.01},${detail.lat - 0.008},${detail.lng + 0.01},${detail.lat + 0.008}&layer=mapnik&marker=${detail.lat},${detail.lng}`}
+                />
+              </div>
+              <a
+                href={`https://www.openstreetmap.org/?mlat=${detail.lat}&mlon=${detail.lng}#map=16/${detail.lat}/${detail.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-3 text-[12px] text-[#525252] hover:text-[#14b8a6] transition-colors no-underline"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open in OpenStreetMap
+              </a>
+            </>
+          ) : (
+            <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-6 flex items-center gap-3">
+              <MapPin className="w-5 h-5 text-[#525252] shrink-0" />
+              <div>
+                <p className="text-[13px] text-white">{locationText || 'Location unavailable'}</p>
+                <p className="text-[11px] text-[#525252] mt-0.5">Exact coordinates not available for this listing.</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* ── Similar Listings ─────────────────────────────────────────── */}
-        {similar.length > 0 && (
-          <div className="mb-12">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Similar Listings</p>
+        <div className="mb-12">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Similar Listings</p>
+          {similar.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {similar.map(s => <SimilarCard key={s.id} listing={s} />)}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-6 text-center">
+              <p className="text-[13px] text-[#525252]">No similar listings yet — check back soon.</p>
+            </div>
+          )}
+        </div>
       </main>
 
       <MobileNav />
