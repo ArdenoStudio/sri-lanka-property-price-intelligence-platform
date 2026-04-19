@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Calculator, ChevronLeft, TrendingUp } from 'lucide-react';
+import { Calculator, ChevronLeft, TrendingUp, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDistricts, getEstimate } from '../api';
 import type { District, EstimateResult, SimilarListing } from '../api';
@@ -29,7 +29,7 @@ const CONFIDENCE_STYLES: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Comparable card (reuses SimilarCard aesthetic)
+// Comparable card
 // ---------------------------------------------------------------------------
 
 function ComparableCard({ listing, formatConverted }: { listing: SimilarListing; formatConverted: (n: number | null | undefined) => string }) {
@@ -62,6 +62,45 @@ function ComparableCard({ listing, formatConverted }: { listing: SimilarListing;
 }
 
 // ---------------------------------------------------------------------------
+// Price range bar
+// ---------------------------------------------------------------------------
+
+function PriceRangeBar({
+  low, median, high, formatConverted,
+}: {
+  low: number | null;
+  median: number | null;
+  high: number | null;
+  formatConverted: (n: number | null | undefined) => string;
+}) {
+  if (low == null || median == null || high == null) return null;
+  // Position median as a % between low and high
+  const range = high - low;
+  const medianPct = range > 0 ? ((median - low) / range) * 100 : 50;
+
+  return (
+    <div className="mb-6">
+      {/* Track */}
+      <div className="relative h-2 rounded-full bg-white/[0.06] overflow-visible mx-1">
+        {/* Filled segment low→high */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-white/[0.08] via-[#14b8a6]/40 to-white/[0.08]" />
+        {/* Median marker */}
+        <div
+          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#14b8a6] border-2 border-black shadow-[0_0_8px_rgba(20,184,166,0.6)] z-10"
+          style={{ left: `calc(${medianPct}% - 6px)` }}
+        />
+      </div>
+      {/* Labels */}
+      <div className="flex justify-between mt-3 text-[10px] text-[#525252]">
+        <span>{formatConverted(low)}</span>
+        <span className="text-[#14b8a6]">{formatConverted(median)}</span>
+        <span>{formatConverted(high)}</span>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -81,6 +120,7 @@ export function EstimateTool() {
   const [result, setResult] = useState<EstimateResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     getDistricts().then(setDistricts).catch(() => {});
@@ -94,15 +134,16 @@ export function EstimateTool() {
   const usesPerches = propertyType === 'land' || propertyType === 'house';
   const usesSqft = propertyType === 'apartment' || propertyType === 'house';
 
-  const canSubmit = !!district && !!propertyType;
+  const canSubmit = !!propertyType;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setLoading(true);
     setHasSubmitted(true);
+    setError(false);
     try {
       const params: Parameters<typeof getEstimate>[0] = {
-        district,
+        district: district || undefined,
         property_type: propertyType,
       };
       if (sizePerches && usesPerches) params.size_perches = Number(sizePerches);
@@ -113,6 +154,7 @@ export function EstimateTool() {
       setResult(res);
     } catch {
       setResult(null);
+      setError(true);
     }
     setLoading(false);
   };
@@ -152,12 +194,18 @@ export function EstimateTool() {
           <div className="space-y-6">
             {/* District */}
             <div>
-              <label className="block text-[11px] uppercase tracking-[0.15em] text-[#525252] mb-2">District</label>
+              <label className="block text-[11px] uppercase tracking-[0.15em] text-[#525252] mb-2">
+                District
+                <span className="ml-2 normal-case tracking-normal text-[#404040] lowercase">— optional</span>
+              </label>
               <MinimalSelect
                 options={districtOptions}
                 value={district}
                 onChange={setDistrict}
               />
+              {!district && (
+                <p className="text-[10px] text-[#404040] mt-1.5">Leave as "All Districts" for a nationwide estimate.</p>
+              )}
             </div>
 
             {/* Property type pills */}
@@ -273,10 +321,15 @@ export function EstimateTool() {
               exit={{ opacity: 0, y: 8 }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             >
-              {!result || result.comparable_count === 0 ? (
+              {error ? (
+                <div className="bg-[#111111] border border-red-500/20 rounded-2xl p-8 text-center mb-8 flex flex-col items-center gap-3">
+                  <AlertCircle className="w-6 h-6 text-red-400" />
+                  <p className="text-[14px] text-[#a3a3a3]">Something went wrong. Please try again.</p>
+                </div>
+              ) : !result || result.comparable_count === 0 ? (
                 <div className="bg-[#111111] border border-white/[0.08] rounded-2xl p-8 text-center mb-8">
                   <p className="text-[#525252] text-[14px]">No comparable listings found for this combination.</p>
-                  <p className="text-[11px] text-[#404040] mt-2">Try broadening your criteria.</p>
+                  <p className="text-[11px] text-[#404040] mt-2">Try broadening your criteria or selecting a different district.</p>
                 </div>
               ) : (
                 <>
@@ -286,7 +339,8 @@ export function EstimateTool() {
                       <div>
                         <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-1">Estimated Value</p>
                         <p className="text-[10px] text-[#404040]">
-                          Based on {result.comparable_count} comparable listings
+                          Based on {result.comparable_count} comparable listing{result.comparable_count !== 1 ? 's' : ''}
+                          {!district ? ' across Sri Lanka' : ` in ${district}`}
                         </p>
                       </div>
                       <span className={`text-[11px] font-medium px-3 py-1 rounded-full border capitalize ${CONFIDENCE_STYLES[result.confidence]}`}>
@@ -294,6 +348,15 @@ export function EstimateTool() {
                       </span>
                     </div>
 
+                    {/* Visual bar */}
+                    <PriceRangeBar
+                      low={result.estimated_low}
+                      median={result.estimated_median}
+                      high={result.estimated_high}
+                      formatConverted={formatConverted}
+                    />
+
+                    {/* Numbers */}
                     <div className="grid grid-cols-3 gap-4 mb-6">
                       <div className="text-center">
                         <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-1">Low (p25)</p>

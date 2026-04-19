@@ -1183,7 +1183,7 @@ def get_listing_price_history(listing_id: int, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 
 class EstimateRequest(BaseModel):
-    district: str
+    district: Optional[str] = None
     property_type: str
     size_perches: Optional[float] = None
     size_sqft: Optional[float] = None
@@ -1192,12 +1192,14 @@ class EstimateRequest(BaseModel):
 @app.post("/estimate")
 def estimate_price(req: EstimateRequest, db: Session = Depends(get_db)):
     query = db.query(Listing).filter(
-        Listing.district == req.district,
         Listing.property_type == req.property_type,
         Listing.price_lkr.isnot(None),
         Listing.price_lkr > 0,
         Listing.is_outlier == False,
     )
+
+    if req.district:
+        query = query.filter(Listing.district == req.district)
 
     if req.size_perches:
         query = query.filter(
