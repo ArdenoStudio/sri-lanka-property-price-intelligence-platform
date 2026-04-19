@@ -42,6 +42,11 @@ THIN_DISTRICTS = [
     "ratnapura", "puttalam", "matale", "nuwara-eliya",
 ]
 
+# All 25 Sri Lanka districts — used for mega scrape mode
+ALL_DISTRICTS = THIN_DISTRICTS + [
+    "colombo", "gampaha", "kalutara", "kandy", "galle", "badulla",
+]
+
 # Extra category URLs for data gaps
 # Rentals are mixed into the main /property feed — ikman has no separate rental category URL.
 # Only add URLs here that are verified to exist on ikman.lk.
@@ -307,7 +312,7 @@ async def scrape_ikman(db: Session, max_pages: int = 20, location: str = "sri-la
     scraper = IkmanScraper(db)
     return await scraper.scrape(max_pages=max_pages, location=location)
 
-async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 50, extra_pages: int = 10, headless: bool = False):
+async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 50, extra_pages: int = 10, headless: bool = False, use_all_districts: bool = False):
     """
     Full scrape: main feed + thin districts + rent/commercial categories.
     Runs sequentially to avoid hammering the site.
@@ -456,8 +461,9 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
         main_base = f"https://ikman.lk/en/ads/sri-lanka/property?sort=date&order=desc&buy_now=0&urgent=0&page="
         await _scrape_url(main_base, main_pages)
 
-        # 2. Thin districts
-        for district in THIN_DISTRICTS:
+        # 2. Districts (all 25 in mega mode, thin districts only otherwise)
+        districts = ALL_DISTRICTS if use_all_districts else THIN_DISTRICTS
+        for district in districts:
             district_base = f"https://ikman.lk/en/ads/{district}/property?sort=date&order=desc&buy_now=0&urgent=0&page="
             await _scrape_url(district_base, district_pages)
 

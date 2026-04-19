@@ -46,6 +46,11 @@ THIN_DISTRICTS = [
     "Kilinochchi", "Polonnaruwa", "Monaragala",
 ]
 
+# All 25 Sri Lanka districts — used for mega scrape mode
+ALL_DISTRICTS = THIN_DISTRICTS + [
+    "Colombo", "Gampaha", "Kalutara", "Kandy", "Galle", "Badulla", "Mullaitivu",
+]
+
 DISTRICT_URLS = [
     {"url": f"{BASE}/sale/index.php?srch_words={d}&page=",    "type": "house", "listing_type": "sale",  "district": d}
     for d in THIN_DISTRICTS
@@ -55,6 +60,17 @@ DISTRICT_URLS = [
 ] + [
     {"url": f"{BASE}/rentals/index.php?srch_words={d}&page=", "type": "house", "listing_type": "rent",  "district": d}
     for d in THIN_DISTRICTS
+]
+
+ALL_DISTRICT_URLS = [
+    {"url": f"{BASE}/sale/index.php?srch_words={d}&page=",    "type": "house", "listing_type": "sale",  "district": d}
+    for d in ALL_DISTRICTS
+] + [
+    {"url": f"{BASE}/land/index.php?srch_words={d}&page=",    "type": "land",  "listing_type": "sale",  "district": d}
+    for d in ALL_DISTRICTS
+] + [
+    {"url": f"{BASE}/rentals/index.php?srch_words={d}&page=", "type": "house", "listing_type": "rent",  "district": d}
+    for d in ALL_DISTRICTS
 ]
 
 
@@ -281,8 +297,8 @@ async def scrape_lpw(db: Session, max_pages: int = 15, location: str = "sri-lank
     return await scraper.scrape(max_pages=max_pages, location=location)
 
 
-async def scrape_lpw_districts(db: Session, max_pages: int = 50):
-    """Scrape LPW with district-specific srch_words filter for thin districts."""
+async def scrape_lpw_districts(db: Session, max_pages: int = 50, use_all_districts: bool = False):
+    """Scrape LPW with district-specific srch_words filter. Uses all 25 districts in mega mode."""
     import os
     from urllib.parse import urlparse
     from playwright.async_api import async_playwright
@@ -306,7 +322,8 @@ async def scrape_lpw_districts(db: Session, max_pages: int = 50):
             if route.request.resource_type in ["image", "media", "font", "stylesheet"]
             else route.continue_())
 
-        for entry in DISTRICT_URLS:
+        urls = ALL_DISTRICT_URLS if use_all_districts else DISTRICT_URLS
+        for entry in urls:
             base_url = entry["url"]
             default_type = entry["type"]
             listing_type = entry["listing_type"]

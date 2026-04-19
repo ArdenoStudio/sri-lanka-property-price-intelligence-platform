@@ -44,6 +44,18 @@ function formatTimeAgo(iso: string | null | undefined): string {
   }
 }
 
+function daysColor(days: number | null | undefined): string {
+  if (days == null || days < 7) return '#10b981';
+  if (days < 30) return '#f59e0b';
+  return '#ef4444';
+}
+
+function formatDaysListed(days: number | null | undefined, fallback: string | null | undefined): string | null {
+  if (days === 0) return 'New today';
+  if (days != null) return `${days} days`;
+  return fallback ? formatTimeAgo(fallback) : null;
+}
+
 const TYPE_COLORS: Record<string, string> = {
   land:       'bg-amber-500/[0.12] text-amber-400 border-amber-500/20',
   house:      'bg-blue-500/[0.12] text-blue-400 border-blue-500/20',
@@ -294,6 +306,9 @@ export function ListingDetail() {
     : detail.description;
   const amenities = extractAmenities(detail.description);
   const locationText = [detail.city, detail.district].filter(Boolean).join(', ') || detail.raw_location || null;
+  const daysSinceLastSeen = detail.last_seen_at
+    ? Math.floor((Date.now() - new Date(detail.last_seen_at).getTime()) / 86400000)
+    : null;
 
   return (
     <div className="min-h-screen bg-black">
@@ -308,6 +323,21 @@ export function ListingDetail() {
           <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
           Back to listings
         </button>
+
+        {/* ── Stale listing warning ────────────────────────────────────── */}
+        {daysSinceLastSeen != null && daysSinceLastSeen > 7 && (
+          <div className="bg-amber-500/[0.08] border border-amber-500/20 rounded-2xl px-4 py-3 mb-8 flex items-center gap-3">
+            <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+            <p className="text-[13px] text-amber-400">
+              Last confirmed {daysSinceLastSeen} days ago — this listing may no longer be available.{' '}
+              {detail.url && (
+                <a href={detail.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">
+                  Verify on source
+                </a>
+              )}
+            </p>
+          </div>
+        )}
 
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
@@ -331,6 +361,10 @@ export function ListingDetail() {
                 <span className="text-[#525252] text-base font-normal ml-2">/ perch</span>
               )}
             </h1>
+
+            {detail.title && (
+              <p className="text-[14px] text-[#737373] mb-2 leading-snug">{detail.title}</p>
+            )}
 
             {detail.price_drop_pct != null && detail.price_drop_pct > 0 && (
               <div className="flex items-center gap-1.5 mb-3">
@@ -371,32 +405,37 @@ export function ListingDetail() {
 
         {/* ── Details Grid ─────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-12">
-          {[
-            { icon: BedDouble, label: 'Bedrooms', value: detail.bedrooms != null ? `${detail.bedrooms} BR` : null },
-            { icon: Bath, label: 'Bathrooms', value: detail.bathrooms != null ? `${detail.bathrooms} BA` : null },
-            { icon: Ruler, label: 'Size', value: detail.size_perches ? `${detail.size_perches} perches` : detail.size_sqft ? `${detail.size_sqft?.toLocaleString()} sqft` : null },
-            { icon: Home, label: 'Price/Perch', value: detail.price_per_perch ? formatConverted(detail.price_per_perch) : null },
-            { icon: Calendar, label: 'Listed', value: detail.days_on_market != null ? `${detail.days_on_market} days` : detail.first_seen_at ? formatTimeAgo(detail.first_seen_at) : null },
-          ].filter(d => d.value != null).map(({ icon: Icon, label, value }) => (
+          {(
+            [
+              { icon: BedDouble, label: 'Bedrooms', value: detail.bedrooms != null ? `${detail.bedrooms} BR` : null },
+              { icon: Bath,      label: 'Bathrooms', value: detail.bathrooms != null ? `${detail.bathrooms} BA` : null },
+              { icon: Ruler,     label: 'Size', value: detail.size_perches ? `${detail.size_perches} perches` : detail.size_sqft ? `${detail.size_sqft?.toLocaleString()} sqft` : null },
+              { icon: Home,      label: 'Price/Perch', value: detail.price_per_perch ? formatConverted(detail.price_per_perch) : null },
+              { icon: Ruler,     label: 'Price/sqft', value: detail.price_per_sqft ? `${formatConverted(detail.price_per_sqft)}/sqft` : null },
+              { icon: Calendar,  label: 'Listed', value: formatDaysListed(detail.days_on_market, detail.first_seen_at), color: daysColor(detail.days_on_market) },
+            ] as { icon: LucideIcon; label: string; value: string | null; color?: string }[]
+          ).filter(d => d.value != null).map(({ icon: Icon, label, value, color }) => (
             <div key={label} className="bg-[#111111] border border-white/[0.06] rounded-2xl p-4">
               <Icon className="w-4 h-4 text-[#525252] mb-2" />
               <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-0.5">{label}</p>
-              <p className="text-[14px] font-bold text-white num">{value}</p>
+              <p className="text-[14px] font-bold num" style={{ color: color ?? '#ffffff' }}>{value}</p>
             </div>
           ))}
           {detail.market_median_lkr && (
             <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-4">
               <TrendingDown className="w-4 h-4 text-[#525252] mb-2" />
-              <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-0.5">Market Median</p>
+              <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-0.5">
+                {detail.listing_type === 'rent' ? 'Sale Median' : 'Market Median'}
+              </p>
               <p className="text-[14px] font-bold text-white num">{formatConverted(detail.market_median_lkr)}</p>
             </div>
           )}
         </div>
 
         {/* ── Amenities ────────────────────────────────────────────────── */}
-        {amenities.length > 0 && (
-          <div className="mb-12">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Amenities</p>
+        <div className="mb-12">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-4">Amenities</p>
+          {amenities.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {amenities.map(({ label, icon: Icon }) => (
                 <span
@@ -408,8 +447,23 @@ export function ListingDetail() {
                 </span>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-4 flex items-center justify-between">
+              <p className="text-[13px] text-[#525252] italic">No amenities listed by source.</p>
+              {detail.url && (
+                <a
+                  href={detail.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[12px] text-[#14b8a6] hover:text-[#5eead4] no-underline transition-colors shrink-0"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  View original
+                </a>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ── Description ─────────────────────────────────────────────── */}
         <div className="mb-12">
