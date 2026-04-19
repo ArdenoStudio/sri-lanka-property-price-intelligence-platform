@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { ChatResponse, sendChatMessage } from '../api';
+import type { ChatResponse } from '../api';
+import { sendChatMessage } from '../api';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const ACCENT      = "#1fb6aa";
