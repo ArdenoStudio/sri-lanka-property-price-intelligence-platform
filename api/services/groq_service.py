@@ -8,36 +8,39 @@ class GroqService:
         # We assume GROQ_API_KEY is in the environment
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-    async def extract_search_params(self, query: str) -> Optional[Dict[str, Any]]:
+    async def extract_search_params(self, query: str = None, chat_history: list = None) -> Optional[Dict[str, Any]]:
         """
         Extract filters from natural language query using explicit Tool Calling.
-        This completely eliminates the need to "beg" the LLM for JSON, guaranteeing a rigid structure.
+        The agent can ask clarifying questions while simultaneously calling tools for a fuzzy search.
         """
         
-        # We instruct the model to use the tool provided
-        messages = [
-            {
-                "role": "system",
-                "content": "You are a real estate search assistant. If the user searches for a property, you must call the `search_properties` tool with the extracted filters. If the user asks a normal conversational question, reply normally."
-            },
-            {
-                "role": "user",
-                "content": query
-            }
-        ]
+        # We instruct the model to use the tool provided, but also allow conversation.
+        system_prompt = """You are Property AI, a friendly conversational real estate search assistant for PropertyLK. 
+
+If the user is looking for a property but their criteria are too vague (e.g. no district or no property type), you MUST ask them clarifying questions in your message. 
+At the same time, if they have given you at least *some* useful information, you should ALSO call the `search_properties` tool with whatever partial filters you have. This allows us to do a fuzzy search and show them some initial results while we wait for their clarification.
+If their criteria are very clear, you can just call the tool and optionally summarize what you're doing.
+Do not invent listings."""
+
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        if chat_history:
+            messages.extend(chat_history)
+        if query:
+            messages.append({"role": "user", "content": query})
 
         tools = [
             {
                 "type": "function",
                 "function": {
                     "name": "search_properties",
-                    "description": "Trigger a database search for properties based on user filters.",
+                    "description": "Trigger a database search for properties to show to the user.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "bedrooms": {"type": "integer"},
                             "bathrooms": {"type": "number"},
-                            "property_type": {"type": "string", "enum": ["land", "house", "apartment", "commercial"]},
+                            "property_type": {"type": "string", "enum": ["land", "house", "apartment", "commercial", "villa"]},
                             "district": {"type": "string"},
                             "min_price": {"type": "integer", "description": "Minimum price in LKR"},
                             "max_price": {"type": "integer", "description": "Maximum price in LKR"},
@@ -47,41 +50,57 @@ class GroqService:
                                 "items": {"type": "string"}
                             }
                         },
-                        "required": [] # No fields are strictly required unless mentioned
+                        "required": [] # No fields are purely required, fuzzy search allowed
                     }
                 }
             }
         ]
 
         response = self.client.chat.completions.create(
-            model="llama-3.3-70b-versatile", # Recommended for heavily structured tool calling
+            model="llama-3.3-70b-versatile", # Great for tools + conversation
             messages=messages,
             tools=tools,
-            tool_choice="auto", # Allows the model to choose whether to reply or use the tool
-            temperature=0.1,
-            max_tokens=300
+            tool_choice="auto",
+            temperature=0.4, # Slightly higher for conversational fluidity
+            max_tokens=400
         )
 
         response_message = response.choices[0].message
         
-        # Did the model decide to use a tool?
+        result = {
+            "type": "error",
+            "message": "Failed to process chat",
+            "filters": None
+        }
+
+        # Check for tool choices and text answers
+        filters = None
         if response_message.tool_calls:
-            # We strictly extract the tool arguments, successfully bypassing standard chat output
             tool_call = response_message.tool_calls[0]
             try:
-                extracted_args = json.loads(tool_call.function.arguments)
-                return {
-                    "type": "database_query",
-                    "filters": extracted_args
-                }
+                filters = json.loads(tool_call.function.arguments)
             except json.JSONDecodeError:
-                return None
-        else:
-            # The model answered conversationally! Best of both worlds.
-            return {
+                pass
+        
+        # We can have both conversational replies AND tool configurations!
+        if filters and response_message.content:
+            result = {
+                "type": "mixed_reply",
+                "message": response_message.content,
+                "filters": filters
+            }
+        elif filters:
+            result = {
+                "type": "database_query",
+                "filters": filters
+            }
+        elif response_message.content:
+            result = {
                 "type": "conversational_reply",
                 "message": response_message.content
             }
+
+        return result
 
     async def analyze_sentiment(self, title: str, description: str) -> Dict[str, Any]:
         """

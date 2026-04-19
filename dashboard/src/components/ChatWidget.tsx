@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import type { ChatResponse } from '../api';
 import { sendChatMessage } from '../api';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -97,7 +98,7 @@ const STYLES = `
 
   .aw-scroll::-webkit-scrollbar       { width: 5px; }
   .aw-scroll::-webkit-scrollbar-track { background: transparent; }
-  .aw-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 999px; }
+  .aw-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 9999px; }
   .aw-scroll::-webkit-scrollbar-thumb:hover { background: rgba(${ACCENT_RGB},.72); }
 
   .aw-fab, .aw-chip, .aw-ctrl, .aw-send { transition: all 180ms ease; }
@@ -195,7 +196,7 @@ const QUICK_ACTIONS = [
 ];
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ChatWidget() {
+export function ChatWidget({ onFilters }: { onFilters?: (filters: NonNullable<ChatResponse['filters']>) => void }) {
   const [open,        setOpen]        = useState(false);
   const [animOut,     setAnimOut]     = useState(false);
   const [mounted,     setMounted]     = useState(false);
@@ -321,6 +322,10 @@ export function ChatWidget() {
       const history = messages.map(m => ({ role: m.role, content: m.content }));
       const res = await sendChatMessage(trimmed, history);
       setMessages([...next, { role: 'assistant', content: res.response, id: genId() }]);
+      
+      if (res.filters && onFilters) {
+        onFilters(res.filters);
+      }
     } catch {
       setMessages([...next, {
         role: 'assistant',

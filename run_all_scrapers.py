@@ -9,6 +9,7 @@ Usage:
     python run_all_scrapers.py --scrapers ikman       # Run specific scraper
     python run_all_scrapers.py --test                 # Test mode (1-2 pages each)
     python run_all_scrapers.py --district-pages 50    # Pages per district (default: 50)
+    python run_all_scrapers.py --mega                 # Mega mode: 500 pages, all 25 districts
 """
 import asyncio
 import sys
@@ -32,7 +33,7 @@ from scraper.geocoder import Geocoder
 log = structlog.get_logger()
 
 
-async def run_ikman(max_pages: int = 50, full_scrape: bool = False, district_pages: int = 50):
+async def run_ikman(max_pages: int = 50, full_scrape: bool = False, district_pages: int = 50, use_all_districts: bool = False):
     """Run ikman scraper with its own DB session."""
     db = SessionLocal()
     log.info("scraper_starting", source="ikman", max_pages=max_pages)
@@ -44,6 +45,7 @@ async def run_ikman(max_pages: int = 50, full_scrape: bool = False, district_pag
                 district_pages=district_pages,
                 extra_pages=10,
                 headless=True,
+                use_all_districts=use_all_districts,
             )
         else:
             found, new = await scrape_ikman(db, max_pages=max_pages)
@@ -56,7 +58,7 @@ async def run_ikman(max_pages: int = 50, full_scrape: bool = False, district_pag
         db.close()
 
 
-async def run_lpw(max_pages: int = 15, full_scrape: bool = False, district_pages: int = 50):
+async def run_lpw(max_pages: int = 15, full_scrape: bool = False, district_pages: int = 50, use_all_districts: bool = False):
     """Run LankaPropertyWeb scraper with its own DB session."""
     db = SessionLocal()
     if full_scrape:
@@ -65,7 +67,7 @@ async def run_lpw(max_pages: int = 15, full_scrape: bool = False, district_pages
         log.info("scraper_starting", source="lpw", mode="main_feed", max_pages=max_pages)
     try:
         if full_scrape:
-            found, new = await scrape_lpw_districts(db, max_pages=district_pages)
+            found, new = await scrape_lpw_districts(db, max_pages=district_pages, use_all_districts=use_all_districts)
         else:
             found, new = await scrape_lpw(db, max_pages=max_pages)
         log.info("scraper_complete", source="lpw", found=found, new=new)
@@ -180,6 +182,8 @@ async def main():
                         help="Max pages for lamudi (default: 20)")
     parser.add_argument("--district-pages", type=int, default=50,
                         help="Max pages per district for ikman and lpw (default: 50)")
+    parser.add_argument("--mega", action="store_true",
+                        help="Mega mode: 500 pages, all 25 districts, implies --full")
 
     args = parser.parse_args()
 
@@ -188,11 +192,16 @@ async def main():
     if args.test:
         ikman_pages, lpw_pages, lamudi_pages, district_pages = 2, 1, 1, 1
         log.info("test_mode_enabled")
+    elif args.mega:
+        ikman_pages, lpw_pages, lamudi_pages, district_pages = 500, 500, 500, 500
     else:
         ikman_pages = args.ikman_pages
         lpw_pages = args.lpw_pages
         lamudi_pages = args.lamudi_pages
         district_pages = args.district_pages
+
+    full_scrape = args.full or args.mega
+    use_all_districts = args.mega
 
     start_time = datetime.utcnow()
 
@@ -200,7 +209,7 @@ async def main():
     print("🚀 PROPERTY SCRAPER - STARTING")
     print("=" * 70)
     print(f"Scrapers:       {', '.join(scrapers_to_run)}")
-    print(f"Mode:           {'TEST' if args.test else 'FULL' if args.full else 'STANDARD'}")
+    print(f"Mode:           {'TEST' if args.test else 'MEGA' if args.mega else 'FULL' if args.full else 'STANDARD'}")
     print(f"District pages: {district_pages}")
     print(f"Parallelism:    {'yes — scrapers run simultaneously' if len(scrapers_to_run) > 1 else 'single scraper'}")
     print(f"Time:           {start_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
@@ -209,9 +218,9 @@ async def main():
     # Build parallel tasks — each scraper owns its own DB session
     tasks = []
     if "ikman" in scrapers_to_run:
-        tasks.append(run_ikman(max_pages=ikman_pages, full_scrape=args.full, district_pages=district_pages))
+        tasks.append(run_ikman(max_pages=ikman_pages, full_scrape=full_scrape, district_pages=district_pages, use_all_districts=use_all_districts))
     if "lpw" in scrapers_to_run:
-        tasks.append(run_lpw(max_pages=lpw_pages, full_scrape=args.full, district_pages=district_pages))
+        tasks.append(run_lpw(max_pages=lpw_pages, full_scrape=full_scrape, district_pages=district_pages, use_all_districts=use_all_districts))
     if "lamudi" in scrapers_to_run:
         tasks.append(run_lamudi(max_pages=lamudi_pages))
 

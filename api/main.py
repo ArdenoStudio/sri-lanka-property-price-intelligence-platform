@@ -1483,79 +1483,62 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 @app.post("/api/chat")
 async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
+    from api.services.groq_service import GroqService
     try:
-        from groq import Groq
-    except ImportError:
-        return {"response": "Groq package not installed on this server.", "context_used": False}
-
-    groq_key = os.getenv("GROQ_API_KEY")
-    if not groq_key:
-        return {"response": "System Error: GROQ_API_KEY is not configured.", "context_used": False}
-
-    client = Groq(api_key=groq_key)
+        groq_service = GroqService()
+    except Exception as e:
+        return {"response": f"System Error initializing Groq: {str(e)}", "context_used": False}
 
     try:
-        # --- 1. Dynamic Search Detection (Internal Search) ---
+        # Step 1: Use GroqService to determine if we should ask back, do a fuzzy search, or both
+        history = req.history or []
+        parsed = await groq_service.extract_search_params(query=req.message, chat_history=history)
+
+        reply_message = parsed.get("message", "")
+        filters = parsed.get("filters")
+
         search_results_context = ""
-        try:
-            # Build a summary of recent conversation so filter model has context
-            recent_history = ""
-            if req.history:
-                for m in req.history[-6:]:
-                    role = "User" if m.get("role") == "user" else "AI"
-                    recent_history += f"{role}: {m.get('content','')}\n"
+        context_used = False
 
-            filter_prompt = f"""You are a filter extractor. Given the conversation below, extract property search filters for the LATEST user message.
-
-Conversation:
-{recent_history}User: {req.message}
-
-Return ONLY a comma-separated list of exactly 5 values:
-  location (district or city in Sri Lanka), property_type (land/house/apartment/commercial), listing_type (sale/rent), min_bedrooms (number), min_price_lkr (number)
-Use "None" for any missing value. Do not explain. Just output the 5 values.
-Example: Colombo, apartment, sale, 2, None"""
-
-            search_intent = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[{"role": "user", "content": filter_prompt}],
-                max_tokens=32
-            ).choices[0].message.content.strip()
-
-            filters = [f.strip() for f in search_intent.split(",")]
-            while len(filters) < 5:
-                filters.append("None")
-            loc_f, type_f, list_f, beds_f, minprice_f = filters[0], filters[1], filters[2], filters[3], filters[4]
+        if filters:
+            # Re-map the filters to our query builder
+            loc_f = filters.get("district", "None")
+            type_f = filters.get("property_type", "None")
+            list_f = filters.get("listing_type", "None")
+            beds_f = str(filters.get("bedrooms", "None"))
+            minprice_f = str(filters.get("min_price", "None"))
 
             def build_query(include_type=True, include_beds=True):
                 q = db.query(Listing).filter(Listing.is_outlier == False, Listing.price_lkr.isnot(None))
                 if loc_f != "None":
-                    q = q.filter(
-                        (Listing.raw_location.ilike(f"%{loc_f}%")) |
-                        (Listing.district.ilike(f"%{loc_f}%"))
-                    )
+                    q = q.filter((Listing.raw_location.ilike(f"%{loc_f}%")) | (Listing.district.ilike(f"%{loc_f}%")))
                 if include_type and type_f != "None":
                     q = q.filter(Listing.property_type == type_f.lower())
                 if list_f != "None":
                     q = q.filter(Listing.listing_type == list_f.lower())
                 if include_beds and beds_f != "None" and beds_f.isdigit():
                     q = q.filter(Listing.bedrooms >= int(beds_f))
-                if minprice_f != "None" and minprice_f.replace(".", "").isdigit():
+                if minprice_f != "None" and minprice_f.isdigit():
                     q = q.filter(Listing.price_lkr >= float(minprice_f))
                 return q
 
-            # Try strict search first, then progressively broaden
-            found = build_query(include_type=True,  include_beds=True ).order_by(Listing.price_lkr.desc()).limit(6).all()
-            if not found:
-                found = build_query(include_type=True,  include_beds=False).order_by(Listing.price_lkr.desc()).limit(6).all()
-            if not found:
-                found = build_query(include_type=False, include_beds=False).order_by(Listing.price_lkr.desc()).limit(6).all()
+            found = build_query(include_type=True, include_beds=True).order_by(Listing.price_lkr.desc()).limit(6).all()
+            if not found: found = build_query(include_type=True, include_beds=False).order_by(Listing.price_lkr.desc()).limit(6).all()
+            if not found: found = build_query(include_type=False, include_beds=False).order_by(Listing.price_lkr.desc()).limit(6).all()
 
             if found:
+                context_used = True
                 avg_q = build_query(include_type=True, include_beds=False)
                 avg_p = avg_q.with_entities(func.avg(Listing.price_lkr)).filter(Listing.price_lkr > 100000).scalar() or 0
                 priced = [l for l in found if l.price_lkr and l.price_lkr > 0]
                 avg_note = f"Avg Price LKR {avg_p:,.0f}" if avg_p > 0 else "No price average available"
-                label = f"{loc_f} {type_f}".replace("None", "").strip()
+                
+                # Create a concise label showing what was filtered
+                label_parts = []
+                if loc_f != "None": label_parts.append(str(loc_f))
+                if type_f != "None": label_parts.append(str(type_f))
+                label = " ".join(label_parts) if label_parts else "Properties"
+                
                 search_results_context = f"LIVE DB RESULTS for '{label}': {len(found)} listings shown ({len(priced)} with prices). {avg_note}."
                 for listing in found:
                     price_str = f"LKR {float(listing.price_lkr):,.0f}" if listing.price_lkr and listing.price_lkr > 0 else "Price not listed"
@@ -1563,53 +1546,52 @@ Example: Colombo, apartment, sale, 2, None"""
                     title = listing.title or "Property listing"
                     url = listing.url or ""
                     search_results_context += f"\n- {title} | {beds_str}{listing.property_type} in {listing.raw_location}: {price_str} | {url}"
-        except Exception:
-            pass
 
-        # --- 2. Final Data-Driven Response ---
-        stats_raw = get_stats(db)
-        system_prompt = f"""You are Property AI — a friendly, knowledgeable assistant for PropertyLK, Sri Lanka's property intelligence platform. You have access to live data from 22,000+ real listings across Sri Lanka.
+        if search_results_context:
+            stats_raw = get_stats(db)
+            system_prompt = f"""You are Property AI. The user had a query, and we found DB results.
+Present the DB results nicely in a friendly conversational way.
+The previous system thought: "{reply_message}" (You MUST use this as a hint to ask any clarifying questions).
+LIVE DATABASE RESULTS:
+{search_results_context}
 
-YOUR PERSONALITY:
-- Warm and conversational. If someone says "hey" or "hello", just greet them back naturally and offer to help with property questions. Never dump database stats at someone saying hi.
-- You're like a knowledgeable friend in the Sri Lanka property market — helpful, direct, not robotic.
-- Only bring up listing data or prices when the user is actually asking about property.
-
-LIVE DATABASE RESULTS (only use if relevant to the user's question):
-{search_results_context if search_results_context else "No specific search was triggered for this message."}
-
-MARKET CONTEXT (only mention if relevant):
-- Total listings in DB: {stats_raw['total_listings']:,}
-- Overall market avg: LKR {stats_raw['avg_price_lkr']:,.0f}
-
-RULES FOR PROPERTY QUESTIONS:
-1. ONLY reference listings explicitly shown in the database results above. NEVER invent specific prices, addresses, or listings that aren't in the results.
-2. For each listing you mention, include its link exactly as provided (e.g. "View listing: https://ikman.lk/...").
-3. If a listing shows "Price not listed", say so — don't make up a figure.
-4. If the DB returned no results or limited data, say so honestly — do not estimate or fabricate specific examples.
-5. Keep answers concise — show the real listings first with prices and links, then a brief market insight. Max 5 sentences.
-6. Format prices as "LKR X,XXX,XXX".
-
-RULES FOR NON-PROPERTY MESSAGES:
-- Greetings → respond warmly, introduce yourself briefly, invite a property question.
-- Off-topic questions → politely steer back to Sri Lanka property.
-- Never paste market stats or database info into a greeting response.
+RULES:
+1. ONLY reference listings explicitly shown in the results. Never invent.
+2. For each listing, include its link.
+3. Formulate 1-2 clarifying questions if the 'previous system thought' had them or if key info is still missing.
+4. Keep answers concise.
 """
+            messages = [{"role": "system", "content": system_prompt}]
+            if req.history: messages.extend(req.history)
+            messages.append({"role": "user", "content": req.message})
 
-        messages = [{"role": "system", "content": system_prompt}]
-        if req.history: messages.extend(req.history)
-        messages.append({"role": "user", "content": req.message})
+            # To avoid creating another client when GroqService exists, we just use its client
+            completion = groq_service.client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1024,
+            )
+            return {
+                "response": completion.choices[0].message.content,
+                "context_used": True,
+                "filters": filters
+            }
+        else:
+            # Native conversational reply OR no results were found
+            message = reply_message
+            if filters and not search_results_context:
+                # DB was queried but 0 results
+                message = "I couldn't find any properties matching those exact criteria. " + (message or "Could you broaden your search or choose another district?")
+            elif not message:
+                message = "How can I help you regarding Sri Lankan properties today?"
+                
+            return {
+                "response": message, 
+                "context_used": False,
+                "filters": filters if filters else None
+            }
 
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            temperature=0.7,
-            max_tokens=1024,
-        )
-        return {
-            "response": completion.choices[0].message.content,
-            "context_used": bool(search_results_context)
-        }
     except Exception as e:
         return {"response": f"AI error: {str(e)}", "context_used": False}
 
