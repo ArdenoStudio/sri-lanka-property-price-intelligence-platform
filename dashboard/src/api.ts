@@ -193,7 +193,7 @@ export interface EstimateResult {
 }
 
 export const getEstimate = (params: {
-  district: string;
+  district?: string;
   property_type: string;
   size_perches?: number;
   size_sqft?: number;
