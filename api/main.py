@@ -1515,7 +1515,10 @@ async def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
                 if include_type and type_f != "None":
                     q = q.filter(Listing.property_type == type_f.lower())
                 if list_f != "None":
-                    q = q.filter(Listing.listing_type == list_f.lower())
+                    if isinstance(list_f, list):
+                        q = q.filter(Listing.listing_type.in_([l.lower() for l in list_f]))
+                    else:
+                        q = q.filter(Listing.listing_type == list_f.lower())
                 if include_beds and beds_f != "None" and beds_f.isdigit():
                     q = q.filter(Listing.bedrooms >= int(beds_f))
                 if minprice_f != "None" and minprice_f.isdigit():

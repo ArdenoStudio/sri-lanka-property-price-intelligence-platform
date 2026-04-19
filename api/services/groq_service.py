@@ -44,7 +44,14 @@ Do not invent listings."""
                             "district": {"type": "string"},
                             "min_price": {"type": "integer", "description": "Minimum price in LKR"},
                             "max_price": {"type": "integer", "description": "Maximum price in LKR"},
-                            "listing_type": {"type": "string", "enum": ["sale", "rent"]},
+                            "listing_type": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "enum": ["sale", "rent"]
+                                },
+                                "description": "The type(s) of listing (e.g., sale, rent). Provide both if comparing."
+                            },
                             "amenities": {
                                 "type": "array",
                                 "items": {"type": "string"}
