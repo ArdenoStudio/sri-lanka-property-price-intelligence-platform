@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../api';
 import { PriceHistoryChart } from './PriceHistoryChart';
@@ -53,6 +53,7 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
   const totalPages = Math.ceil(total / pageSize);
   const topRef = useRef<HTMLDivElement>(null);
   const { formatConverted } = useCurrency();
+  const navigate = useNavigate();
 
   function handlePageChange(p: number) {
     onPageChange(p);
@@ -132,13 +133,13 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                     {[listing.property_type, listing.district].filter(Boolean).join(' · ') || 'Property'}
                   </p>
                   <button
-                    onClick={(e) => { e.stopPropagation(); onCompareToggle(listing); }}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); navigate(`/listing/${listing.id}`); }}
                     className={`sm:opacity-0 sm:group-hover:opacity-100 transition-all text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border active:scale-90 ${
                       isCompared
                         ? 'bg-[#14b8a6] text-black border-[#14b8a6] sm:opacity-100'
                         : 'text-[#737373] border-white/[0.12] hover:text-white hover:border-white/25 bg-transparent'
                     }`}
-                    aria-label={isCompared ? 'Remove from comparison' : 'Add to comparison'}
+                    aria-label="View listing details"
                   >
                     <PlusCheckIcon checked={isCompared} />
                   </button>
