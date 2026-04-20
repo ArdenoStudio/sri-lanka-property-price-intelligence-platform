@@ -177,15 +177,6 @@ function Dashboard() {
   const [selectedForComparison, setSelectedForComparison] = useState<Listing[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
-  const toggleComparison = (listing: Listing) => {
-    setSelectedForComparison(prev => {
-      const isAlreadyAdded = prev.some(l => l.id === listing.id);
-      if (isAlreadyAdded) return prev.filter(l => l.id !== listing.id);
-      if (prev.length >= 3) return prev;
-      return [...prev, listing];
-    });
-  };
-
   // Clear size filters when property type changes (sqft vs perches units are incompatible)
   useEffect(() => {
     setMinSizePerches(''); setMaxSizePerches('');
