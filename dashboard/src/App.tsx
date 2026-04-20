@@ -370,7 +370,6 @@ function Dashboard() {
                   pageSize={PAGE_SIZE}
                   total={totalListings}
                   onPageChange={setPage}
-                  onCompareToggle={toggleComparison}
                   selectedForComparison={selectedForComparison.map(l => l.id)}
                 />
               </div>

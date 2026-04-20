@@ -45,11 +45,10 @@ interface Props {
   pageSize: number;
   total: number;
   onPageChange: (p: number) => void;
-  onCompareToggle: (listing: Listing) => void;
   selectedForComparison: number[];
 }
 
-export function ListingsGrid({ listings, loading, page, pageSize, total, onPageChange, onCompareToggle, selectedForComparison }: Props) {
+export function ListingsGrid({ listings, loading, page, pageSize, total, onPageChange, selectedForComparison }: Props) {
   const totalPages = Math.ceil(total / pageSize);
   const topRef = useRef<HTMLDivElement>(null);
   const { formatConverted } = useCurrency();
