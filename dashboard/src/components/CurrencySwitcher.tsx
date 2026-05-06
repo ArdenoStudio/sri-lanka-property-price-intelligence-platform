@@ -75,11 +75,11 @@ export function CurrencySwitcher() {
                 <p className="text-[10px] text-[#525252] leading-relaxed">
                   Overseas Sri Lankans can repatriate property investment proceeds via an IIA at any licensed commercial bank (CBSL regulation).
                 </p>
-                {ratesUpdatedAt && (
-                  <p className="text-[10px] text-[#404040] mt-2">
-                    Rates updated {timeAgo(ratesUpdatedAt)}
-                  </p>
-                )}
+                <p className="text-[10px] text-[#404040] mt-2">
+                  {ratesUpdatedAt
+                    ? `Rates updated ${timeAgo(ratesUpdatedAt)}`
+                    : 'Using estimated rates'}
+                </p>
               </div>
             </div>
           </motion.div>

@@ -1322,7 +1322,7 @@ def get_exchange_rates():
         "rates": _exchange_rate_cache["rates"],
         "base": "LKR",
         "source": _exchange_rate_cache["source"],
-        "updated_at": (_exchange_rate_cache["fetched_at"] or now).isoformat(),
+        "updated_at": _exchange_rate_cache["fetched_at"].isoformat() if _exchange_rate_cache["fetched_at"] else None,
     }
 
 
