@@ -59,15 +59,22 @@ async def run_ikman(max_pages: int = 50, full_scrape: bool = False, district_pag
 
 
 async def run_lpw(max_pages: int = 15, full_scrape: bool = False, district_pages: int = 50, use_all_districts: bool = False):
-    """Run LankaPropertyWeb scraper with its own DB session."""
+    """Run LankaPropertyWeb scraper with its own DB session.
+
+    District mode (scrape_lpw_districts) is only used for --mega runs because
+    the srch_words filter on the redesigned LPW site returns no results for most
+    districts, silently yielding found=11/new=0 every daily run. The main feed
+    (scrape_lpw) hits /sale|land|rentals|condo/index.php directly and works fine.
+    """
     db = SessionLocal()
-    if full_scrape:
-        log.info("scraper_starting", source="lpw", mode="district", max_pages=district_pages)
+    # mega mode: district sweep (all 25 districts); otherwise always use main feed
+    if use_all_districts:
+        log.info("scraper_starting", source="lpw", mode="mega_district", max_pages=district_pages)
     else:
         log.info("scraper_starting", source="lpw", mode="main_feed", max_pages=max_pages)
     try:
-        if full_scrape:
-            found, new = await scrape_lpw_districts(db, max_pages=district_pages, use_all_districts=use_all_districts)
+        if use_all_districts:
+            found, new = await scrape_lpw_districts(db, max_pages=district_pages, use_all_districts=True)
         else:
             found, new = await scrape_lpw(db, max_pages=max_pages)
         log.info("scraper_complete", source="lpw", found=found, new=new)
