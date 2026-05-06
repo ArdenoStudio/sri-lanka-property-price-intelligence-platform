@@ -220,7 +220,7 @@ export interface ExchangeRates {
   rates: Record<string, number>;
   base: string;
   source: string;
-  updated_at: string;
+  updated_at: string | null;
 }
 
 export const getExchangeRates = () => fetchJSON<ExchangeRates>('/exchange-rates');

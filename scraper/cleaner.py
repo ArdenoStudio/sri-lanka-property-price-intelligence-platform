@@ -536,9 +536,9 @@ class DataCleaner:
             multiplier = 1_000_000.0
             clean_str = re.sub(r"M\b", "", clean_str).strip()
 
-        # Check for per unit rates
+        # Check for per unit rates — check raw_price before suffix stripping removed the signal
         price_per_unit = None
-        if "per perch" in clean_str.lower():
+        if "per perch" in raw_price.lower():
             val_match = re.findall(r"(\d+\.?\d*)", clean_str)
             if val_match:
                 price_per_unit = float(val_match[0]) * multiplier
