@@ -94,6 +94,10 @@ class LPWScraper:
         self.backoff_base = float(os.getenv("SCRAPER_BACKOFF_BASE_SECONDS", "5"))
         self.backoff_max = float(os.getenv("SCRAPER_BACKOFF_MAX_SECONDS", "60"))
         self.stop_after_blocks = int(os.getenv("SCRAPER_STOP_AFTER_BLOCKS", "3"))
+        # LPW rate-limits by IP with a ~60s window; waiting this long between
+        # pages lets the window reset so page 2+ succeeds.
+        self.page_delay_min = float(os.getenv("LPW_PAGE_DELAY_MIN", "55"))
+        self.page_delay_max = float(os.getenv("LPW_PAGE_DELAY_MAX", "70"))
 
     async def _is_blocked(self, page, response) -> bool:
         try:
@@ -300,7 +304,9 @@ class LPWScraper:
 
                         self.db.commit()
                         log.info("lpw_page_done", page=page_num, found=total_found, new=total_new)
-                        await asyncio.sleep(random.uniform(4.0, 8.0))
+                        delay = random.uniform(self.page_delay_min, self.page_delay_max)
+                        log.info("lpw_page_delay", seconds=round(delay, 1))
+                        await asyncio.sleep(delay)
 
                     except Exception as e:
                         log.error("lpw_page_error", url=full_url, error=str(e))
