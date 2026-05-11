@@ -44,8 +44,6 @@ jobs:
           SCRAPER_BACKOFF_BASE_SECONDS: 5
           SCRAPER_BACKOFF_MAX_SECONDS: 60
           SCRAPER_STOP_AFTER_BLOCKS: 3
-          LPW_PAGE_DELAY_MIN: 55
-          LPW_PAGE_DELAY_MAX: 70
           LOG_LEVEL: INFO
         run: python3 run_all_scrapers.py --mega
 

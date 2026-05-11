@@ -94,10 +94,8 @@ class LPWScraper:
         self.backoff_base = float(os.getenv("SCRAPER_BACKOFF_BASE_SECONDS", "5"))
         self.backoff_max = float(os.getenv("SCRAPER_BACKOFF_MAX_SECONDS", "60"))
         self.stop_after_blocks = int(os.getenv("SCRAPER_STOP_AFTER_BLOCKS", "3"))
-        # LPW rate-limits by IP with a ~60s window; waiting this long between
-        # pages lets the window reset so page 2+ succeeds.
-        self.page_delay_min = float(os.getenv("LPW_PAGE_DELAY_MIN", "55"))
-        self.page_delay_max = float(os.getenv("LPW_PAGE_DELAY_MAX", "70"))
+        self.page_delay_min = float(os.getenv("LPW_PAGE_DELAY_MIN", "4"))
+        self.page_delay_max = float(os.getenv("LPW_PAGE_DELAY_MAX", "8"))
 
     async def _is_blocked(self, page, response) -> bool:
         try:
