@@ -945,6 +945,7 @@ def get_prices(
         .filter(
             PriceAggregate.district == district,
             PriceAggregate.property_type == property_type,
+            PriceAggregate.bedroom_bucket.is_(None),
         )
         .order_by(desc(PriceAggregate.period_year), desc(PriceAggregate.period_month))
         .limit(months)
