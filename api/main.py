@@ -497,58 +497,6 @@ class PriceAggregator:
         self._update_deal_scores()
         return len(broad_results)
 
-    def _latest_medians_query(self, with_bucket: bool):
-        """Returns the most recent aggregate rows, preferring current month with fallback."""
-        now = datetime.utcnow()
-        bucket_filter = (
-            PriceAggregate.bedroom_bucket.isnot(None)
-            if with_bucket
-            else PriceAggregate.bedroom_bucket.is_(None)
-        )
-        cols = [
-            PriceAggregate.district,
-            PriceAggregate.property_type,
-            PriceAggregate.median_price_lkr,
-            PriceAggregate.listing_count,
-        ]
-        if with_bucket:
-            cols.insert(2, PriceAggregate.bedroom_bucket)
-
-        rows = (
-            self.db.query(*cols)
-            .filter(
-                bucket_filter,
-                PriceAggregate.period_year == now.year,
-                PriceAggregate.period_month == now.month,
-                PriceAggregate.median_price_lkr.isnot(None),
-            )
-            .all()
-        )
-        if rows:
-            return rows
-
-        # Fall back to most recent available month
-        group_cols = [PriceAggregate.district, PriceAggregate.property_type]
-        if with_bucket:
-            group_cols.append(PriceAggregate.bedroom_bucket)
-        subq = (
-            self.db.query(
-                *group_cols,
-                func.max(PriceAggregate.period_year * 100 + PriceAggregate.period_month).label("ym"),
-            )
-            .filter(bucket_filter, PriceAggregate.median_price_lkr.isnot(None))
-            .group_by(*group_cols)
-            .subquery()
-        )
-        join_cond = (
-            (PriceAggregate.district == subq.c.district)
-            & (PriceAggregate.property_type == subq.c.property_type)
-            & (PriceAggregate.period_year * 100 + PriceAggregate.period_month == subq.c.ym)
-        )
-        if with_bucket:
-            join_cond = join_cond & (PriceAggregate.bedroom_bucket == subq.c.bedroom_bucket)
-        return self.db.query(*cols).filter(bucket_filter).join(subq, join_cond).all()
-
     def _update_deal_scores(self):
         """Stamps deal_score and market_median_lkr on each non-outlier listing.
 
@@ -559,52 +507,71 @@ class PriceAggregator:
         Uses comparable-based pricing: compares against listings with the same
         bedroom bucket (1/2/3/4/5+) in the same district+type (min 5 listings).
         Falls back to broad district+type median if no bucket data.
+
+        Implemented as a single SQL UPDATE to avoid loading all listings into
+        Python memory (prior approach took ~108 min on large tables).
         """
-        MIN_BUCKET_COUNT = 5
-
-        # Build bucketed map: (district, property_type, bedroom_bucket) -> median
-        bucketed_map: dict = {}
-        for row in self._latest_medians_query(with_bucket=True):
-            d, pt, bucket, med, cnt = row
-            if med and cnt and cnt >= MIN_BUCKET_COUNT:
-                bucketed_map[(d, pt, bucket)] = float(med)
-
-        # Build broad fallback map: (district, property_type) -> median
-        broad_map: dict = {}
-        for row in self._latest_medians_query(with_bucket=False):
-            d, pt, med, cnt = row
-            if med:
-                broad_map[(d, pt)] = float(med)
-
-        if not broad_map and not bucketed_map:
-            return
-
-        listings = (
-            self.db.query(Listing)
-            .filter(
-                Listing.is_outlier == False,
-                Listing.price_lkr.isnot(None),
-                Listing.district.isnot(None),
-                Listing.property_type.isnot(None),
+        self.db.execute(text("""
+            WITH latest_broad AS (
+                SELECT DISTINCT ON (district, property_type)
+                    district, property_type, median_price_lkr
+                FROM price_aggregates
+                WHERE bedroom_bucket IS NULL
+                  AND median_price_lkr IS NOT NULL
+                ORDER BY district, property_type, period_year DESC, period_month DESC
+            ),
+            latest_bucketed AS (
+                SELECT DISTINCT ON (district, property_type, bedroom_bucket)
+                    district, property_type, bedroom_bucket,
+                    median_price_lkr, listing_count
+                FROM price_aggregates
+                WHERE bedroom_bucket IS NOT NULL
+                  AND median_price_lkr IS NOT NULL
+                ORDER BY district, property_type, bedroom_bucket,
+                         period_year DESC, period_month DESC
+            ),
+            resolved AS (
+                SELECT
+                    l.id,
+                    COALESCE(
+                        CASE WHEN b.listing_count >= :min_bucket_count
+                             THEN b.median_price_lkr ELSE NULL END,
+                        br.median_price_lkr
+                    ) AS market_median
+                FROM listings l
+                LEFT JOIN latest_bucketed b
+                    ON  b.district       = l.district
+                    AND b.property_type  = l.property_type
+                    AND b.bedroom_bucket = CASE
+                        WHEN l.bedrooms IS NULL THEN NULL
+                        WHEN l.bedrooms <= 1    THEN '1'
+                        WHEN l.bedrooms = 2     THEN '2'
+                        WHEN l.bedrooms = 3     THEN '3'
+                        WHEN l.bedrooms = 4     THEN '4'
+                        ELSE '5+'
+                    END
+                LEFT JOIN latest_broad br
+                    ON  br.district      = l.district
+                    AND br.property_type = l.property_type
+                WHERE l.is_outlier = FALSE
+                  AND l.price_lkr      IS NOT NULL
+                  AND l.district       IS NOT NULL
+                  AND l.property_type  IS NOT NULL
             )
-            .all()
-        )
-
-        for listing in listings:
-            # Try bucketed comparable first
-            bucket = self._bedroom_bucket(listing.bedrooms)
-            median = None
-            if bucket:
-                median = bucketed_map.get((listing.district, listing.property_type, bucket))
-            # Fall back to broad median
-            if not median:
-                median = broad_map.get((listing.district, listing.property_type))
-            if not median or median <= 0:
-                continue
-            listing.market_median_lkr = median
-            raw_score = (1.0 - float(listing.price_lkr) / median) * 100.0
-            listing.deal_score = max(-100.0, min(100.0, round(raw_score, 1)))
-
+            UPDATE listings
+            SET
+                market_median_lkr = r.market_median,
+                deal_score = GREATEST(-100.0, LEAST(100.0,
+                    ROUND(
+                        ((1.0 - listings.price_lkr::float8 / r.market_median::float8) * 100.0)::numeric,
+                        1
+                    )::float8
+                ))
+            FROM resolved r
+            WHERE listings.id = r.id
+              AND r.market_median IS NOT NULL
+              AND r.market_median > 0
+        """), {"min_bucket_count": 5})
         self.db.commit()
 
 

@@ -426,7 +426,7 @@ export function Filters({
 
   const districtOptions: SelectOption[] = [
     { value: '', label: 'All Districts' },
-    ...districts.map(d => ({ value: d.district, label: `${d.district} (${d.count})` })),
+    ...districts.map(d => ({ value: d.district, label: `${d.district} (${d.count})`, triggerLabel: d.district })),
   ];
 
   const clearAll = () => {

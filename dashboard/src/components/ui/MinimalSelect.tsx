@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-export interface SelectOption { value: string; label: string }
+export interface SelectOption { value: string; label: string; triggerLabel?: string }
 
 export function MinimalSelect({ options, value, onChange, prefix }: {
   options: SelectOption[]; value: string; onChange: (v: string) => void; prefix?: string;
@@ -20,9 +20,10 @@ export function MinimalSelect({ options, value, onChange, prefix }: {
 
   const selected = options.find(o => o.value === value);
   const isActive = selected && selected.value !== '';
+  const selectedTriggerLabel = selected?.triggerLabel ?? selected?.label;
   const displayLabel = prefix
-    ? `${prefix}${isActive ? ` ${selected?.label}` : ''}`
-    : (selected?.label ?? options[0]?.label);
+    ? `${prefix}${isActive ? ` ${selectedTriggerLabel}` : ''}`
+    : (selectedTriggerLabel ?? options[0]?.triggerLabel ?? options[0]?.label);
 
   return (
     <div ref={ref} className="relative flex-shrink-0">

@@ -22,9 +22,20 @@ BLOCK_KEYWORDS = [
 ]
 
 USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+    # Chrome 136 — Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    # Chrome 136 — macOS
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    # Chrome 136 — Linux
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    # Firefox 128 ESR — Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
+    # Firefox 128 ESR — Linux
+    "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
+    # Safari 17 — macOS Sonoma
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
+    # Edge 136 — Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
 ]
 
 BASE = "https://www.lankapropertyweb.com"
@@ -83,6 +94,8 @@ class LPWScraper:
         self.backoff_base = float(os.getenv("SCRAPER_BACKOFF_BASE_SECONDS", "5"))
         self.backoff_max = float(os.getenv("SCRAPER_BACKOFF_MAX_SECONDS", "60"))
         self.stop_after_blocks = int(os.getenv("SCRAPER_STOP_AFTER_BLOCKS", "3"))
+        self.page_delay_min = float(os.getenv("LPW_PAGE_DELAY_MIN", "4"))
+        self.page_delay_max = float(os.getenv("LPW_PAGE_DELAY_MAX", "8"))
 
     async def _is_blocked(self, page, response) -> bool:
         try:
@@ -113,11 +126,37 @@ class LPWScraper:
                 await asyncio.sleep(delay)
         return False
 
+    async def _make_context(self, browser, proxy_settings):
+        """Create a fresh browser context with realistic headers."""
+        context = await browser.new_context(
+            user_agent=random.choice(USER_AGENTS),
+            ignore_https_errors=True,
+            locale="en-US",
+            extra_http_headers={
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "DNT": "1",
+                "Upgrade-Insecure-Requests": "1",
+            },
+        )
+        page = await context.new_page()
+        await page.route("**/*", lambda route: route.abort()
+            if route.request.resource_type in ["image", "media", "font", "stylesheet"]
+            else route.continue_())
+        return context, page
+
+    async def _warmup(self, page):
+        """Visit the LPW homepage to establish a session before hitting listing pages."""
+        try:
+            await page.goto(BASE, wait_until="domcontentloaded", timeout=20000)
+            await asyncio.sleep(random.uniform(2.0, 4.0))
+        except Exception:
+            pass
+
     async def scrape(self, max_pages: int = 15, location: str = "sri-lanka"):
         from urllib.parse import urlparse
         from playwright.async_api import async_playwright
 
-        consecutive_blocks = 0
         proxy_url = os.getenv("PROXY_URL")
         proxy_settings = None
         if proxy_url:
@@ -126,24 +165,22 @@ class LPWScraper:
             if parsed.username: proxy_settings["username"] = parsed.username
             if parsed.password: proxy_settings["password"] = parsed.password
 
+        total_found = 0
+        total_new = 0
+
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True, proxy=proxy_settings)
-            context = await browser.new_context(user_agent=random.choice(USER_AGENTS), ignore_https_errors=True)
-            page = await context.new_page()
-
-            # Block heavy resources to speed things up
-            await page.route("**/*", lambda route: route.abort()
-                if route.request.resource_type in ["image", "media", "font", "stylesheet"]
-                else route.continue_())
-
-            total_found = 0
-            total_new = 0
 
             for entry in BASE_URLS:
                 base_url = entry["url"]
                 default_type = entry["type"]
                 listing_type = entry["listing_type"]
                 category_blocks = 0
+
+                # Fresh context + session warm-up for every category to avoid
+                # LPW fingerprinting the persistent session as a bot.
+                context, page = await self._make_context(browser, proxy_settings)
+                await self._warmup(page)
 
                 for page_num in range(1, max_pages + 1):
                     full_url = f"{base_url}?page={page_num}"
@@ -158,7 +195,7 @@ class LPWScraper:
                                 log.warning("lpw_category_blocked_skipping", url=base_url)
                                 break
                             continue
-                        consecutive_blocks = 0
+
                         await page.wait_for_selector("article.listing-item", timeout=12000)
 
                         cards = await page.query_selector_all("article.listing-item")
@@ -168,27 +205,21 @@ class LPWScraper:
 
                         for card in cards:
                             try:
-                                # Source ID from data attribute
                                 source_id = await card.get_attribute("data-ad-id") or ""
 
-                                # Listing URL
                                 header_link = await card.query_selector("a.listing-header")
                                 href = await header_link.get_attribute("href") if header_link else ""
                                 listing_url = href if href.startswith("http") else f"{BASE}{href}"
 
-                                # Title
                                 title_el = await card.query_selector("h4.listing-title a, h4.listing-title")
                                 title = (await title_el.inner_text()).strip() if title_el else ""
 
-                                # Price
                                 price_el = await card.query_selector(".listing-price")
                                 raw_price = (await price_el.inner_text()).strip() if price_el else ""
 
-                                # Location (city/district level)
                                 loc_el = await card.query_selector(".location")
                                 raw_loc = (await loc_el.inner_text()).strip() if loc_el else ""
 
-                                # Property type override from card badge
                                 type_el = await card.query_selector(".type")
                                 type_text = (await type_el.inner_text()).strip().lower() if type_el else ""
                                 if "apartment" in type_text or "flat" in type_text:
@@ -200,7 +231,6 @@ class LPWScraper:
                                 else:
                                     property_type = default_type
 
-                                # Size (perches/sqft)
                                 size_el = await card.query_selector(".listing-summery li:nth-child(2) .count, li .count")
                                 raw_size = (await size_el.inner_text()).strip() if size_el else ""
 
@@ -272,11 +302,15 @@ class LPWScraper:
 
                         self.db.commit()
                         log.info("lpw_page_done", page=page_num, found=total_found, new=total_new)
-                        await asyncio.sleep(random.uniform(1.5, 2.5))
+                        delay = random.uniform(self.page_delay_min, self.page_delay_max)
+                        log.info("lpw_page_delay", seconds=round(delay, 1))
+                        await asyncio.sleep(delay)
 
                     except Exception as e:
                         log.error("lpw_page_error", url=full_url, error=str(e))
                         break
+
+                await context.close()
 
             from db.models import ScrapeRun
             new_run = ScrapeRun(
