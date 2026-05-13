@@ -399,7 +399,18 @@ export function ListingDetail() {
 
           {/* Deal score gauge */}
           <div className="bg-[#111111] border border-white/[0.08] rounded-2xl p-6 flex items-center justify-center">
-            <DealScoreGauge score={detail.deal_score} />
+            {detail.deal_score != null
+              ? <DealScoreGauge score={detail.deal_score} />
+              : (
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className="w-8 h-8 rounded-full border-2 border-white/[0.08] flex items-center justify-center">
+                    <span className="text-[#525252] text-lg">?</span>
+                  </div>
+                  <p className="text-[11px] text-[#525252] uppercase tracking-[0.1em]">Deal score</p>
+                  <p className="text-[12px] text-[#2e2e2e]">Pending analysis</p>
+                </div>
+              )
+            }
           </div>
         </div>
 
