@@ -117,7 +117,7 @@ export function StatsBar({ stats }: Props) {
                   </p>
                   {changePct !== null && (
                     <span className={`mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full num ${
-                      changePct >= 0 ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'
+                      changePct >= 0 ? 'bg-red-950 text-red-400' : 'bg-emerald-950 text-emerald-400'
                     }`}>
                       <span className="text-[14px] leading-none" aria-hidden="true">{changePct >= 0 ? '▲' : '▼'}</span>
                       {changePct >= 0 ? '+' : ''}{changePct}% vs last month
