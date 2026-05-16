@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, Query, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, cast, Float, case, or_, and_
+from sqlalchemy import func, desc, cast, Float, case, or_, and_, text
 from sqlalchemy.dialects.postgresql import insert
 from typing import List, Optional
 from db.connection import get_db, SessionLocal
