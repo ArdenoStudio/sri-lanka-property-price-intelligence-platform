@@ -5,8 +5,9 @@ from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from sqlalchemy import func
 from db.connection import SessionLocal, engine
 from db.models import ScrapeRun, Listing, PriceAggregate, JobRun
-from scraper.ikman import IkmanScraper
-from scraper.lpw import LPWScraper
+from scraper.ikman import scrape_ikman_coverage
+from scraper.location_targets import build_ikman_coverage_targets
+from scraper.lpw import LPWScraper, scrape_lpw_districts
 from scraper.lamudi import LamudiScraper
 from scraper.detail_enricher import DetailEnricher
 from scraper.cleaner import DataCleaner
@@ -66,10 +67,27 @@ def scrape_ikman_job():
     db.commit()
     
     try:
-        scraper = IkmanScraper(db)
-        found, new = run_async(scraper.scrape())
-        run.listings_found = found
-        run.listings_new = new
+        rows = (
+            db.query(Listing.district, func.count(Listing.id))
+            .filter(Listing.district.isnot(None), Listing.is_outlier == False)
+            .group_by(Listing.district)
+            .all()
+        )
+        district_counts = {district: int(count) for district, count in rows if district}
+        targets = build_ikman_coverage_targets(
+            district_counts,
+            district_target=int(os.getenv("COVERAGE_DISTRICT_TARGET", "750")),
+            subdistricts_per_district=int(os.getenv("COVERAGE_SUBDISTRICTS_PER_DISTRICT", "2")),
+            subdistrict_pages=int(os.getenv("COVERAGE_SUBDISTRICT_PAGES", "2")),
+        )
+        result = run_async(scrape_ikman_coverage(
+            db,
+            main_pages=int(os.getenv("IKMAN_COVERAGE_MAIN_PAGES", "50")),
+            targets=targets,
+            headless=True,
+        ))
+        run.listings_found = result.get("found", 0)
+        run.listings_new = result.get("new", 0)
         run.status = "success"
         run.finished_at = datetime.utcnow()
     except Exception as e:
@@ -89,6 +107,13 @@ def scrape_lpw_job():
     try:
         scraper = LPWScraper(db)
         found, new = run_async(scraper.scrape())
+        if os.getenv("LPW_COVERAGE_PROBE", "1") != "0":
+            try:
+                probe_found, probe_new = run_async(scrape_lpw_districts(db, max_pages=1, use_all_districts=True))
+                found += probe_found
+                new += probe_new
+            except Exception as probe_error:
+                log.warning("lpw_coverage_probe_skipped", error=str(probe_error))
         run.listings_found = found
         run.listings_new = new
         run.status = "success"
@@ -130,6 +155,7 @@ def clean_listings_job():
         run = _start_job_run(db, "clean_listings")
         cleaner = DataCleaner(db)
         stats = cleaner.process_all()
+        stats["null_district_reprocess"] = cleaner.reprocess_null_districts()
         log.info("clean_job_complete", **stats)
         _finish_job_run(db, run, "success", stats=stats)
     except Exception as e:

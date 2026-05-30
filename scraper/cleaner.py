@@ -28,6 +28,7 @@ LOCATION_DISTRICT_MAP = {
     "Athurugiriya": "Colombo",
     "Boralesgamuwa": "Colombo",
     "Kottawa": "Colombo",
+    "Pannipitiya": "Colombo",
     "Wellampitiya": "Colombo",
     "Kolonnawa": "Colombo",
     "Mulleriyawa": "Colombo",
@@ -58,6 +59,14 @@ LOCATION_DISTRICT_MAP = {
     "Mafahpitiya": "Colombo",
     "Welikade": "Colombo",
     "Nawala": "Colombo",
+    "Rathmalana": "Colombo",
+    "Kalubowila": "Colombo",
+    "Kohuwala": "Colombo",
+    "Koswatta": "Colombo",
+    "Bolgoda": "Colombo",
+    "Kesbewa": "Colombo",
+    "Polgasowita": "Colombo",
+    "Madiwela": "Colombo",
     "Paget Road": "Colombo",
     "Cinnamon Gardens": "Colombo",
     "Dematagoda": "Colombo",
@@ -107,6 +116,7 @@ LOCATION_DISTRICT_MAP = {
     "Heiyanthuduwa": "Gampaha",
     "Gampola": "Gampaha",
     "Pamunugama": "Gampaha",
+    "Uswetakeiyawa": "Gampaha",
     "Walpita": "Gampaha",
     "Kapuwatta": "Gampaha",
     # --- Kalutara District ---
@@ -171,6 +181,8 @@ LOCATION_DISTRICT_MAP = {
     "Ahangama": "Galle",
     "Unawatuna": "Galle",
     "Koggala": "Galle",
+    "Kathaluwa": "Galle",
+    "Kosgoda": "Galle",
     "Habaraduwa": "Galle",
     "Talpe": "Galle",
     "Imaduwa": "Galle",
@@ -196,6 +208,7 @@ LOCATION_DISTRICT_MAP = {
     "Beliatta": "Matara",
     "Devinuwara": "Matara",
     "Mirissa": "Matara",
+    "Midigama": "Matara",
     "Pitabeddara": "Matara",
     "Welipitiya": "Matara",
     "Kotapola": "Matara",
@@ -354,6 +367,7 @@ LOCATION_DISTRICT_MAP = {
     "Pallama": "Puttalam",
     "Nawagattegama": "Puttalam",
     "Karuwalagaswewa": "Puttalam",
+    "Kalpitiya": "Puttalam",
     # --- Jaffna District ---
     "Jaffna": "Jaffna",
     "Chunnakam": "Jaffna",
@@ -410,6 +424,7 @@ LOCATION_DISTRICT_MAP = {
     "Ninthavur": "Ampara",
     "Akkaraipattu": "Ampara",
     "Pottuvil": "Ampara",
+    "Arugam Bay": "Ampara",
     "Uhana": "Ampara",
     "Damana": "Ampara",
     "Mahaoya": "Ampara",
@@ -446,6 +461,7 @@ LOCATION_DISTRICT_MAP = {
     "Sooriyawewa": "Hambantota",
     "Lunugamvehera": "Hambantota",
     "Kataragama": "Hambantota",
+    "Yala": "Hambantota",
     "Ranna": "Hambantota",
     "Hungama": "Hambantota",
     "Okewela": "Hambantota",
@@ -453,6 +469,7 @@ LOCATION_DISTRICT_MAP = {
     "Walasmulla": "Hambantota",
     # --- Monaragala District ---
     "Monaragala": "Monaragala",
+    "Moneragala": "Monaragala",
     "Bibile": "Monaragala",
     "Wellawaya": "Monaragala",
     "Medagama": "Monaragala",
@@ -829,4 +846,51 @@ class DataCleaner:
             self.db.expire_all()
 
         log.info("clean_complete", **stats)
+        return stats
+
+    def reprocess_null_districts(self, limit: int = 5000):
+        """Idempotently retry location parsing for clean listings missing district."""
+        rows = (
+            self.db.query(Listing, RawListing)
+            .outerjoin(RawListing, Listing.raw_id == RawListing.id)
+            .filter(Listing.district == None)
+            .limit(limit)
+            .all()
+        )
+        stats = {"checked": 0, "fixed": 0, "unchanged": 0}
+
+        for listing, raw in rows:
+            stats["checked"] += 1
+            raw_location = listing.raw_location or (raw.raw_location if raw else "")
+            title = raw.title if raw else ""
+            district, city, confidence = self.parse_location(raw_location, title)
+            if not district:
+                stats["unchanged"] += 1
+                continue
+
+            location = self._get_or_create_location(district, city, confidence)
+            listing.district = district
+            if city and not listing.city:
+                listing.city = city
+            listing.geocode_confidence = confidence
+            if raw_location and not listing.raw_location:
+                listing.raw_location = raw_location
+            if location:
+                listing.location_id = location.id
+                listing.lat = location.lat
+                listing.lng = location.lng
+            self.db.add(listing)
+            stats["fixed"] += 1
+
+            if stats["checked"] % 500 == 0:
+                self.db.commit()
+
+        try:
+            self.db.commit()
+        except Exception as e:
+            log.error("null_district_reprocess_commit_error", error=str(e))
+            self.db.rollback()
+            self.db.expire_all()
+
+        log.info("null_district_reprocess_complete", **stats)
         return stats

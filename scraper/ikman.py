@@ -8,6 +8,7 @@ import structlog
 from db.models import RawListing, ListingSnapshot
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
+from scraper.location_targets import CoverageTarget, should_stop_after_page
 from scraper.utils import build_snapshot_fingerprint
 
 log = structlog.get_logger()
@@ -53,6 +54,7 @@ ALL_DISTRICTS = THIN_DISTRICTS + [
 EXTRA_TARGETS = [
     {"url": "https://ikman.lk/en/ads/sri-lanka/commercial-property?sort=date&order=desc&buy_now=0&urgent=0&page=", "listing_type": "sale", "property_type": "commercial"},
 ]
+
 
 class IkmanScraper:
     SOURCE = "ikman"
@@ -159,7 +161,7 @@ class IkmanScraper:
                         pass
 
                     # Wait for listing links (current Ikman selector)
-                    await page.wait_for_selector("a.gtm-ad-item", timeout=15000)
+                    await page.wait_for_selector("a.gtm-ad-item", state="attached", timeout=15000)
 
                     # Get all listing anchors
                     listings = await page.query_selector_all("a.gtm-ad-item")
@@ -308,9 +310,291 @@ class IkmanScraper:
 
             return total_found, total_new
 
+    async def scrape_coverage(
+        self,
+        *,
+        main_pages: int,
+        targets: list[CoverageTarget],
+        headless: bool = True,
+    ) -> dict:
+        import os
+        from urllib.parse import urlparse
+
+        proxy_url = os.getenv("PROXY_URL")
+        proxy_settings = None
+        if proxy_url:
+            parsed = urlparse(proxy_url)
+            proxy_settings = {"server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}"}
+            if parsed.username:
+                proxy_settings["username"] = parsed.username
+            if parsed.password:
+                proxy_settings["password"] = parsed.password
+
+        totals = {
+            "source": self.SOURCE,
+            "found": 0,
+            "new": 0,
+            "success": True,
+            "district_targets_attempted": 0,
+            "subdistrict_targets_attempted": 0,
+            "new_by_target_district": {},
+        }
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=headless, proxy=proxy_settings)
+            context = await browser.new_context(
+                user_agent=random.choice(USER_AGENTS),
+                ignore_https_errors=True,
+            )
+            page = await context.new_page()
+            await page.route(
+                "**/*",
+                lambda route: route.abort()
+                if route.request.resource_type in ["image", "media", "stylesheet", "font"]
+                else route.continue_(),
+            )
+
+            async def _scrape_url(
+                *,
+                base_url: str,
+                max_pages: int,
+                label: str,
+                kind: str,
+                district: str | None = None,
+                min_pages: int = 1,
+                duplicate_stop_pages: int = 1,
+                required: bool = True,
+            ) -> tuple[int, int]:
+                total_found = 0
+                total_new = 0
+                consecutive_blocks = 0
+                consecutive_duplicate_pages = 0
+
+                for page_num in range(1, max_pages + 1):
+                    url = f"{base_url}{page_num}"
+                    log.info(
+                        "scraping_ikman_coverage",
+                        target=label,
+                        kind=kind,
+                        district=district,
+                        page=page_num,
+                        url=url,
+                    )
+                    try:
+                        ok = await self._safe_goto(page, url)
+                        if not ok:
+                            consecutive_blocks += 1
+                            log.error(
+                                "page_blocked",
+                                source=self.SOURCE,
+                                target=label,
+                                page=page_num,
+                                url=url,
+                                blocks=consecutive_blocks,
+                            )
+                            if consecutive_blocks >= self.stop_after_blocks:
+                                if required:
+                                    raise RuntimeError("blocked_by_site")
+                                log.warning("ikman_coverage_target_skipped", target=label, reason="too_many_blocks")
+                                return total_found, total_new
+                            continue
+                        consecutive_blocks = 0
+
+                        try:
+                            close_btn = page.locator("button[aria-label='Close'], .close-button, [data-testid='close-button']")
+                            if await close_btn.count() > 0:
+                                await close_btn.first.click(timeout=3000)
+                        except Exception:
+                            pass
+
+                        await page.wait_for_selector("a.gtm-ad-item", state="attached", timeout=15000)
+                        listings = await page.query_selector_all("a.gtm-ad-item")
+                        page_listings_count = len(listings)
+                        if not listings:
+                            log.info("ikman_coverage_no_cards", target=label, page=page_num)
+                            break
+
+                        page_new = 0
+                        for listing in listings:
+                            try:
+                                listing_url = await listing.get_attribute("href") or ""
+                                if not listing_url.startswith("http"):
+                                    listing_url = f"https://ikman.lk{listing_url}"
+                                id_match = re.search(r"-(\d+)$", listing_url.rstrip("/"))
+                                source_id = id_match.group(1) if id_match else listing_url.split("/")[-1]
+                                title_elem = await listing.query_selector("h2")
+                                title = (await title_elem.inner_text()).strip() if title_elem else ""
+                                price_elem = await listing.query_selector("[class*='price'], [class*='Price']")
+                                raw_price = (await price_elem.inner_text()).strip() if price_elem else ""
+                                loc_elems = await listing.query_selector_all("[class*='location'], [class*='Location']")
+                                raw_location = (await loc_elems[0].inner_text()).strip() if loc_elems else ""
+                                cat_elems = await listing.query_selector_all("[class*='category'], [class*='Category'], [class*='tag'], [class*='Tag']")
+                                raw_meta = (await cat_elems[0].inner_text()).strip() if cat_elems else ""
+                                combined = (title + " " + raw_meta).lower()
+
+                                property_type = "land"
+                                if any(w in combined for w in ("house", "bungalow", "villa", "cottage", "annexe", "annex", "townhouse", "holiday home")):
+                                    property_type = "house"
+                                elif "apartment" in combined or "flat" in combined:
+                                    property_type = "apartment"
+                                elif "commercial" in combined:
+                                    property_type = "commercial"
+
+                                listing_type = "rent" if ("rent" in combined or "lease" in combined) else "sale"
+                                if not title and not raw_price:
+                                    continue
+
+                                stmt = insert(RawListing).values(
+                                    source=self.SOURCE,
+                                    source_id=source_id,
+                                    url=listing_url,
+                                    title=title,
+                                    raw_price=raw_price,
+                                    raw_location=raw_location,
+                                    raw_size=raw_meta,
+                                    property_type=property_type,
+                                    listing_type=listing_type,
+                                    raw_json={"full_meta": raw_meta, "coverage_target": label, "coverage_kind": kind},
+                                    scraped_at=datetime.utcnow(),
+                                ).on_conflict_do_nothing()
+                                res = self.db.execute(stmt)
+                                if res.rowcount > 0:
+                                    page_new += 1
+                                    total_new += 1
+
+                                fingerprint = build_snapshot_fingerprint(
+                                    title=title,
+                                    raw_price=raw_price,
+                                    raw_location=raw_location,
+                                    raw_size=raw_meta,
+                                    property_type=property_type,
+                                    listing_type=listing_type,
+                                    url=listing_url,
+                                )
+                                snap_stmt = insert(ListingSnapshot).values(
+                                    source=self.SOURCE,
+                                    source_id=source_id,
+                                    url=listing_url,
+                                    title=title,
+                                    raw_price=raw_price,
+                                    raw_location=raw_location,
+                                    raw_size=raw_meta,
+                                    property_type=property_type,
+                                    listing_type=listing_type,
+                                    raw_json={"full_meta": raw_meta, "coverage_target": label, "coverage_kind": kind},
+                                    fingerprint=fingerprint,
+                                    scraped_at=datetime.utcnow(),
+                                ).on_conflict_do_nothing(
+                                    index_elements=["source", "source_id", "fingerprint"]
+                                )
+                                self.db.execute(snap_stmt)
+                                total_found += 1
+                            except Exception as e:
+                                log.error("ikman_coverage_card_error", target=label, error=str(e))
+                                self.db.rollback()
+                                self.db.expire_all()
+
+                        self.db.commit()
+                        if page_new == 0:
+                            consecutive_duplicate_pages += 1
+                        else:
+                            consecutive_duplicate_pages = 0
+
+                        log.info(
+                            "ikman_coverage_page_done",
+                            target=label,
+                            page=page_num,
+                            found=page_listings_count,
+                            new=page_new,
+                            target_new=total_new,
+                        )
+
+                        if should_stop_after_page(
+                            page_num=page_num,
+                            page_new=page_new,
+                            page_listings_count=page_listings_count,
+                            min_pages=min_pages,
+                            consecutive_duplicate_pages=consecutive_duplicate_pages,
+                            duplicate_stop_pages=duplicate_stop_pages,
+                        ):
+                            break
+
+                        await asyncio.sleep(random.uniform(1, 2.5))
+
+                    except Exception as e:
+                        if str(e) == "blocked_by_site":
+                            raise
+                        log.error("ikman_coverage_page_error", target=label, url=url, error=str(e))
+                        await asyncio.sleep(1)
+
+                return total_found, total_new
+
+            main_base = "https://ikman.lk/en/ads/sri-lanka/property?sort=date&order=desc&buy_now=0&urgent=0&page="
+            found, new = await _scrape_url(
+                base_url=main_base,
+                max_pages=main_pages,
+                label="sri-lanka",
+                kind="main",
+                min_pages=1,
+                duplicate_stop_pages=1,
+            )
+            totals["found"] += found
+            totals["new"] += new
+
+            for target in targets:
+                if target.kind == "district":
+                    totals["district_targets_attempted"] += 1
+                elif target.kind == "subdistrict":
+                    totals["subdistrict_targets_attempted"] += 1
+
+                district_base = f"https://ikman.lk/en/ads/{target.slug}/property?sort=date&order=desc&buy_now=0&urgent=0&page="
+                found, new = await _scrape_url(
+                    base_url=district_base,
+                    max_pages=target.pages,
+                    label=target.query,
+                    kind=target.kind,
+                    district=target.district,
+                    min_pages=target.min_pages,
+                    duplicate_stop_pages=3,
+                    required=False,
+                )
+                totals["found"] += found
+                totals["new"] += new
+                if new:
+                    by_district = totals["new_by_target_district"]
+                    by_district[target.district] = by_district.get(target.district, 0) + new
+
+            from db.models import ScrapeRun
+            self.db.add(ScrapeRun(
+                source="ikman_coverage",
+                started_at=datetime.utcnow(),
+                finished_at=datetime.utcnow(),
+                listings_found=totals["found"],
+                listings_new=totals["new"],
+                status="success",
+            ))
+            self.db.commit()
+            await browser.close()
+
+        return totals
+
 async def scrape_ikman(db: Session, max_pages: int = 20, location: str = "sri-lanka"):
     scraper = IkmanScraper(db)
     return await scraper.scrape(max_pages=max_pages, location=location)
+
+async def scrape_ikman_coverage(
+    db: Session,
+    *,
+    main_pages: int,
+    targets: list[CoverageTarget],
+    headless: bool = True,
+) -> dict:
+    scraper = IkmanScraper(db)
+    return await scraper.scrape_coverage(
+        main_pages=main_pages,
+        targets=targets,
+        headless=headless,
+    )
 
 async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: int = 50, extra_pages: int = 10, headless: bool = False, use_all_districts: bool = False):
     """
@@ -368,7 +652,7 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
                             await close_btn.first.click(timeout=3000)
                     except Exception:
                         pass
-                    await page.wait_for_selector("a.gtm-ad-item", timeout=15000)
+                    await page.wait_for_selector("a.gtm-ad-item", state="attached", timeout=15000)
                     listings = await page.query_selector_all("a.gtm-ad-item")
                     if not listings:
                         break
