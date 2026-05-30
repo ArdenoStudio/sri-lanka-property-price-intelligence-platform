@@ -106,9 +106,13 @@ run_with_retry() {
 
         # Run the master scraper script
         if python3 run_all_scrapers.py \
+            --coverage \
             --ikman-pages 50 \
             --lpw-pages 15 \
             --lamudi-pages 20 \
+            --district-target 750 \
+            --subdistricts-per-district 2 \
+            --subdistrict-pages 2 \
             2>&1 | tee -a "$LOG_FILE"; then
             success=true
             break

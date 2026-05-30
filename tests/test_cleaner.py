@@ -114,6 +114,28 @@ def test_location_empty(cleaner):
     assert city is None
     assert confidence == "low"
 
+@pytest.mark.parametrize(
+    ("raw_location", "expected"),
+    [
+        ("Pannipitiya", "Colombo"),
+        ("Rathmalana", "Colombo"),
+        ("Kalubowila", "Colombo"),
+        ("Kohuwala", "Colombo"),
+        ("Uswetakeiyawa", "Gampaha"),
+        ("Kalpitiya", "Puttalam"),
+        ("Arugam Bay", "Ampara"),
+        ("Kesbewa", "Colombo"),
+        ("Yala", "Hambantota"),
+        ("Midigama", "Matara"),
+        ("Monaragala", "Monaragala"),
+        ("Moneragala", "Monaragala"),
+    ],
+)
+def test_location_common_null_district_aliases(cleaner, raw_location, expected):
+    district, _, confidence = cleaner.parse_location(raw_location)
+    assert district == expected
+    assert confidence == "high"
+
 # ---------------------------------------------------------------------------
 # detect_short_term
 # ---------------------------------------------------------------------------

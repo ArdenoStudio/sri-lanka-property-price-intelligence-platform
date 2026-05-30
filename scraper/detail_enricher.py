@@ -422,6 +422,8 @@ class DetailEnricher:
         # Phase 3: write results — short-lived DB transactions, no Playwright overhead
         # Also stamp enrichment_attempted_at on every listing we visited (success OR failure)
         # so they are skipped on future runs.
+        from scraper.cleaner import DataCleaner
+        cleaner = DataCleaner(self.db)
         now = datetime.utcnow()
         all_ids_to_stamp = visited_ids  # full set including those with no attrs found
 
@@ -449,6 +451,28 @@ class DetailEnricher:
                 if attrs.get("bathrooms") and listing.bathrooms is None:
                     listing.bathrooms = attrs["bathrooms"]
                     changed = True
+                if attrs.get("raw_location"):
+                    raw_location = str(attrs["raw_location"]).strip()
+                    if raw_location and raw_location != (listing.raw_location or ""):
+                        listing.raw_location = raw_location
+                        changed = True
+                    raw = self.db.get(RawListing, listing.raw_id) if listing.raw_id else None
+                    title = raw.title if raw else ""
+                    if raw and raw_location != (raw.raw_location or ""):
+                        raw.raw_location = raw_location
+                        self.db.add(raw)
+                    district, city, confidence = cleaner.parse_location(raw_location, title)
+                    if district and (listing.district != district or not listing.city):
+                        location = cleaner._get_or_create_location(district, city, confidence)
+                        listing.district = district
+                        if city:
+                            listing.city = city
+                        listing.geocode_confidence = confidence
+                        if location:
+                            listing.location_id = location.id
+                            listing.lat = location.lat
+                            listing.lng = location.lng
+                        changed = True
                 if (
                     listing.size_perches
                     and listing.price_per_perch
