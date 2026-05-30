@@ -1,17 +1,17 @@
-name: Daily Property Scraper
+name: LPW Scraper (IP Rotation)
 
 on:
   schedule:
-    - cron: '0 20 * * *'   # 2 AM Sri Lanka time (UTC+5:30 → 8:30 PM UTC prev day ≈ 20:00 UTC)
-  workflow_dispatch:        # Allow manual trigger from GitHub UI
+    - cron: '0 1 * * *'   # 6:30 AM Sri Lanka time — 4h after main scrape, fresh IP
+  workflow_dispatch:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  scrape:
+  scrape-lpw:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -37,22 +37,22 @@ jobs:
       - name: Install Playwright browsers
         run: python -m playwright install chromium
 
-      - name: Run all scrapers
+      - name: Run LPW scraper only
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NOMINATIM_USER_AGENT: ${{ secrets.NOMINATIM_USER_AGENT }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           SCRAPER_MAX_RETRIES: 3
-          SCRAPER_BACKOFF_BASE_SECONDS: 5
-          SCRAPER_BACKOFF_MAX_SECONDS: 60
+          SCRAPER_BACKOFF_BASE_SECONDS: 10
+          SCRAPER_BACKOFF_MAX_SECONDS: 90
           SCRAPER_STOP_AFTER_BLOCKS: 5
           LOG_LEVEL: INFO
-        run: python3 run_all_scrapers.py --full --district-pages 50
+        run: python3 run_all_scrapers.py --scrapers lpw --full --district-pages 50 --lpw-pages 30
 
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: scraper-logs
+          name: lpw-scraper-logs
           path: logs/
           retention-days: 7
