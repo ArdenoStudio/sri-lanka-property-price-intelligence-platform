@@ -1187,6 +1187,8 @@ def estimate_price(req: EstimateRequest, db: Session = Depends(get_db)):
 
     comparables = query.order_by(desc(Listing.first_seen_at)).limit(50).all()
     prices = sorted([float(c.price_lkr) for c in comparables if c.price_lkr])
+    ppp_vals = sorted([float(c.price_per_perch) for c in comparables if c.price_per_perch and c.price_per_perch > 0])
+    pps_vals = sorted([float(c.price_per_sqft) for c in comparables if c.price_per_sqft and c.price_per_sqft > 0])
 
     if not prices:
         return {
@@ -1204,6 +1206,14 @@ def estimate_price(req: EstimateRequest, db: Session = Depends(get_db)):
     p75 = prices[int(n * 0.75)] if n >= 4 else prices[-1]
 
     confidence = "high" if n >= 20 else ("medium" if n >= 5 else "low")
+
+    def _median(vals: list) -> float | None:
+        if not vals:
+            return None
+        return vals[len(vals) // 2]
+
+    median_ppp = _median(ppp_vals)
+    median_pps = _median(pps_vals)
 
     now_utc = datetime.utcnow()
     top_comparables = comparables[:6]
@@ -1236,6 +1246,8 @@ def estimate_price(req: EstimateRequest, db: Session = Depends(get_db)):
         "estimated_high": round(p75, 2),
         "comparable_count": n,
         "confidence": confidence,
+        "median_price_per_perch": round(median_ppp, 2) if median_ppp else None,
+        "median_price_per_sqft": round(median_pps, 2) if median_pps else None,
         "comparables": comp_list,
     }
 
@@ -1597,6 +1609,12 @@ def sitemap(db: Session = Depends(get_db)):
 @app.get("/")
 def root():
     return {"message": "Ardeno Studio: Intelligence API is Alive and Running"}
+
+try:
+    from mangum import Mangum
+    handler = Mangum(app, lifespan="off")
+except ImportError:
+    pass  # Not running on Lambda
 
 if __name__ == "__main__":
     import uvicorn
