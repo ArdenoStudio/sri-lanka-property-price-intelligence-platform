@@ -48,8 +48,18 @@ def _category_url(slug: str, page: int) -> str:
 
 
 def _clean_price(raw: str) -> str:
-    """Normalise price text — strip LKR/රු symbols and whitespace."""
-    return re.sub(r"\s+", " ", raw).strip() if raw else ""
+    """Normalise price text — strip suffixes the cleaner doesn't handle."""
+    if not raw:
+        return ""
+    # "රු 48,500,000total price" → "රු 48,500,000"
+    # "රු 25,000per month"       → "රු 25,000 Per Month"
+    s = raw
+    s = s.replace("total price", "").replace("Total Price", "")
+    s = s.replace("per month", " Per Month").replace("Per month", " Per Month")
+    s = s.replace("per perch", " Per Perch").replace("Per perch", " Per Perch")
+    # Strip Sinhala rupee symbol — cleaner only knows Rs./LKR
+    s = s.replace("රු", "Rs.")
+    return re.sub(r"\s+", " ", s).strip()
 
 
 def _parse_location(meta_items: list) -> str:
