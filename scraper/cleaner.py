@@ -717,23 +717,46 @@ class DataCleaner:
             listing.outlier_reason = "; ".join(reasons)
 
     def detect_duplicates(self, listing: Listing) -> bool:
-        """Checks for duplicates based on price, location, size within 7 days"""
-        if not listing.price_lkr or not listing.raw_location:
-            return False
-        
-        seven_days_ago = datetime.utcnow() - timedelta(days=7)
-        
-        existing = self.db.query(Listing).filter(
-            Listing.price_lkr == listing.price_lkr,
-            Listing.raw_location == listing.raw_location,
-            Listing.scraped_at >= seven_days_ago,
-            Listing.source_id != listing.source_id
-        ).first()
+        """Checks for duplicates based on price + location across sources.
 
-        if existing:
-            listing.is_duplicate = True
-            listing.duplicate_of = existing.id
-            return True
+        Two-pass strategy:
+        1. Exact raw_location match (fast, handles same-source reposts)
+        2. Cleaned district + property_type match (catches cross-site dupes
+           where location strings differ e.g. "Colombo" vs "Nugegoda, Colombo District")
+        """
+        if not listing.price_lkr:
+            return False
+
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+
+        # Pass 1 — exact raw_location (original behaviour)
+        if listing.raw_location:
+            existing = self.db.query(Listing).filter(
+                Listing.price_lkr == listing.price_lkr,
+                Listing.raw_location == listing.raw_location,
+                Listing.scraped_at >= seven_days_ago,
+                Listing.source_id != listing.source_id,
+            ).first()
+            if existing:
+                listing.is_duplicate = True
+                listing.duplicate_of = existing.id
+                return True
+
+        # Pass 2 — cross-site: same price + district + property_type, different source
+        if listing.district and listing.property_type and listing.price_lkr:
+            existing = self.db.query(Listing).filter(
+                Listing.price_lkr == listing.price_lkr,
+                Listing.district == listing.district,
+                Listing.property_type == listing.property_type,
+                Listing.source != listing.source,
+                Listing.scraped_at >= seven_days_ago,
+                Listing.source_id != listing.source_id,
+            ).first()
+            if existing:
+                listing.is_duplicate = True
+                listing.duplicate_of = existing.id
+                return True
+
         return False
 
     def process_all(self, limit: int = 500):
