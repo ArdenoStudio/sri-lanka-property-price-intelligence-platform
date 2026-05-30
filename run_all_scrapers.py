@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Master Scraper Runner
-Run all 3 scrapers (ikman, lpw, lamudi) in parallel.
+Run all scrapers (ikman, lamudi, onlineproperty) in parallel.
 
 Usage:
     python run_all_scrapers.py                        # Run all scrapers (standard)
@@ -30,6 +30,7 @@ from scraper.ikman import scrape_ikman, scrape_ikman_full, scrape_ikman_coverage
 from scraper.location_targets import CANONICAL_DISTRICTS, build_ikman_coverage_targets
 from scraper.lpw import scrape_lpw, scrape_lpw_districts
 from scraper.lamudi import LamudiScraper
+from scraper.onlineproperty import scrape_onlineproperty
 from scraper.cleaner import DataCleaner
 from scraper.geocoder import Geocoder
 
@@ -172,6 +173,20 @@ async def run_lamudi(max_pages: int = 20):
         db.close()
 
 
+async def run_onlineproperty(max_pages: int = 30):
+    """Run onlineproperty.lk scraper with its own DB session."""
+    db = SessionLocal()
+    log.info("scraper_starting", source="onlineproperty", max_pages=max_pages)
+    try:
+        result = await scrape_onlineproperty(db, max_pages=max_pages)
+        return {"source": "onlineproperty", "found": result["found"], "new": result["new"], "success": True}
+    except Exception as e:
+        log.error("scraper_failed", source="onlineproperty", error=str(e))
+        return {"source": "onlineproperty", "found": 0, "new": 0, "success": False, "error": str(e)}
+    finally:
+        db.close()
+
+
 def _start_job_run(db, name: str) -> JobRun:
     run = JobRun(job_name=name, started_at=datetime.utcnow(), status="running")
     db.add(run)
@@ -244,7 +259,7 @@ async def main():
     parser.add_argument(
         "--scrapers",
         nargs="+",
-        choices=["ikman", "lpw", "lamudi"],
+        choices=["ikman", "lpw", "lamudi", "onlineproperty"],
         help="Scrapers to run (default: all)",
     )
     parser.add_argument("--test", action="store_true",
@@ -274,7 +289,7 @@ async def main():
 
     args = parser.parse_args()
 
-    scrapers_to_run = args.scrapers if args.scrapers else ["ikman", "lpw", "lamudi"]
+    scrapers_to_run = args.scrapers if args.scrapers else ["ikman", "lamudi", "onlineproperty"]
 
     subdistricts_per_district = args.subdistricts_per_district
     subdistrict_pages = args.subdistrict_pages
@@ -334,6 +349,8 @@ async def main():
         ))
     if "lamudi" in scrapers_to_run:
         tasks.append(run_lamudi(max_pages=lamudi_pages))
+    if "onlineproperty" in scrapers_to_run:
+        tasks.append(run_onlineproperty(max_pages=30 if not args.test else 1))
 
     scraper_results = await asyncio.gather(*tasks, return_exceptions=True)
 
