@@ -1,0 +1,81 @@
+name: AWS Lambda Deploy
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  LAMBDA_FUNCTION_NAME: property-price-api
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  deploy:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    concurrency: aws-lambda-deploy
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          role-session-name: github-actions-property-price-api
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build Lambda package
+        run: |
+          python -m pip install --upgrade pip
+          rm -rf package lambda.zip
+          mkdir -p package
+          python -m pip install \
+            --requirement requirements-lambda.txt \
+            --target package \
+            --platform manylinux2014_x86_64 \
+            --implementation cp \
+            --python-version 3.13 \
+            --only-binary=:all: \
+            --upgrade
+          cp -r api db package/
+          cd package
+          zip -r ../lambda.zip . -x '*.pyc' '*/__pycache__/*'
+
+      - name: Update Lambda configuration
+        run: |
+          aws lambda update-function-configuration \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --handler api.main.handler \
+            --runtime "python${PYTHON_VERSION}" \
+            --timeout 30 \
+            --memory-size 512
+          aws lambda wait function-updated \
+            --function-name "$LAMBDA_FUNCTION_NAME"
+
+      - name: Deploy Lambda code
+        run: |
+          aws lambda update-function-code \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --zip-file fileb://lambda.zip
+          aws lambda wait function-updated \
+            --function-name "$LAMBDA_FUNCTION_NAME"
+
+      - name: Smoke test
+        run: |
+          function_url=$(aws lambda get-function-url-config \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --query FunctionUrl \
+            --output text)
+          curl --fail --silent --show-error "${function_url%/}/health"
