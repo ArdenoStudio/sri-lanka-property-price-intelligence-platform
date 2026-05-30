@@ -7,6 +7,7 @@ import asyncio
 import random
 import re
 import os
+import hashlib
 from datetime import datetime
 import httpx
 from bs4 import BeautifulSoup
@@ -98,8 +99,9 @@ def _parse_cards(html: str, property_type: str, listing_type: str) -> list[dict]
             meta_items = card.select(".rtin-meta li")
             raw_location = _parse_location(meta_items)
 
-            # Source ID from URL slug
-            source_id = url.rstrip("/").split("/")[-1][:200]
+            # Source ID from URL slug — capped at 100 chars (DB column limit)
+            slug = url.rstrip("/").split("/")[-1]
+            source_id = slug[:100] if len(slug) <= 100 else hashlib.sha1(slug.encode()).hexdigest()
 
             items.append({
                 "source": SOURCE,
