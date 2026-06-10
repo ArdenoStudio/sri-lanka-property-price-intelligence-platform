@@ -7,6 +7,16 @@ from sqlalchemy.dialects.postgresql import insert
 from typing import List, Optional
 from db.connection import get_db, SessionLocal
 from db.models import Listing, RawListing, ScrapeRun, PriceAggregate, JobRun, ListingSnapshot
+from api.estimate_logic import (
+    MAX_DISPLAY_COMPS,
+    MAX_ESTIMATE_COMPS,
+    EstimateCriteria,
+    build_matched_criteria,
+    choose_match_tier,
+    confidence_for,
+    percentile,
+    ranked_comparables,
+)
 from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel
 import os
@@ -14,10 +24,19 @@ import httpx
 
 app = FastAPI(title="Sri Lanka Property Price Intelligence Platform")
 
+def _configured_cors_origins() -> list[str]:
+    raw = os.getenv("CORS_ALLOW_ORIGINS", "")
+    origins = [origin.strip() for origin in raw.split(",") if origin.strip()]
+    return origins or [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://property-price-intelligence.vercel.app",
+    ]
+
 # CORS - allow dashboard frontends
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_configured_cors_origins(),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -164,7 +183,7 @@ def public_pipeline(db: Session = Depends(get_db)):
 
     job_defs = [
         {"name": "scrape_ikman", "type": "scrape", "source": "ikman", "expected_hours": 24},
-        {"name": "scrape_lpw", "type": "scrape", "source": "lpw", "expected_hours": 24},
+        {"name": "scrape_onlineproperty", "type": "scrape", "source": "onlineproperty", "expected_hours": 24},
         {"name": "scrape_lamudi", "type": "scrape", "source": "lamudi", "expected_hours": 24},
         {"name": "clean_listings", "type": "job", "expected_hours": 24},
         {"name": "geocode_listings", "type": "job", "expected_hours": 24},
@@ -271,11 +290,11 @@ def admin_job_runs(
 
 
 @app.post("/trigger/process")
-async def trigger_process(db: Session = Depends(get_db)):
+async def trigger_process(req: Request, db: Session = Depends(get_db)):
+    _require_admin(req)
     from scraper.cleaner import DataCleaner
     from scraper.geocoder import Geocoder
     from scraper.detail_enricher import DetailEnricher
-    import asyncio
 
     cleaner = DataCleaner(db)
     processed = cleaner.process_all()
@@ -284,11 +303,7 @@ async def trigger_process(db: Session = Depends(get_db)):
     geocoded = geocoder.geocode_listings()
 
     enricher = DetailEnricher(db)
-    loop = asyncio.new_event_loop()
-    try:
-        enriched = loop.run_until_complete(enricher.enrich())
-    finally:
-        loop.close()
+    enriched = await enricher.enrich()
 
     aggregator = PriceAggregator(db)
     trends = aggregator.aggregate()
@@ -302,8 +317,22 @@ async def trigger_process(db: Session = Depends(get_db)):
     }
 
 @app.post("/trigger/backfill")
-async def trigger_backfill(db: Session = Depends(get_db)):
-    """Generates 12 months of trend data extrapolated backward from real current prices."""
+async def trigger_backfill(
+    req: Request,
+    synthetic_demo_data: bool = Query(False),
+    db: Session = Depends(get_db),
+):
+    """Generate demo-only extrapolated trend data.
+
+    This endpoint is intentionally opt-in because it writes synthetic history.
+    Production trend data should come from real listing snapshots/aggregates.
+    """
+    _require_admin(req)
+    if not synthetic_demo_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Synthetic backfill is disabled unless synthetic_demo_data=true is explicitly supplied.",
+        )
     # Use every district that actually has clean listing data — not a hardcoded list
     districts = [
         row[0] for row in
@@ -354,7 +383,7 @@ async def trigger_backfill(db: Session = Depends(get_db)):
                 count += 1
 
     db.commit()
-    return {"status": "success", "backfilled_points": count}
+    return {"status": "success", "synthetic_demo_data": True, "backfilled_points": count}
 
 class PriceAggregator:
     def __init__(self, db: Session):
@@ -1153,39 +1182,42 @@ def get_listing_price_history(listing_id: int, db: Session = Depends(get_db)):
 class EstimateRequest(BaseModel):
     district: Optional[str] = None
     property_type: str
+    listing_type: str
     size_perches: Optional[float] = None
     size_sqft: Optional[float] = None
     bedrooms: Optional[int] = None
 
 @app.post("/estimate")
 def estimate_price(req: EstimateRequest, db: Session = Depends(get_db)):
+    listing_type = (req.listing_type or "").lower().strip()
+    if listing_type not in {"sale", "rent"}:
+        raise HTTPException(status_code=422, detail="listing_type must be 'sale' or 'rent'")
+
+    criteria = EstimateCriteria(
+        district=req.district,
+        property_type=req.property_type,
+        listing_type=listing_type,
+        size_perches=req.size_perches,
+        size_sqft=req.size_sqft,
+        bedrooms=req.bedrooms,
+    )
+
     query = db.query(Listing).filter(
         Listing.property_type == req.property_type,
+        Listing.listing_type == listing_type,
         Listing.price_lkr.isnot(None),
         Listing.price_lkr > 0,
         Listing.is_outlier == False,
+        Listing.is_short_term == False,
     )
 
-    if req.district:
-        query = query.filter(Listing.district == req.district)
+    candidates = query.order_by(desc(Listing.first_seen_at)).limit(500).all()
+    tier, tier_candidates = choose_match_tier(candidates, criteria)
+    ranked = ranked_comparables(tier_candidates, criteria, tier, datetime.utcnow())
+    estimate_rows = ranked[:MAX_ESTIMATE_COMPS]
+    comparables = [row[0] for row in estimate_rows]
+    scores_by_id = {row[0].id: (row[1], row[2]) for row in ranked}
 
-    if req.size_perches:
-        query = query.filter(
-            Listing.size_perches >= req.size_perches * 0.5,
-            Listing.size_perches <= req.size_perches * 2.0,
-        )
-    if req.size_sqft:
-        query = query.filter(
-            Listing.size_sqft >= req.size_sqft * 0.5,
-            Listing.size_sqft <= req.size_sqft * 2.0,
-        )
-    if req.bedrooms is not None and req.bedrooms > 0:
-        query = query.filter(
-            Listing.bedrooms >= max(0, req.bedrooms - 1),
-            Listing.bedrooms <= req.bedrooms + 1,
-        )
-
-    comparables = query.order_by(desc(Listing.first_seen_at)).limit(50).all()
     prices = sorted([float(c.price_lkr) for c in comparables if c.price_lkr])
     ppp_vals = sorted([float(c.price_per_perch) for c in comparables if c.price_per_perch and c.price_per_perch > 0])
     pps_vals = sorted([float(c.price_per_sqft) for c in comparables if c.price_per_sqft and c.price_per_sqft > 0])
@@ -1197,15 +1229,19 @@ def estimate_price(req: EstimateRequest, db: Session = Depends(get_db)):
             "estimated_high": None,
             "comparable_count": 0,
             "confidence": "none",
+            "match_tier": tier.label,
+            "confidence_reason": "No comparable listings matched these criteria.",
+            "average_similarity_score": 0,
+            "matched_criteria": build_matched_criteria(criteria, tier),
+            "median_price_per_perch": None,
+            "median_price_per_sqft": None,
             "comparables": [],
         }
 
     n = len(prices)
-    p25 = prices[int(n * 0.25)] if n >= 4 else prices[0]
-    median = prices[n // 2]
-    p75 = prices[int(n * 0.75)] if n >= 4 else prices[-1]
-
-    confidence = "high" if n >= 20 else ("medium" if n >= 5 else "low")
+    p25 = percentile(prices, 0.25)
+    median = percentile(prices, 0.5)
+    p75 = percentile(prices, 0.75)
 
     def _median(vals: list) -> float | None:
         if not vals:
@@ -1214,38 +1250,61 @@ def estimate_price(req: EstimateRequest, db: Session = Depends(get_db)):
 
     median_ppp = _median(ppp_vals)
     median_pps = _median(pps_vals)
+    average_similarity = round(sum(row[1] for row in estimate_rows) / len(estimate_rows), 1)
+    confidence, confidence_reason = confidence_for(n, average_similarity, tier)
 
     now_utc = datetime.utcnow()
-    top_comparables = comparables[:6]
+    top_comparables = comparables[:MAX_DISPLAY_COMPS]
     comp_list = []
     for c in top_comparables:
+        similarity_score, match_reasons = scores_by_id.get(c.id, (0, []))
         raw = db.query(RawListing).filter(RawListing.id == c.raw_id).first() if c.raw_id else None
         comp_list.append({
             "id": c.id,
+            "source": c.source,
             "title": (raw.title if raw else None) or c.source_id,
             "price_lkr": float(c.price_lkr) if c.price_lkr else None,
+            "original_price_lkr": float(c.original_price_lkr) if c.original_price_lkr else None,
+            "price_drop_pct": (
+                round((1 - float(c.price_lkr) / float(c.original_price_lkr)) * 100, 1)
+                if c.price_lkr and c.original_price_lkr and float(c.original_price_lkr) > 0
+                   and float(c.price_lkr) < float(c.original_price_lkr)
+                else None
+            ),
             "district": c.district,
             "city": c.city,
+            "raw_location": c.raw_location,
             "property_type": c.property_type,
+            "listing_type": c.listing_type,
             "size_perches": float(c.size_perches) if c.size_perches else None,
             "size_sqft": float(c.size_sqft) if c.size_sqft else None,
             "bedrooms": c.bedrooms,
             "bathrooms": c.bathrooms,
             "deal_score": float(c.deal_score) if c.deal_score is not None else None,
+            "market_median_lkr": float(c.market_median_lkr) if c.market_median_lkr else None,
+            "price_per_perch": float(c.price_per_perch) if c.price_per_perch else None,
             "url": (raw.url if raw else None),
             "first_seen_at": c.first_seen_at.isoformat() if c.first_seen_at else None,
             "days_on_market": (
                 (now_utc - c.first_seen_at.replace(tzinfo=None)).days
                 if c.first_seen_at else None
             ),
+            "lat": float(c.lat) if c.lat else None,
+            "lng": float(c.lng) if c.lng else None,
+            "similarity_score": similarity_score,
+            "match_reasons": match_reasons,
         })
 
     return {
-        "estimated_low": round(p25, 2),
-        "estimated_median": round(median, 2),
-        "estimated_high": round(p75, 2),
+        "estimated_low": round(p25, 2) if p25 is not None else None,
+        "estimated_median": round(median, 2) if median is not None else None,
+        "estimated_high": round(p75, 2) if p75 is not None else None,
         "comparable_count": n,
         "confidence": confidence,
+        "match_tier": tier.label,
+        "confidence_reason": confidence_reason,
+        "average_similarity_score": average_similarity,
+        "matched_criteria": build_matched_criteria(criteria, tier),
         "median_price_per_perch": round(median_ppp, 2) if median_ppp else None,
         "median_price_per_sqft": round(median_pps, 2) if median_pps else None,
         "comparables": comp_list,
