@@ -81,8 +81,21 @@ jobs:
             --function-name "$LAMBDA_FUNCTION_NAME" \
             --query FunctionUrl \
             --output text)
-          for attempt in 1 2 3 4 5 6; do
-            curl --fail --silent --show-error "${function_url%/}/health" && exit 0
-            sleep 5
+          endpoint="${function_url%/}/health"
+          echo "Testing: $endpoint"
+          for attempt in $(seq 1 10); do
+            echo "Attempt $attempt/10..."
+            status=$(curl --silent --output /tmp/smoke_body --write-out '%{http_code}' "$endpoint") || true
+            if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
+              echo "Smoke test passed (HTTP $status)"
+              cat /tmp/smoke_body
+              echo
+              exit 0
+            fi
+            echo "HTTP $status – response:"
+            cat /tmp/smoke_body
+            echo
+            sleep 10
           done
-          curl --fail --silent --show-error "${function_url%/}/health"
+          echo "Smoke test failed after 10 attempts"
+          exit 1

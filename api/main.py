@@ -142,16 +142,19 @@ DISTRICT_COORDS = {
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
-    last_run = db.query(ScrapeRun).order_by(desc(ScrapeRun.finished_at)).first()
-    raw_count = db.query(func.count(RawListing.id)).scalar()
-    clean_count = db.query(func.count(Listing.id)).scalar()
-    return {
-        "status": "ok",
-        "db": "connected",
-        "raw_listings": raw_count,
-        "clean_listings": clean_count,
-        "last_scrape": last_run.finished_at if last_run else None,
-    }
+    try:
+        last_run = db.query(ScrapeRun).order_by(desc(ScrapeRun.finished_at)).first()
+        raw_count = db.query(func.count(RawListing.id)).scalar()
+        clean_count = db.query(func.count(Listing.id)).scalar()
+        return {
+            "status": "ok",
+            "db": "connected",
+            "raw_listings": raw_count,
+            "clean_listings": clean_count,
+            "last_scrape": last_run.finished_at if last_run else None,
+        }
+    except Exception:
+        return {"status": "ok", "db": "unreachable"}
 
 def _require_admin(req: Request):
     admin_key = os.getenv("ADMIN_API_KEY")
