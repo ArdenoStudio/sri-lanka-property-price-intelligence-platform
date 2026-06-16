@@ -13,6 +13,7 @@ import httpx
 from bs4 import BeautifulSoup
 import structlog
 from db.models import RawListing, ListingSnapshot
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 from scraper.utils import build_snapshot_fingerprint
@@ -185,9 +186,12 @@ def _upsert_listings(db: Session, items: list[dict]) -> tuple[int, int]:
                 "raw_location": item["raw_location"],
                 "scraped_at": now,
             }
-        )
+        ).returning(text("(xmax = 0) AS inserted"))
+        # ON CONFLICT DO UPDATE reports rowcount=1 for updates too, so rowcount
+        # can't distinguish inserts from updates. Postgres sets xmax=0 only on a
+        # fresh insert, so (xmax = 0) is True for genuinely new rows.
         result = db.execute(stmt)
-        if result.rowcount and result.rowcount > 0:
+        if result.scalar():
             new_count += 1
 
     db.commit()
