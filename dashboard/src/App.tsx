@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import type { FilterState } from './hooks/useSavedSearches';
 import { Routes, Route } from 'react-router-dom';
 import { getStats, getDistricts, getHeatmap, getListings, getPipelineStatus } from './api';
@@ -39,6 +39,9 @@ const EstimateTool = lazy(() =>
 );
 const SavedSearches = lazy(() =>
   import('./components/SavedSearches').then(m => ({ default: m.SavedSearches }))
+);
+const ReportPage = lazy(() =>
+  import('./components/ReportPage').then(m => ({ default: m.ReportPage }))
 );
 
 // ── Skeleton fallbacks ────────────────────────────────────────────────────────
@@ -82,6 +85,10 @@ function PageSkeleton() {
   return <div className="min-h-screen bg-black" />;
 }
 
+type IdleWindow = Window & typeof globalThis & {
+  requestIdleCallback?: (callback: () => void) => number;
+};
+
 function readURLFilters() {
   const p = new URLSearchParams(window.location.search);
   const n = (k: string) => p.get(k) ? Number(p.get(k)) : ('' as number | '');
@@ -113,6 +120,10 @@ function Dashboard() {
   const [pipeline, setPipeline] = useState<PipelineStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(false);
+  const [listingsError, setListingsError] = useState<string | null>(null);
+  const listingsRequestId = useRef(0);
+  const listingsInFlight = useRef(false);
+  const pollInFlight = useRef(false);
 
   // Filter state — seeded from URL on mount (lazy initializers avoid re-reading on re-render)
   const [selectedDistrict, setSelectedDistrict] = useState(() => readURLFilters().district);
@@ -185,6 +196,9 @@ function Dashboard() {
 
   // Listings load (depends on filters)
   const loadListings = useCallback(async (isSilent = false) => {
+    if (isSilent && listingsInFlight.current) return;
+    listingsInFlight.current = true;
+    const requestId = ++listingsRequestId.current;
     if (!isSilent) setListingsLoading(true);
     try {
       const res = await getListings({
@@ -204,12 +218,20 @@ function Dashboard() {
         limit:             PAGE_SIZE,
         offset:            page * PAGE_SIZE,
       });
-      setListings(res.listings);
-      setTotalListings(res.total);
-    } catch {
-      setListings([]);
+      if (requestId === listingsRequestId.current) {
+        setListings(res.listings);
+        setTotalListings(res.total);
+        setListingsError(null);
+      }
+    } catch (e) {
+      console.error('Listings load error:', e);
+      if (requestId === listingsRequestId.current) {
+        setListingsError('Could not refresh listings. Showing the latest loaded results.');
+      }
+    } finally {
+      listingsInFlight.current = false;
+      if (!isSilent && requestId === listingsRequestId.current) setListingsLoading(false);
     }
-    if (!isSilent) setListingsLoading(false);
   }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource, page]);
 
   // Initial data load + polling
@@ -244,8 +266,9 @@ function Dashboard() {
     loadListings();
 
     const scheduleDeferred = () => {
-      if ('requestIdleCallback' in window) {
-        (window as any).requestIdleCallback(() => loadDeferred());
+      const idleWindow = window as IdleWindow;
+      if (idleWindow.requestIdleCallback) {
+        idleWindow.requestIdleCallback(() => loadDeferred());
       } else {
         setTimeout(() => loadDeferred(), 200);
       }
@@ -253,9 +276,15 @@ function Dashboard() {
     scheduleDeferred();
 
     const interval = setInterval(() => {
-      loadCritical();
-      loadDeferred();
-      loadListings(true);
+      if (pollInFlight.current) return;
+      pollInFlight.current = true;
+      Promise.all([
+        loadCritical(),
+        loadDeferred(),
+        loadListings(true),
+      ]).finally(() => {
+        pollInFlight.current = false;
+      });
     }, 30000);
 
     return () => clearInterval(interval);
@@ -282,6 +311,15 @@ function Dashboard() {
     setSortBy(f.sortBy);
     setSelectedSource(f.source);
     setIsSavedSearchesOpen(false);
+  }, []);
+
+  const toggleComparison = useCallback((listing: Listing) => {
+    setSelectedForComparison(prev => {
+      if (prev.some(item => item.id === listing.id)) {
+        return prev.filter(item => item.id !== listing.id);
+      }
+      return [...prev.slice(-2), listing];
+    });
   }, []);
 
   return (
@@ -362,6 +400,8 @@ function Dashboard() {
                   total={totalListings}
                   onPageChange={setPage}
                   selectedForComparison={selectedForComparison.map(l => l.id)}
+                  onToggleComparison={toggleComparison}
+                  error={listingsError}
                 />
               </div>
             </RevealSection>
@@ -435,6 +475,14 @@ function App() {
           element={
             <Suspense fallback={<PageSkeleton />}>
               <EstimateTool />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/report"
+          element={
+            <Suspense fallback={<PageSkeleton />}>
+              <ReportPage />
             </Suspense>
           }
         />
