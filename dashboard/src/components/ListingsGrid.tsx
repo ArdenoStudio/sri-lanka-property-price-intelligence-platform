@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../api';
 import { PriceHistoryChart } from './PriceHistoryChart';
@@ -46,13 +46,24 @@ interface Props {
   total: number;
   onPageChange: (p: number) => void;
   selectedForComparison: number[];
+  onToggleComparison: (listing: Listing) => void;
+  error?: string | null;
 }
 
-export function ListingsGrid({ listings, loading, page, pageSize, total, onPageChange, selectedForComparison }: Props) {
+export function ListingsGrid({
+  listings,
+  loading,
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  selectedForComparison,
+  onToggleComparison,
+  error,
+}: Props) {
   const totalPages = Math.ceil(total / pageSize);
   const topRef = useRef<HTMLDivElement>(null);
   const { formatConverted } = useCurrency();
-  const navigate = useNavigate();
 
   function handlePageChange(p: number) {
     onPageChange(p);
@@ -91,6 +102,11 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
 
   return (
     <div ref={topRef}>
+      {error && (
+        <div className="mb-4 border border-amber-500/20 bg-amber-500/[0.08] text-amber-200 rounded-xl px-4 py-3 text-[12px]">
+          {error}
+        </div>
+      )}
       <div className="listings-grid">
         {listings.map((listing, idx) => {
           const priceText = listing.price_lkr
@@ -111,10 +127,9 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
           ].filter(Boolean);
 
           return (
-            <Link
+            <article
               key={listing.id}
-              to={`/listing/${listing.id}`}
-              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in block no-underline cursor-pointer"
+              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in"
               style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
             >
               {/* Left accent line — teal on hover */}
@@ -125,23 +140,40 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                 →
               </div>
 
-              <div className="p-6 flex flex-col h-full">
-                {/* Type + location + compare button */}
-                <div className="flex items-start justify-between mb-3">
+              <button
+                onClick={() => onToggleComparison(listing)}
+                className={`absolute right-6 top-6 z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-all text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border active:scale-90 ${
+                  isCompared
+                    ? 'bg-[#14b8a6] text-black border-[#14b8a6] sm:opacity-100'
+                    : 'text-[#737373] border-white/[0.12] hover:text-white hover:border-white/25 bg-[#111111]'
+                }`}
+                aria-pressed={isCompared}
+                aria-label={`${isCompared ? 'Remove from' : 'Add to'} comparison`}
+              >
+                <PlusCheckIcon checked={isCompared} />
+              </button>
+
+              {listing.url && (
+                <a
+                  href={listing.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute right-6 bottom-6 z-10 text-[#525252] hover:text-[#737373] transition-colors"
+                  aria-label={`View on ${listing.source}`}
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+
+              <Link
+                to={`/listing/${listing.id}`}
+                className="p-6 flex flex-col h-full no-underline cursor-pointer"
+              >
+                {/* Type + location */}
+                <div className="mb-3 pr-9">
                   <p className="text-[11px] uppercase tracking-[0.12em] text-[#737373] leading-none">
                     {[listing.property_type, listing.district].filter(Boolean).join(' · ') || 'Property'}
                   </p>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); navigate(`/listing/${listing.id}`); }}
-                    className={`sm:opacity-0 sm:group-hover:opacity-100 transition-all text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border active:scale-90 ${
-                      isCompared
-                        ? 'bg-[#14b8a6] text-black border-[#14b8a6] sm:opacity-100'
-                        : 'text-[#737373] border-white/[0.12] hover:text-white hover:border-white/25 bg-transparent'
-                    }`}
-                    aria-label="View listing details"
-                  >
-                    <PlusCheckIcon checked={isCompared} />
-                  </button>
                 </div>
 
                 {/* PRICE — HERO */}
@@ -202,25 +234,13 @@ export function ListingsGrid({ listings, loading, page, pageSize, total, onPageC
                 )}
 
                 {/* Footer — meta + link */}
-                <div className="mt-auto pt-3 flex items-center justify-between">
+                <div className="mt-auto pt-3 pr-6 flex items-center justify-between">
                   <p className="text-[11px] text-[#525252] num">
                     {[formatDate(listing.first_seen_at), listing.source].filter(Boolean).join(' · ')}
                   </p>
-                  {listing.url && (
-                    <a
-                      href={listing.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-[#525252] hover:text-[#737373] transition-colors"
-                      aria-label={`View on ${listing.source}`}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </article>
           );
         })}
       </div>

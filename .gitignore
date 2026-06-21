@@ -1,4 +1,7 @@
 .env
+.env.*
+!.env.example
+!.env.*.example
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -7,3 +10,20 @@ postgres_data/
 dist/
 .venv/
 venv/
+node_modules/
+dashboard/node_modules/
+dashboard/dist/
+
+# Local app/tooling state
+.agents/
+.claude/
+.vercel/
+dashboard/.vercel/
+
+# Runtime output and one-off scrape artifacts
+*.log
+*.out.log
+*.err.log
+*_auth_state.json
+*_page_dump.html
+source.zip
