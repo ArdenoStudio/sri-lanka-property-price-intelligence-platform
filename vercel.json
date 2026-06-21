@@ -3,15 +3,17 @@
   "buildCommand": "cd dashboard && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "dashboard/dist",
   "framework": null,
+  "env": {
+    "VITE_API_URL": "https://property-price-intelligence-an-ardeno-production.fly.dev"
+  },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ],
-  "experimentalServices": {
-    "web": {
-      "routePrefix": "/"
-    }
-  }
+  ]
 }
