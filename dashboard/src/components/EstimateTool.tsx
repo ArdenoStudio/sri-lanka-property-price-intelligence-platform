@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Calculator, ChevronLeft, TrendingUp, AlertCircle } from 'lucide-react';
+import { Calculator, ChevronLeft, TrendingUp, AlertCircle, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDistricts, getEstimate } from '../api';
 import type { District, EstimateResult, SimilarListing } from '../api';
@@ -21,6 +21,11 @@ const PROPERTY_TYPES = [
   { value: 'commercial', label: 'Commercial' },
 ];
 
+const LISTING_TYPES = [
+  { value: 'sale' as const, label: 'Sale' },
+  { value: 'rent' as const, label: 'Rent' },
+];
+
 const CONFIDENCE_STYLES: Record<string, string> = {
   high:   'bg-emerald-500/[0.12] text-emerald-400 border-emerald-500/20',
   medium: 'bg-amber-500/[0.12] text-amber-400 border-amber-500/20',
@@ -33,6 +38,12 @@ const CONFIDENCE_STYLES: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 function ComparableCard({ listing, formatConverted }: { listing: SimilarListing; formatConverted: (n: number | null | undefined) => string }) {
+  const detailParts = [
+    listing.size_perches ? `${listing.size_perches}p` : '',
+    listing.size_sqft ? `${listing.size_sqft} sqft` : '',
+    listing.bedrooms ? `${listing.bedrooms}BR` : '',
+  ].filter(Boolean);
+
   return (
     <Link
       to={`/listing/${listing.id}`}
@@ -44,12 +55,24 @@ function ComparableCard({ listing, formatConverted }: { listing: SimilarListing;
       <p className="text-[11px] text-[#525252] mb-2 line-clamp-1">
         {listing.city || listing.raw_location || listing.district}
       </p>
-      {(listing.size_perches || listing.bedrooms) && (
+      {detailParts.length > 0 && (
         <p className="text-[11px] text-[#404040]">
-          {listing.size_perches ? `${listing.size_perches}p` : ''}
-          {listing.size_perches && listing.bedrooms ? ' · ' : ''}
-          {listing.bedrooms ? `${listing.bedrooms}BR` : ''}
+          {detailParts.join(' · ')}
         </p>
+      )}
+      {listing.similarity_score != null && (
+        <p className="text-[10px] text-[#14b8a6] mt-2 font-semibold">
+          {listing.similarity_score.toFixed(0)}% match
+        </p>
+      )}
+      {listing.match_reasons && listing.match_reasons.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {listing.match_reasons.slice(0, 3).map(reason => (
+            <span key={reason} className="text-[9px] text-[#737373] bg-white/[0.04] border border-white/[0.06] rounded-full px-2 py-0.5">
+              {reason}
+            </span>
+          ))}
+        </div>
       )}
       {listing.deal_score != null && listing.deal_score > 0 && (
         <span className="inline-flex mt-2 text-[10px] text-emerald-400 bg-emerald-400/[0.08] px-2 py-0.5 rounded-full border border-emerald-400/20">
@@ -112,6 +135,7 @@ export function EstimateTool() {
   // Form state
   const [district, setDistrict] = useState('');
   const [propertyType, setPropertyType] = useState('house');
+  const [listingType, setListingType] = useState<'sale' | 'rent' | ''>('');
   const [sizePerches, setSizePerches] = useState('');
   const [sizeSqft, setSizeSqft] = useState('');
   const [bedrooms, setBedrooms] = useState<number | null>(null);
@@ -133,11 +157,21 @@ export function EstimateTool() {
 
   const usesPerches = propertyType === 'land' || propertyType === 'house';
   const usesSqft = propertyType === 'apartment' || propertyType === 'house';
+  const hasPositivePerchSize = usesPerches && Number(sizePerches) > 0;
+  const hasPositiveSqftSize = usesSqft && Number(sizeSqft) > 0;
+  const hasEstimateAnchor = !!district || hasPositivePerchSize || hasPositiveSqftSize;
+  const estimateLabel = listingType === 'rent'
+    ? 'monthly rent'
+    : listingType === 'sale'
+      ? 'asking value'
+      : 'asking value or monthly rent';
+  const resultLabel = listingType === 'rent' ? 'Estimated Monthly Rent' : 'Estimated Asking Value';
 
-  const canSubmit = !!propertyType;
+  const canSubmit = !!propertyType && !!listingType && hasEstimateAnchor;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    if (!listingType) return;
     setLoading(true);
     setHasSubmitted(true);
     setError(false);
@@ -145,9 +179,10 @@ export function EstimateTool() {
       const params: Parameters<typeof getEstimate>[0] = {
         district: district || undefined,
         property_type: propertyType,
+        listing_type: listingType,
       };
-      if (sizePerches && usesPerches) params.size_perches = Number(sizePerches);
-      if (sizeSqft && usesSqft) params.size_sqft = Number(sizeSqft);
+      if (hasPositivePerchSize) params.size_perches = Number(sizePerches);
+      if (hasPositiveSqftSize) params.size_sqft = Number(sizeSqft);
       if (bedrooms != null) params.bedrooms = bedrooms;
 
       const res = await getEstimate(params);
@@ -185,7 +220,7 @@ export function EstimateTool() {
             Price Estimator
           </h1>
           <p className="text-[14px] text-[#525252] mt-3">
-            Get an estimated market value based on real listing data from across Sri Lanka.
+            Get an estimated {estimateLabel} based on ranked comparable listings from across Sri Lanka.
           </p>
         </div>
 
@@ -228,6 +263,26 @@ export function EstimateTool() {
                       />
                     )}
                     <span className="relative z-10">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Listing type pills */}
+            <div>
+              <label className="block text-[11px] uppercase tracking-[0.15em] text-[#525252] mb-3">Market Mode</label>
+              <div className="grid grid-cols-2 gap-2">
+                {LISTING_TYPES.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setListingType(opt.value)}
+                    className={`relative py-2 rounded-xl text-[13px] font-semibold cursor-pointer border transition-colors ${
+                      listingType === opt.value
+                        ? 'bg-[#14b8a6] text-black border-[#14b8a6]'
+                        : 'bg-transparent text-[#737373] border-white/[0.08] hover:text-white hover:border-white/[0.14]'
+                    }`}
+                  >
+                    {opt.label}
                   </button>
                 ))}
               </div>
@@ -309,6 +364,11 @@ export function EstimateTool() {
                 </span>
               ) : 'Get Estimate'}
             </button>
+            {!canSubmit && (
+              <p className="text-[11px] text-[#525252] text-center">
+                Choose sale or rent, then add a district or property size to anchor the estimate.
+              </p>
+            )}
           </div>
         </div>
 
@@ -337,7 +397,7 @@ export function EstimateTool() {
                   <div className="bg-[#111111] border border-white/[0.08] rounded-2xl p-6 mb-6">
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-1">Estimated Value</p>
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-1">{resultLabel}</p>
                         <p className="text-[10px] text-[#404040]">
                           Based on {result.comparable_count} comparable listing{result.comparable_count !== 1 ? 's' : ''}
                           {!district ? ' across Sri Lanka' : ` in ${district}`}
@@ -346,6 +406,31 @@ export function EstimateTool() {
                       <span className={`text-[11px] font-medium px-3 py-1 rounded-full border capitalize ${CONFIDENCE_STYLES[result.confidence]}`}>
                         {result.confidence} confidence
                       </span>
+                    </div>
+
+                    {/* Why this estimate */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 border-y border-white/[0.06] py-4">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.15em] text-[#404040] mb-1">Mode</p>
+                        <p className="text-[12px] text-white font-semibold capitalize">{result.matched_criteria?.listing_type || listingType}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.15em] text-[#404040] mb-1">Scope</p>
+                        <p className="text-[12px] text-white font-semibold capitalize">{result.matched_criteria?.city_scope || (district ? 'district' : 'market')}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.15em] text-[#404040] mb-1">Match</p>
+                        <p className="text-[12px] text-white font-semibold">
+                          {result.average_similarity_score != null ? `${result.average_similarity_score.toFixed(0)}%` : 'Pending'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.15em] text-[#404040] mb-1">Tier</p>
+                        <p className="text-[12px] text-white font-semibold line-clamp-1">{result.match_tier || 'Comparable set'}</p>
+                      </div>
+                      <p className="col-span-2 sm:col-span-4 text-[11px] text-[#737373] leading-relaxed">
+                        {result.confidence_reason || 'Ranked comparable metadata will appear after the API is updated.'}
+                      </p>
                     </div>
 
                     {/* Visual bar */}
@@ -372,9 +457,33 @@ export function EstimateTool() {
                       </div>
                     </div>
 
+                    {/* Per-unit rate */}
+                    {(result.median_price_per_perch || result.median_price_per_sqft) && (
+                      <div className="flex items-center justify-center gap-6 py-3 mb-4 border-t border-b border-white/[0.06]">
+                        {result.median_price_per_perch && (usesPerches) && (
+                          <div className="text-center">
+                            <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-0.5">Per Perch</p>
+                            <p className="text-[1rem] font-bold text-[#14b8a6] num">{formatConverted(result.median_price_per_perch)}</p>
+                          </div>
+                        )}
+                        {result.median_price_per_sqft && (usesSqft) && (
+                          <div className="text-center">
+                            <p className="text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-0.5">Per Sqft</p>
+                            <p className="text-[1rem] font-bold text-[#14b8a6] num">{formatConverted(result.median_price_per_sqft)}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Browse button */}
                     <button
-                      onClick={() => navigate(`/?district=${encodeURIComponent(district)}&type=${encodeURIComponent(propertyType)}`)}
+                      onClick={() => {
+                        const p = new URLSearchParams();
+                        if (district) p.set('district', district);
+                        p.set('type', propertyType);
+                        p.set('listing_type', listingType);
+                        navigate(`/?${p.toString()}`);
+                      }}
                       className="w-full py-2.5 rounded-xl border border-white/[0.08] text-[13px] text-[#a3a3a3] hover:text-white hover:border-white/[0.16] transition-colors cursor-pointer bg-transparent font-medium flex items-center justify-center gap-2"
                     >
                       <TrendingUp className="w-3.5 h-3.5" />
@@ -393,6 +502,24 @@ export function EstimateTool() {
                       </div>
                     </div>
                   )}
+
+                  {/* Download report */}
+                  <button
+                    onClick={() => {
+                      const p = new URLSearchParams();
+                      if (district) p.set('district', district);
+                      p.set('type', propertyType);
+                      if (listingType) p.set('listing_type', listingType);
+                      if (hasPositivePerchSize) p.set('size_perches', sizePerches);
+                      if (hasPositiveSqftSize) p.set('size_sqft', sizeSqft);
+                      if (bedrooms != null) p.set('bedrooms', String(bedrooms));
+                      window.open(`/report?${p.toString()}`, '_blank');
+                    }}
+                    className="mt-4 w-full py-3 rounded-xl border border-[#14b8a6]/30 bg-[#14b8a6]/[0.05] text-[#14b8a6] hover:bg-[#14b8a6]/[0.1] hover:border-[#14b8a6]/50 transition-colors cursor-pointer text-[13px] font-semibold flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Download Report (PDF)
+                  </button>
                 </>
               )}
             </motion.div>

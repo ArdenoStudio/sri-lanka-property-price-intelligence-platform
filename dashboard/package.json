@@ -7,13 +7,16 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",
     "@vercel/analytics": "^2.0.1",
     "@vercel/og": "^0.11.1",
     "clsx": "^2.1.1",
+    "convex": "^1.39.1",
     "framer-motion": "^12.38.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.475.0",

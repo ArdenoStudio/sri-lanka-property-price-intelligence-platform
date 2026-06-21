@@ -1,4 +1,24 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_TIMEOUT_MS = 15_000;
+
+type QueryValue = string | number | boolean | readonly unknown[] | undefined | null;
+type ChatHistoryMessage = {
+  role?: string;
+  content?: string;
+  [key: string]: unknown;
+};
+
+export class ApiError extends Error {
+  status: number | null;
+  details: unknown;
+
+  constructor(message: string, status: number | null = null, details: unknown = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.details = details;
+  }
+}
 
 // ---------- Types ----------
 
@@ -138,7 +158,7 @@ export interface ChatResponse {
   };
 }
 
-export const sendChatMessage = (message: string, history: any[] = []) =>
+export const sendChatMessage = (message: string, history: ChatHistoryMessage[] = []) =>
   fetchJSON<ChatResponse>('/chat', { message, history }, 'POST');
 
 export const getPipelineStatus = () =>
@@ -184,6 +204,8 @@ export interface SimilarListing {
   days_on_market: number | null;
   lat: number | null;
   lng: number | null;
+  similarity_score?: number;
+  match_reasons?: string[];
 }
 
 export const getListingDetail = (id: number) =>
@@ -203,12 +225,26 @@ export interface EstimateResult {
   estimated_high: number | null;
   comparable_count: number;
   confidence: 'high' | 'medium' | 'low' | 'none';
+  match_tier?: string;
+  confidence_reason?: string;
+  average_similarity_score?: number;
+  matched_criteria?: {
+    listing_type: 'sale' | 'rent';
+    property_type: string;
+    district?: string;
+    city_scope?: string;
+    size?: { unit: 'perches' | 'sqft'; value: number };
+    bedrooms?: number;
+  };
+  median_price_per_perch: number | null;
+  median_price_per_sqft: number | null;
   comparables: SimilarListing[];
 }
 
 export const getEstimate = (params: {
   district?: string;
   property_type: string;
+  listing_type: 'sale' | 'rent';
   size_perches?: number;
   size_sqft?: number;
   bedrooms?: number;
@@ -252,22 +288,23 @@ export const getRentalYield = (params: {
 
 async function fetchJSON<T>(
   path: string, 
-  params?: Record<string, string | number | boolean | any[] | undefined>,
+  params?: Record<string, QueryValue>,
   method: string = 'GET'
 ): Promise<T> {
   const isPost = method === 'POST';
   const url = new URL(`${API_BASE}${path}`, window.location.origin);
-  
-  const options: RequestInit = {
+
+  const buildOptions = (signal: AbortSignal): RequestInit => ({
     method,
+    signal,
     headers: {
       'Content-Type': 'application/json',
     },
-  };
+  });
 
   if (params) {
     if (isPost) {
-      options.body = JSON.stringify(params);
+      // Body is attached per attempt below so each retry gets a fresh RequestInit.
     } else {
       Object.entries(params).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== '') {
@@ -277,7 +314,41 @@ async function fetchJSON<T>(
     }
   }
 
-  const res = await fetch(url.toString(), options);
-  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
-  return res.json();
+  const maxAttempts = isPost ? 1 : 2;
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+    try {
+      const options = buildOptions(controller.signal);
+      if (params && isPost) {
+        options.body = JSON.stringify(params);
+      }
+      const res = await fetch(url.toString(), options);
+      if (!res.ok) {
+        let details: unknown = null;
+        try {
+          details = await res.json();
+        } catch {
+          details = await res.text().catch(() => null);
+        }
+        throw new ApiError(`API ${res.status}: ${res.statusText}`, res.status, details);
+      }
+      return res.json();
+    } catch (error) {
+      lastError = error;
+      const isAbort = error instanceof DOMException && error.name === 'AbortError';
+      const isTransientApiError = error instanceof ApiError && error.status !== null && error.status >= 500;
+      if (attempt >= maxAttempts || (!isAbort && !isTransientApiError && error instanceof ApiError)) {
+        throw error;
+      }
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new ApiError('API request failed', null, lastError);
 }
