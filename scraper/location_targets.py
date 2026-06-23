@@ -81,12 +81,12 @@ def slugify_location(value: str) -> str:
 
 def district_page_budget(count: int, district_target: int = 750) -> int:
     if count < 100:
-        return 15
+        return 20
     if count < 250:
-        return 10
+        return 12
     if count < district_target:
-        return 5
-    return 2
+        return 8
+    return 3
 
 
 def should_stop_after_page(

@@ -530,13 +530,14 @@ class IkmanScraper:
                 return total_found, total_new
 
             main_base = "https://ikman.lk/en/ads/sri-lanka/property?sort=date&order=desc&buy_now=0&urgent=0&page="
+            main_duplicate_stop = int(os.getenv("SCRAPER_STOP_AFTER_BLOCKS", "3"))
             found, new = await _scrape_url(
                 base_url=main_base,
                 max_pages=main_pages,
                 label="sri-lanka",
                 kind="main",
                 min_pages=1,
-                duplicate_stop_pages=1,
+                duplicate_stop_pages=main_duplicate_stop,
             )
             totals["found"] += found
             totals["new"] += new

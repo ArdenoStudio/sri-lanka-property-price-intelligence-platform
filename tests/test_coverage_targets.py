@@ -31,8 +31,8 @@ def test_thin_districts_receive_larger_page_budgets():
         run_date=date(2026, 5, 30),
     )
     by_district = {target.district: target for target in targets if target.kind == "district"}
-    assert by_district["Mullaitivu"].pages == 15
-    assert by_district["Colombo"].pages == 2
+    assert by_district["Mullaitivu"].pages == 20
+    assert by_district["Colombo"].pages == 3
 
 
 def test_alias_rotation_is_deterministic_by_date():
