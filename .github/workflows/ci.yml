@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install test dependencies
-        run: pip install pytest sqlalchemy structlog
+        run: pip install pytest sqlalchemy structlog httpx beautifulsoup4
       - name: Run tests
         run: pytest tests/ -v
 
