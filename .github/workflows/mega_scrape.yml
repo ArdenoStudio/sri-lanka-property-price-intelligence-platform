@@ -44,6 +44,8 @@ jobs:
           SCRAPER_BACKOFF_BASE_SECONDS: 5
           SCRAPER_BACKOFF_MAX_SECONDS: 60
           SCRAPER_STOP_AFTER_BLOCKS: 3
+          ONLINEPROPERTY_READ_TIMEOUT: 90
+          ONLINEPROPERTY_CONNECT_TIMEOUT: 15
           LOG_LEVEL: INFO
         run: python3 run_all_scrapers.py --mega
 
