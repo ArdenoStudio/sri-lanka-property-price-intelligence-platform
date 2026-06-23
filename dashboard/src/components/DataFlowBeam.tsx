@@ -123,16 +123,16 @@ const UserIcon     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill=
 // ─── Main export ───────────────────────────────────────────────────────────
 export function DataFlowBeam() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const ikmanRef     = useRef<HTMLDivElement>(null);
-  const lpwRef       = useRef<HTMLDivElement>(null);
-  const houseLkRef   = useRef<HTMLDivElement>(null);
+  const ikmanRef           = useRef<HTMLDivElement>(null);
+  const onlinePropertyRef  = useRef<HTMLDivElement>(null);
+  const houseLkRef         = useRef<HTMLDivElement>(null);
   const scraperRef   = useRef<HTMLDivElement>(null);
   const cleanerRef   = useRef<HTMLDivElement>(null);
   const dbRef        = useRef<HTMLDivElement>(null);
   const youRef       = useRef<HTMLDivElement>(null);
 
   const [positions, setPositions] = useState<Record<string, Pos | null>>({
-    ikman: null, lpw: null, houseLk: null, scraper: null, cleaner: null, db: null, you: null,
+    ikman: null, onlineProperty: null, houseLk: null, scraper: null, cleaner: null, db: null, you: null,
   });
   const [svgSize, setSvgSize] = useState({ w: 0, h: 0 });
 
@@ -143,9 +143,9 @@ export function DataFlowBeam() {
     const get = (ref: React.RefObject<HTMLDivElement | null>) =>
       ref.current ? getCenter(ref.current, c) : null;
     setPositions({
-      ikman:   get(ikmanRef),
-      lpw:     get(lpwRef),
-      houseLk: get(houseLkRef),
+      ikman:           get(ikmanRef),
+      onlineProperty:  get(onlinePropertyRef),
+      houseLk:         get(houseLkRef),
       scraper: get(scraperRef),
       cleaner: get(cleanerRef),
       db:      get(dbRef),
@@ -198,9 +198,9 @@ export function DataFlowBeam() {
           </defs>
 
           {/* Sources → Scraper */}
-          <Beam from={p.ikman}   to={p.scraper} duration={2.0} delay={0}    color="rgba(129,140,248,0.9)" />
-          <Beam from={p.lpw}     to={p.scraper} duration={2.0} delay={0.25} color="rgba(129,140,248,0.9)" />
-          <Beam from={p.houseLk} to={p.scraper} duration={2.0} delay={0.5}  color="rgba(129,140,248,0.9)" />
+          <Beam from={p.ikman}           to={p.scraper} duration={2.0} delay={0}    color="rgba(129,140,248,0.9)" />
+          <Beam from={p.onlineProperty}  to={p.scraper} duration={2.0} delay={0.25} color="rgba(129,140,248,0.9)" />
+          <Beam from={p.houseLk}         to={p.scraper} duration={2.0} delay={0.5}  color="rgba(129,140,248,0.9)" />
           {/* Scraper → Cleaner */}
           <Beam from={p.scraper} to={p.cleaner} duration={2.0} delay={1.0}  color="rgba(167,139,250,0.9)" />
           {/* Cleaner → DB */}
@@ -214,9 +214,9 @@ export function DataFlowBeam() {
             Desktop: flex-col stacked on the left                        */}
         <div className="flex flex-row sm:flex-col justify-around sm:justify-start
                         gap-2 sm:gap-4 z-10 w-full sm:w-auto">
-          <Node ref={ikmanRef}   label="ikman.lk" sub="source 1"><span className="text-text-muted"><GlobeIcon /></span></Node>
-          <Node ref={lpwRef}     label="LPW"      sub="source 2"><span className="text-text-muted"><GlobeIcon /></span></Node>
-          <Node ref={houseLkRef} label="house.lk" sub="source 3"><span className="text-text-muted"><GlobeIcon /></span></Node>
+          <Node ref={ikmanRef}          label="ikman.lk"          sub="source 1"><span className="text-text-muted"><GlobeIcon /></span></Node>
+          <Node ref={onlinePropertyRef} label="onlineproperty.lk" sub="source 2"><span className="text-text-muted"><GlobeIcon /></span></Node>
+          <Node ref={houseLkRef}        label="house.lk"          sub="source 3"><span className="text-text-muted"><GlobeIcon /></span></Node>
         </div>
 
         {/* ── Pipeline nodes ─────────────────────────────────────────────

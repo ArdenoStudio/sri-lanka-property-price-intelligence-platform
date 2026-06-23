@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 20 * * *'   # 2 AM Sri Lanka time (UTC+5:30 → 8:30 PM UTC prev day ≈ 20:00 UTC)
   workflow_dispatch:        # Allow manual trigger from GitHub UI
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/trigger-daily-scrape'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
