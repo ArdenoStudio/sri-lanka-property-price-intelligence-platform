@@ -32,7 +32,6 @@ function statusColor(status: PipelineJobStatus['status']) {
 
 const LABELS: Record<string, string> = {
   scrape_ikman: 'Ikman',
-  scrape_lpw: 'LPW',
   scrape_onlineproperty: 'OnlineProperty',
   scrape_lamudi: 'house.lk',
   clean_listings: 'Cleaner',
@@ -68,7 +67,7 @@ export function PipelineStatus({ status }: Props) {
           {/* Skeleton jobs */}
           {loading ? (
             <>
-              {Array.from({ length: 7 }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex-1 flex items-center gap-2.5 px-5 py-4">
                   <div className="w-3 h-3 rounded-full bg-white/[0.06] animate-pulse shrink-0" />
                   <div className="min-w-0 flex flex-col gap-1.5">
