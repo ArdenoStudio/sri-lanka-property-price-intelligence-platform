@@ -11,7 +11,7 @@ env:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 240
 
     steps:
       - name: Checkout code
@@ -49,7 +49,11 @@ jobs:
           ONLINEPROPERTY_READ_TIMEOUT: 90
           ONLINEPROPERTY_CONNECT_TIMEOUT: 15
           LOG_LEVEL: INFO
-        run: python3 run_all_scrapers.py --coverage --skip-processing
+        run: >-
+          python3 run_all_scrapers.py --coverage --skip-processing
+          --ikman-pages 75 --lpw-pages 25 --lamudi-pages 35
+          --onlineproperty-pages 50
+          --subdistricts-per-district 3 --subdistrict-pages 3
 
       - name: Upload logs on failure
         if: failure()

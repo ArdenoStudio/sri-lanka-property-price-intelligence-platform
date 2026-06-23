@@ -318,6 +318,7 @@ class LamudiScraper:
             page = await context.new_page()
 
             consecutive_blocks = 0
+            consecutive_duplicate_pages = 0
 
             # Warm up — visit homepage first so Cloudflare sees a natural session
             try:
@@ -330,6 +331,8 @@ class LamudiScraper:
                 if consecutive_blocks >= self.stop_after_blocks:
                     log.warning("houseLk_too_many_blocks_stopping")
                     break
+
+                consecutive_duplicate_pages = 0
 
                 for page_num in range(1, max_pages + 1):
                     url = _page_url(target["url"], page_num)
@@ -354,8 +357,16 @@ class LamudiScraper:
                     total_new += new
                     log.info("houseLk_page_done", url=url, found=found, new=new)
 
+                    if new == 0:
+                        consecutive_duplicate_pages += 1
+                    else:
+                        consecutive_duplicate_pages = 0
+
                     # Stop paginating early if we're hitting all duplicates
-                    if new == 0 and page_num > 2:
+                    if (
+                        page_num >= 2
+                        and consecutive_duplicate_pages >= self.stop_after_blocks
+                    ):
                         log.info("houseLk_all_duplicates_stopping", url=url, page=page_num)
                         break
 
