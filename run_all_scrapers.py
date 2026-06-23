@@ -179,7 +179,23 @@ async def run_onlineproperty(max_pages: int = 30):
     log.info("scraper_starting", source="onlineproperty", max_pages=max_pages)
     try:
         result = await scrape_onlineproperty(db, max_pages=max_pages)
-        return {"source": "onlineproperty", "found": result["found"], "new": result["new"], "success": True}
+        success = result.get("success", result.get("found", 0) > 0)
+        payload = {
+            "source": "onlineproperty",
+            "found": result["found"],
+            "new": result["new"],
+            "success": success,
+        }
+        if result.get("error"):
+            payload["error"] = result["error"]
+        if not success:
+            log.error(
+                "scraper_zero_yield",
+                source="onlineproperty",
+                found=result["found"],
+                error=result.get("error", "zero_yield"),
+            )
+        return payload
     except Exception as e:
         log.error("scraper_failed", source="onlineproperty", error=str(e))
         return {"source": "onlineproperty", "found": 0, "new": 0, "success": False, "error": str(e)}
@@ -289,7 +305,7 @@ async def main():
 
     args = parser.parse_args()
 
-    scrapers_to_run = args.scrapers if args.scrapers else ["ikman", "lamudi", "onlineproperty"]
+    scrapers_to_run = args.scrapers if args.scrapers else ["ikman", "lpw", "lamudi", "onlineproperty"]
 
     subdistricts_per_district = args.subdistricts_per_district
     subdistrict_pages = args.subdistrict_pages
@@ -405,7 +421,7 @@ async def main():
     print(f"COMPLETED:   {end_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print("=" * 70 + "\n")
 
-    sys.exit(0 if any(r.get("success") for r in results) else 1)
+    sys.exit(0 if all(r.get("success") for r in results if r.get("source")) else 1)
 
 
 if __name__ == "__main__":

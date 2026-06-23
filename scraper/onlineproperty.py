@@ -12,7 +12,7 @@ from datetime import datetime
 import httpx
 from bs4 import BeautifulSoup
 import structlog
-from db.models import RawListing, ListingSnapshot
+from db.models import RawListing, ListingSnapshot, ScrapeRun
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
@@ -22,18 +22,18 @@ log = structlog.get_logger()
 
 SOURCE = "onlineproperty"
 BASE = "https://onlineproperty.lk"
+WARMUP_URL = f"{BASE}/all-ads/"
 
-# All property categories available on the site
-# URL pattern: /all-ads/listing-category/<slug>/page/<n>/
+# Property categories on onlineproperty.lk (path: /listing-category/property/<slug>/)
 CATEGORIES = [
     {"slug": "houses-for-sale",              "property_type": "house",      "listing_type": "sale"},
-    {"slug": "land-for-sale",                "property_type": "land",       "listing_type": "sale"},
+    {"slug": "plots-land-for-sale",          "property_type": "land",       "listing_type": "sale"},
     {"slug": "apartments-flats-for-sale",    "property_type": "apartment",  "listing_type": "sale"},
     {"slug": "commercial-property-for-sale", "property_type": "commercial", "listing_type": "sale"},
-    {"slug": "houses-for-rent",              "property_type": "house",      "listing_type": "rent"},
-    {"slug": "annexes-for-rent",             "property_type": "house",      "listing_type": "rent"},
-    {"slug": "apartments-flats-for-rent",    "property_type": "apartment",  "listing_type": "rent"},
-    {"slug": "commercial-property-for-rent", "property_type": "commercial", "listing_type": "rent"},
+    {"slug": "houses",                       "property_type": "house",      "listing_type": "rent"},
+    {"slug": "annex-for-rent",               "property_type": "house",      "listing_type": "rent"},
+    {"slug": "apartments-flats",             "property_type": "apartment",  "listing_type": "rent"},
+    {"slug": "commercial-property",          "property_type": "commercial", "listing_type": "rent"},
 ]
 
 USER_AGENTS = [
@@ -43,23 +43,44 @@ USER_AGENTS = [
 ]
 
 
+def _client_timeout() -> httpx.Timeout:
+    """onlineproperty.lk can take 40s+ on cold cache misses; GH runners hit ReadTimeout at 20s."""
+    read = float(os.getenv("ONLINEPROPERTY_READ_TIMEOUT", "90"))
+    connect = float(os.getenv("ONLINEPROPERTY_CONNECT_TIMEOUT", "15"))
+    return httpx.Timeout(connect=connect, read=read, write=30.0, pool=15.0)
+
+
+def _request_headers() -> dict[str, str]:
+    return {
+        "User-Agent": random.choice(USER_AGENTS),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+    }
+
+
+def _format_error(exc: Exception) -> str:
+    message = str(exc).strip()
+    if message:
+        return f"{type(exc).__name__}: {message}"
+    return type(exc).__name__
+
+
 def _category_url(slug: str, page: int) -> str:
+    base = f"{BASE}/listing-category/property/{slug}"
     if page == 1:
-        return f"{BASE}/all-ads/listing-category/{slug}/"
-    return f"{BASE}/all-ads/listing-category/{slug}/page/{page}/"
+        return f"{base}/"
+    return f"{base}/page/{page}/"
 
 
 def _clean_price(raw: str) -> str:
     """Normalise price text — strip suffixes the cleaner doesn't handle."""
     if not raw:
         return ""
-    # "රු 48,500,000total price" → "රු 48,500,000"
-    # "රු 25,000per month"       → "රු 25,000 Per Month"
     s = raw
     s = s.replace("total price", "").replace("Total Price", "")
     s = s.replace("per month", " Per Month").replace("Per month", " Per Month")
     s = s.replace("per perch", " Per Perch").replace("Per perch", " Per Perch")
-    # Strip Sinhala rupee symbol — cleaner only knows Rs./LKR
     s = s.replace("රු", "Rs.")
     return re.sub(r"\s+", " ", s).strip()
 
@@ -67,12 +88,11 @@ def _clean_price(raw: str) -> str:
 def _parse_location(meta_items: list) -> str:
     """Location is usually the second meta item (first is time ago)."""
     for item in meta_items:
-        text = item.get_text(strip=True)
-        # Skip time-ago items like "1 year ago", "3 months ago"
-        if re.search(r"\d+\s+(year|month|week|day|hour|minute)", text, re.I):
+        text_value = item.get_text(strip=True)
+        if re.search(r"\d+\s+(year|month|week|day|hour|minute)", text_value, re.I):
             continue
-        if text:
-            return text
+        if text_value:
+            return text_value
     return ""
 
 
@@ -83,7 +103,6 @@ def _parse_cards(html: str, property_type: str, listing_type: str) -> list[dict]
 
     for card in cards:
         try:
-            # Title + URL
             title_el = card.select_one(".rtin-title a") or card.select_one("h2 a, h3 a, h4 a")
             if not title_el:
                 continue
@@ -92,15 +111,12 @@ def _parse_cards(html: str, property_type: str, listing_type: str) -> list[dict]
             if not url or not title:
                 continue
 
-            # Price
             price_el = card.select_one(".rtin-price")
             raw_price = _clean_price(price_el.get_text()) if price_el else ""
 
-            # Location from meta items
             meta_items = card.select(".rtin-meta li")
             raw_location = _parse_location(meta_items)
 
-            # Source ID from URL slug — capped at 100 chars (DB column limit)
             slug = url.rstrip("/").split("/")[-1]
             source_id = slug[:100] if len(slug) <= 100 else hashlib.sha1(slug.encode()).hexdigest()
 
@@ -115,7 +131,7 @@ def _parse_cards(html: str, property_type: str, listing_type: str) -> list[dict]
                 "listing_type": listing_type,
             })
         except Exception as e:
-            log.debug("onlineproperty_parse_card_error", error=str(e))
+            log.debug("onlineproperty_parse_card_error", error=_format_error(e))
 
     return items
 
@@ -126,17 +142,21 @@ async def _fetch_page(client: httpx.AsyncClient, url: str, retries: int = 3) -> 
 
     for attempt in range(retries):
         try:
-            ua = random.choice(USER_AGENTS)
-            resp = await client.get(url, headers={"User-Agent": ua}, timeout=20)
+            resp = await client.get(url, headers=_request_headers())
             if resp.status_code == 404:
-                return None  # past last page
+                return None
             if resp.status_code >= 400:
                 raise RuntimeError(f"http_{resp.status_code}")
             return resp.text
         except Exception as e:
             delay = min(backoff * (2 ** attempt), backoff_max) + random.uniform(0, backoff * 0.2)
-            log.warning("onlineproperty_page_retry", url=url, attempt=attempt + 1,
-                        delay=round(delay, 2), error=str(e))
+            log.warning(
+                "onlineproperty_page_retry",
+                url=url,
+                attempt=attempt + 1,
+                delay=round(delay, 2),
+                error=_format_error(e),
+            )
             await asyncio.sleep(delay)
     return None
 
@@ -157,7 +177,6 @@ def _upsert_listings(db: Session, items: list[dict]) -> tuple[int, int]:
             url=item["url"],
         )
 
-        # Snapshot upsert
         snap_stmt = insert(ListingSnapshot).values(
             source=item["source"],
             source_id=item["source_id"],
@@ -167,7 +186,6 @@ def _upsert_listings(db: Session, items: list[dict]) -> tuple[int, int]:
         ).on_conflict_do_nothing(index_elements=["source", "source_id", "fingerprint"])
         db.execute(snap_stmt)
 
-        # RawListing upsert
         stmt = insert(RawListing).values(
             source=item["source"],
             source_id=item["source_id"],
@@ -187,9 +205,6 @@ def _upsert_listings(db: Session, items: list[dict]) -> tuple[int, int]:
                 "scraped_at": now,
             }
         ).returning(text("(xmax = 0) AS inserted"))
-        # ON CONFLICT DO UPDATE reports rowcount=1 for updates too, so rowcount
-        # can't distinguish inserts from updates. Postgres sets xmax=0 only on a
-        # fresh insert, so (xmax = 0) is True for genuinely new rows.
         result = db.execute(stmt)
         if result.scalar():
             new_count += 1
@@ -198,15 +213,54 @@ def _upsert_listings(db: Session, items: list[dict]) -> tuple[int, int]:
     return found, new_count
 
 
+def _write_scrape_run(
+    db: Session,
+    started_at: datetime,
+    found: int,
+    new: int,
+    *,
+    status: str = "success",
+    error: str | None = None,
+):
+    try:
+        db.add(ScrapeRun(
+            source=SOURCE,
+            started_at=started_at,
+            finished_at=datetime.utcnow(),
+            status=status,
+            listings_found=found,
+            listings_new=new,
+            error_message=error,
+        ))
+        db.commit()
+    except Exception as e:
+        log.error("scrape_run_write_error", source=SOURCE, error=_format_error(e))
+        db.rollback()
+
+
 async def scrape_onlineproperty(db: Session, max_pages: int = 30) -> dict:
     """Scrape all property categories from onlineproperty.lk."""
+    started_at = datetime.utcnow()
     total_found = 0
     total_new = 0
     stop_after_dupes = int(os.getenv("SCRAPER_STOP_AFTER_BLOCKS", "3"))
 
     log.info("onlineproperty_starting", max_pages=max_pages, source=SOURCE)
 
-    async with httpx.AsyncClient(follow_redirects=True) as client:
+    limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
+    async with httpx.AsyncClient(
+        follow_redirects=True,
+        timeout=_client_timeout(),
+        http2=False,
+        limits=limits,
+    ) as client:
+        warmup_html = await _fetch_page(client, WARMUP_URL, retries=2)
+        if warmup_html is None:
+            error = "site_unreachable"
+            log.error("onlineproperty_unreachable", url=WARMUP_URL)
+            _write_scrape_run(db, started_at, 0, 0, status="failed", error=error)
+            return {"found": 0, "new": 0, "error": error, "success": False}
+
         for cat in CATEGORIES:
             slug = cat["slug"]
             property_type = cat["property_type"]
@@ -218,8 +272,9 @@ async def scrape_onlineproperty(db: Session, max_pages: int = 30) -> dict:
                 html = await _fetch_page(client, url)
 
                 if html is None:
-                    log.info("onlineproperty_category_done",
-                             slug=slug, pages_scraped=page - 1)
+                    log.info("onlineproperty_category_done", slug=slug, pages_scraped=page - 1)
+                    if page == 1:
+                        log.warning("onlineproperty_category_fetch_failed", slug=slug, url=url)
                     break
 
                 items = _parse_cards(html, property_type, listing_type)
@@ -232,24 +287,26 @@ async def scrape_onlineproperty(db: Session, max_pages: int = 30) -> dict:
                 total_found += found
                 total_new += new
 
-                log.info("onlineproperty_page_done",
-                         slug=slug, page=page, found=found, new=new)
+                log.info("onlineproperty_page_done", slug=slug, page=page, found=found, new=new)
 
-                # Stop early if consecutive pages are all dupes
                 if new == 0:
                     dupe_pages += 1
                     if dupe_pages >= stop_after_dupes:
-                        log.info("onlineproperty_all_dupes_stopping",
-                                 slug=slug, page=page)
+                        log.info("onlineproperty_all_dupes_stopping", slug=slug, page=page)
                         break
                 else:
                     dupe_pages = 0
 
-                # Polite delay between pages
                 await asyncio.sleep(random.uniform(1.5, 3.0))
 
-            # Delay between categories
-            await asyncio.sleep(random.uniform(2.0, 4.0))
+            await asyncio.sleep(random.uniform(3.0, 5.0))
 
+    status = "success" if total_found > 0 else "failed"
+    error = None if total_found > 0 else "zero_yield"
+    _write_scrape_run(db, started_at, total_found, total_new, status=status, error=error)
     log.info("scraper_complete", source=SOURCE, found=total_found, new=total_new)
-    return {"found": total_found, "new": total_new}
+    result = {"found": total_found, "new": total_new}
+    if error:
+        result["error"] = error
+        result["success"] = False
+    return result
