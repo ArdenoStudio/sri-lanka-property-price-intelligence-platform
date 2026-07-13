@@ -173,13 +173,29 @@ async def run_lamudi(max_pages: int = 20):
         db.close()
 
 
-async def run_onlineproperty(max_pages: int = 30):
+async def run_onlineproperty(max_pages: int = 50):
     """Run onlineproperty.lk scraper with its own DB session."""
     db = SessionLocal()
     log.info("scraper_starting", source="onlineproperty", max_pages=max_pages)
     try:
         result = await scrape_onlineproperty(db, max_pages=max_pages)
-        return {"source": "onlineproperty", "found": result["found"], "new": result["new"], "success": True}
+        success = result.get("success", result.get("found", 0) > 0)
+        payload = {
+            "source": "onlineproperty",
+            "found": result["found"],
+            "new": result["new"],
+            "success": success,
+        }
+        if result.get("error"):
+            payload["error"] = result["error"]
+        if not success:
+            log.error(
+                "scraper_zero_yield",
+                source="onlineproperty",
+                found=result["found"],
+                error=result.get("error", "zero_yield"),
+            )
+        return payload
     except Exception as e:
         log.error("scraper_failed", source="onlineproperty", error=str(e))
         return {"source": "onlineproperty", "found": 0, "new": 0, "success": False, "error": str(e)}
@@ -270,41 +286,46 @@ async def main():
                         help="Adaptive daily coverage: main feed plus all districts and rotating subdistrict targets")
     parser.add_argument("--skip-processing", action="store_true",
                         help="Skip data cleaning and geocoding")
-    parser.add_argument("--ikman-pages", type=int, default=50,
-                        help="Max pages for ikman main feed (default: 50)")
-    parser.add_argument("--lpw-pages", type=int, default=15,
-                        help="Max pages for lpw main feed (default: 15)")
-    parser.add_argument("--lamudi-pages", type=int, default=20,
-                        help="Max pages for lamudi (default: 20)")
+    parser.add_argument("--ikman-pages", type=int, default=75,
+                        help="Max pages for ikman main feed (default: 75)")
+    parser.add_argument("--lpw-pages", type=int, default=25,
+                        help="Max pages for lpw main feed (default: 25)")
+    parser.add_argument("--lamudi-pages", type=int, default=35,
+                        help="Max pages for lamudi (default: 35)")
+    parser.add_argument("--onlineproperty-pages", type=int, default=50,
+                        help="Max pages per onlineproperty category (default: 50)")
     parser.add_argument("--district-pages", type=int, default=50,
                         help="Max pages per district for ikman and lpw (default: 50)")
     parser.add_argument("--district-target", type=int, default=750,
                         help="Clean-listing target per district before reducing adaptive district budget (default: 750)")
-    parser.add_argument("--subdistricts-per-district", type=int, default=2,
-                        help="Rotating subdistrict aliases per thin district in coverage mode (default: 2)")
-    parser.add_argument("--subdistrict-pages", type=int, default=2,
-                        help="Pages per subdistrict alias target in coverage mode (default: 2)")
+    parser.add_argument("--subdistricts-per-district", type=int, default=3,
+                        help="Rotating subdistrict aliases per thin district in coverage mode (default: 3)")
+    parser.add_argument("--subdistrict-pages", type=int, default=3,
+                        help="Pages per subdistrict alias target in coverage mode (default: 3)")
     parser.add_argument("--mega", action="store_true",
                         help="Mega mode: 500 pages, all 25 districts, implies --full")
 
     args = parser.parse_args()
 
-    scrapers_to_run = args.scrapers if args.scrapers else ["ikman", "lamudi", "onlineproperty"]
+    scrapers_to_run = args.scrapers if args.scrapers else ["ikman", "lpw", "lamudi", "onlineproperty"]
 
     subdistricts_per_district = args.subdistricts_per_district
     subdistrict_pages = args.subdistrict_pages
 
     if args.test:
         ikman_pages, lpw_pages, lamudi_pages, district_pages = 2, 1, 1, 1
+        onlineproperty_pages = 1
         subdistricts_per_district = 0
         subdistrict_pages = min(subdistrict_pages, 1)
         log.info("test_mode_enabled")
     elif args.mega:
         ikman_pages, lpw_pages, lamudi_pages, district_pages = 500, 500, 500, 500
+        onlineproperty_pages = 500
     else:
         ikman_pages = args.ikman_pages
         lpw_pages = args.lpw_pages
         lamudi_pages = args.lamudi_pages
+        onlineproperty_pages = args.onlineproperty_pages
         district_pages = args.district_pages
 
     full_scrape = args.full or args.mega
@@ -322,6 +343,7 @@ async def main():
     if coverage:
         print(f"District target:{args.district_target}")
         print(f"Subdistricts:   {subdistricts_per_district} per thin district, {subdistrict_pages} page(s) each")
+        print(f"OnlineProp pgs:{onlineproperty_pages} per category")
     print(f"Parallelism:    {'yes - scrapers run simultaneously' if len(scrapers_to_run) > 1 else 'single scraper'}")
     print(f"Time:           {start_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print("=" * 70 + "\n")
@@ -350,7 +372,7 @@ async def main():
     if "lamudi" in scrapers_to_run:
         tasks.append(run_lamudi(max_pages=lamudi_pages))
     if "onlineproperty" in scrapers_to_run:
-        tasks.append(run_onlineproperty(max_pages=30 if not args.test else 1))
+        tasks.append(run_onlineproperty(max_pages=onlineproperty_pages))
 
     scraper_results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -405,7 +427,7 @@ async def main():
     print(f"COMPLETED:   {end_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print("=" * 70 + "\n")
 
-    sys.exit(0 if any(r.get("success") for r in results) else 1)
+    sys.exit(0 if all(r.get("success") for r in results if r.get("source")) else 1)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 20 * * *'   # 2 AM Sri Lanka time (UTC+5:30 → 8:30 PM UTC prev day ≈ 20:00 UTC)
   workflow_dispatch:        # Allow manual trigger from GitHub UI
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/trigger-daily-scrape'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -11,7 +15,7 @@ env:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 240
 
     steps:
       - name: Checkout code
@@ -46,8 +50,14 @@ jobs:
           SCRAPER_BACKOFF_BASE_SECONDS: 5
           SCRAPER_BACKOFF_MAX_SECONDS: 60
           SCRAPER_STOP_AFTER_BLOCKS: 5
+          ONLINEPROPERTY_READ_TIMEOUT: 90
+          ONLINEPROPERTY_CONNECT_TIMEOUT: 15
           LOG_LEVEL: INFO
-        run: python3 run_all_scrapers.py --scrapers ikman lamudi onlineproperty --full --district-pages 50
+        run: >-
+          python3 run_all_scrapers.py --coverage --skip-processing
+          --ikman-pages 75 --lpw-pages 25 --lamudi-pages 35
+          --onlineproperty-pages 50
+          --subdistricts-per-district 3 --subdistrict-pages 3
 
       - name: Upload logs on failure
         if: failure()
