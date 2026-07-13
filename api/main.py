@@ -31,6 +31,7 @@ def _configured_cors_origins() -> list[str]:
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "https://property-price-intelligence.vercel.app",
+        "https://propertylk-one.vercel.app",
     ]
 
 # CORS - allow dashboard frontends

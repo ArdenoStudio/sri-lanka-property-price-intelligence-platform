@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white" />
     <img src="https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB" />
     <img src="https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white" />
-    <img src="https://img.shields.io/badge/Deployed-Fly.io-7B36ED?style=flat" />
+    <img src="https://img.shields.io/badge/Deployed-AWS%20Lambda-FF9900?style=flat&logo=awslambda&logoColor=white" />
     <img src="https://img.shields.io/badge/Frontend-Vercel-black?style=flat&logo=vercel" />
   </p>
 </div>
@@ -36,7 +36,7 @@ A full-stack real estate intelligence platform that aggregates, cleans, and anal
 | Frontend | React + Vite + Tailwind CSS |
 | Scraping | Playwright (ikman), httpx + BeautifulSoup (LPW, house.lk) |
 | Geocoding | Nominatim / OSM |
-| Deployment | Fly.io (API) + Vercel (frontend) |
+| Deployment | AWS Lambda + Function URL (API) + Vercel (frontend) |
 
 ## Project Structure
 
@@ -54,9 +54,7 @@ A full-stack real estate intelligence platform that aggregates, cleans, and anal
 ├── _lpw_catchup_runner.py
 ├── _houseLk_catchup_runner.py
 ├── _process_runner.py  # Cleaner → geocoder → aggregates pipeline
-├── Dockerfile
-├── fly.toml            # Fly.io deployment config
-└── render.yaml         # Render deployment config (alternative)
+└── requirements-lambda.txt  # Slim dependency set for the Lambda deploy
 ```
 
 ## Local Setup
@@ -96,15 +94,15 @@ python _process_runner.py
 
 ## Deployment
 
-### API (Fly.io)
+### API (AWS Lambda)
+Deploys automatically on push to `master` via [.github/workflows/aws-lambda-deploy.yml](.github/workflows/aws-lambda-deploy.yml), or manually with:
 ```bash
-fly launch --no-deploy        # first time only
-fly secrets set DATABASE_URL="..." GROQ_API_KEY="..."
-fly deploy
+gh workflow run aws-lambda-deploy.yml --ref <branch>
 ```
+The function is exposed via a Lambda Function URL (see AWS Console → Lambda → `property-price-api` → Configuration → Function URL).
 
 ### Frontend (Vercel)
-Set `VITE_API_URL` to your Fly.io app URL in Vercel environment variables, then push to trigger a deploy.
+Set `VITE_API_URL` to the Lambda Function URL in Vercel environment variables, then push to trigger a deploy.
 
 ## Database Migrations
 
