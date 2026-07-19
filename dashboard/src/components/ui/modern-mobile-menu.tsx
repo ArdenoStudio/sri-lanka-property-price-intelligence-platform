@@ -68,7 +68,7 @@ const InteractiveMenu: React.FC<InteractiveMenuProps> = ({ items, accentColor })
   }, [finalItems]);
 
   const navStyle = useMemo(() => {
-    const color = accentColor || '#14b8a6';
+    const color = accentColor || '#f5f5f5';
     return { '--mobile-menu-accent': color } as React.CSSProperties;
   }, [accentColor]);
 

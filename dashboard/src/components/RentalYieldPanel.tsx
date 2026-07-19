@@ -13,9 +13,9 @@ interface Props {
 }
 
 const CONFIDENCE_STYLES: Record<string, string> = {
-  high:   'bg-emerald-500/[0.12] text-emerald-400 border-emerald-500/20',
-  medium: 'bg-amber-500/[0.12] text-amber-400 border-amber-500/20',
-  low:    'bg-red-500/[0.12] text-red-400 border-red-500/20',
+  high:   'bg-white/[0.08] text-white border-white/20',
+  medium: 'bg-white/[0.06] text-[#a3a3a3] border-white/15',
+  low:    'bg-white/[0.04] text-[#737373] border-white/10',
 };
 
 const CONFIDENCE_COPY: Record<string, string> = {
@@ -33,26 +33,26 @@ const PROPERTY_LABELS: Record<string, string> = {
 function getYieldTone(yieldPct: number) {
   if (yieldPct >= 7) {
     return {
-      value: 'text-emerald-300',
-      panel: 'border-emerald-500/20 bg-emerald-500/[0.07]',
-      bar: 'bg-emerald-400',
+      value: 'text-white',
+      panel: 'border-white/20 bg-white/[0.08]',
+      bar: 'bg-white',
       label: 'Higher gross yield',
     };
   }
 
   if (yieldPct >= 4) {
     return {
-      value: 'text-amber-200',
-      panel: 'border-amber-500/20 bg-amber-500/[0.07]',
-      bar: 'bg-amber-400',
+      value: 'text-[#a3a3a3]',
+      panel: 'border-white/15 bg-white/[0.06]',
+      bar: 'bg-white/60',
       label: 'Mid-range gross yield',
     };
   }
 
   return {
-    value: 'text-rose-200',
-    panel: 'border-rose-500/20 bg-rose-500/[0.07]',
-    bar: 'bg-rose-400',
+    value: 'text-[#a3a3a3]',
+    panel: 'border-white/15 bg-white/[0.06]',
+    bar: 'bg-white/30',
     label: 'Lower gross yield',
   };
 }
@@ -120,7 +120,7 @@ export function RentalYieldPanel({ district, propertyType, listingType, bedrooms
     return (
       <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-8 h-8 rounded-xl bg-[#14b8a6]/[0.1] border border-[#14b8a6]/20 flex items-center justify-center shrink-0 animate-pulse" />
+          <div className="w-8 h-8 rounded-xl bg-[#f5f5f5]/[0.1] border border-[#f5f5f5]/20 flex items-center justify-center shrink-0 animate-pulse" />
           <div className="space-y-2">
             <div className="h-4 w-44 bg-white/[0.05] rounded animate-pulse" />
             <div className="h-3 w-64 bg-white/[0.04] rounded animate-pulse" />
@@ -140,8 +140,8 @@ export function RentalYieldPanel({ district, propertyType, listingType, bedrooms
     return (
       <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-8 h-8 rounded-xl bg-[#14b8a6]/[0.1] border border-[#14b8a6]/20 flex items-center justify-center shrink-0">
-            <TrendingUp className="w-4 h-4 text-[#14b8a6]" />
+          <div className="w-8 h-8 rounded-xl bg-[#f5f5f5]/[0.1] border border-[#f5f5f5]/20 flex items-center justify-center shrink-0">
+            <TrendingUp className="w-4 h-4 text-[#f5f5f5]" />
           </div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252]">Rental Yield Estimate</p>
         </div>
@@ -162,8 +162,8 @@ export function RentalYieldPanel({ district, propertyType, listingType, bedrooms
     <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-6">
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-xl bg-[#14b8a6]/[0.1] border border-[#14b8a6]/20 flex items-center justify-center shrink-0">
-            <TrendingUp className="w-4 h-4 text-[#14b8a6]" />
+          <div className="w-8 h-8 rounded-xl bg-[#f5f5f5]/[0.1] border border-[#f5f5f5]/20 flex items-center justify-center shrink-0">
+            <TrendingUp className="w-4 h-4 text-[#f5f5f5]" />
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252]">Rental Yield Estimate</p>

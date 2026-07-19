@@ -29,10 +29,11 @@ export interface DealScoreBand {
 
 export const DEAL_SCORE_LIGHT_SURFACE_TOKENS = {
   bg: '#ffffffb8',
-  border: '#64748b24',
-  shadow: '0 12px 36px rgba(15, 23, 42, 0.08)',
+  border: '#0a0a0a18',
+  shadow: '0 12px 36px rgba(0, 0, 0, 0.08)',
 } as const;
 
+/** Strict B&W band inks: much-lower = brightest, typical = mid, much-higher = muted. */
 export const DEAL_SCORE_BANDS: DealScoreBand[] = [
   {
     id: 'much-higher',
@@ -42,13 +43,13 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
     detailLabel: 'Much higher than similar homes',
     description: 'The asking price is well above the usual range for comparable listings.',
     tone: {
-      accent: '#c65a43',
-      fgDark: '#fdc5b6',
-      bgDark: 'rgba(198, 90, 67, 0.14)',
-      borderDark: 'rgba(198, 90, 67, 0.28)',
-      fgLight: '#8d321d',
-      bgLight: '#c65a431c',
-      borderLight: '#8d321d2e',
+      accent: 'rgba(255, 255, 255, 0.38)',
+      fgDark: 'rgba(255, 255, 255, 0.42)',
+      bgDark: 'rgba(255, 255, 255, 0.03)',
+      borderDark: 'rgba(255, 255, 255, 0.12)',
+      fgLight: '#737373',
+      bgLight: 'rgba(10, 10, 10, 0.03)',
+      borderLight: 'rgba(10, 10, 10, 0.12)',
     },
   },
   {
@@ -59,13 +60,13 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
     detailLabel: 'A bit higher than similar homes',
     description: 'The asking price is above comparable listings, but not dramatically so.',
     tone: {
-      accent: '#c98928',
-      fgDark: '#f8d48a',
-      bgDark: 'rgba(201, 137, 40, 0.14)',
-      borderDark: 'rgba(201, 137, 40, 0.28)',
-      fgLight: '#86520e',
-      bgLight: '#c989281f',
-      borderLight: '#86520e2e',
+      accent: 'rgba(255, 255, 255, 0.52)',
+      fgDark: 'rgba(255, 255, 255, 0.58)',
+      bgDark: 'rgba(255, 255, 255, 0.045)',
+      borderDark: 'rgba(255, 255, 255, 0.16)',
+      fgLight: '#525252',
+      bgLight: 'rgba(10, 10, 10, 0.04)',
+      borderLight: 'rgba(10, 10, 10, 0.16)',
     },
   },
   {
@@ -76,13 +77,13 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
     detailLabel: 'Close to the usual range',
     description: 'The asking price is roughly in line with similar listings.',
     tone: {
-      accent: '#7c8ca3',
-      fgDark: '#d8e1ed',
-      bgDark: 'rgba(124, 140, 163, 0.12)',
-      borderDark: 'rgba(124, 140, 163, 0.24)',
-      fgLight: '#526173',
-      bgLight: '#7c8ca31c',
-      borderLight: '#52617329',
+      accent: 'rgba(255, 255, 255, 0.68)',
+      fgDark: 'rgba(255, 255, 255, 0.72)',
+      bgDark: 'rgba(255, 255, 255, 0.06)',
+      borderDark: 'rgba(255, 255, 255, 0.2)',
+      fgLight: '#404040',
+      bgLight: 'rgba(10, 10, 10, 0.05)',
+      borderLight: 'rgba(10, 10, 10, 0.2)',
     },
   },
   {
@@ -93,13 +94,13 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
     detailLabel: 'A bit lower than similar homes',
     description: 'The asking price is below comparable listings without being unusually low.',
     tone: {
-      accent: '#168b96',
-      fgDark: '#a8edf3',
-      bgDark: 'rgba(22, 139, 150, 0.14)',
-      borderDark: 'rgba(22, 139, 150, 0.28)',
-      fgLight: '#0d5f67',
-      bgLight: '#168b961c',
-      borderLight: '#0d5f672b',
+      accent: 'rgba(255, 255, 255, 0.84)',
+      fgDark: 'rgba(255, 255, 255, 0.88)',
+      bgDark: 'rgba(255, 255, 255, 0.08)',
+      borderDark: 'rgba(255, 255, 255, 0.28)',
+      fgLight: '#262626',
+      bgLight: 'rgba(10, 10, 10, 0.06)',
+      borderLight: 'rgba(10, 10, 10, 0.28)',
     },
   },
   {
@@ -110,13 +111,13 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
     detailLabel: 'Much lower than similar homes',
     description: 'The asking price is well below the usual range for comparable listings.',
     tone: {
-      accent: '#178661',
-      fgDark: '#b4f2d8',
-      bgDark: 'rgba(23, 134, 97, 0.14)',
-      borderDark: 'rgba(23, 134, 97, 0.28)',
-      fgLight: '#0f5f43',
-      bgLight: '#1786611c',
-      borderLight: '#0f5f432b',
+      accent: '#ffffff',
+      fgDark: '#ffffff',
+      bgDark: 'rgba(255, 255, 255, 0.1)',
+      borderDark: 'rgba(255, 255, 255, 0.36)',
+      fgLight: '#0a0a0a',
+      bgLight: 'rgba(10, 10, 10, 0.07)',
+      borderLight: 'rgba(10, 10, 10, 0.36)',
     },
   },
 ];
@@ -159,7 +160,7 @@ export function getDetailSentence(score: number): string {
 export function getSurfaceTone(band: DealScoreBand, surface: DealScoreSurface) {
   return surface === 'light'
     ? {
-        accent: band.tone.accent,
+        accent: band.tone.fgLight,
         fg: band.tone.fgLight,
         bg: band.tone.bgLight,
         border: band.tone.borderLight,

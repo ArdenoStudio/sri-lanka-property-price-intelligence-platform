@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import type { PriceSnapshot } from '../api';
 import { formatCurrencyAmount } from '../lib/pricing';
+import { chartTheme } from '../lib/chartTheme';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -86,8 +87,14 @@ function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   const val = payload[0]?.value;
   return (
-    <div className="bg-[#161616] border border-white/[0.1] rounded-xl px-3 py-2 shadow-xl">
-      <p className="text-[10px] text-[#525252] mb-0.5">{label}</p>
+    <div
+      className="rounded-xl px-3 py-2 shadow-xl"
+      style={{
+        backgroundColor: chartTheme.tooltipBg,
+        border: `1px solid ${chartTheme.tooltipBorder}`,
+      }}
+    >
+      <p className="text-[10px] mb-0.5" style={{ color: chartTheme.axis }}>{label}</p>
       <p className="text-[13px] font-bold text-white num">
         {val != null ? formatCurrencyAmount(val, 'LKR', { variant: 'table' }) : '—'}
       </p>
@@ -112,7 +119,7 @@ export function PriceHistoryChart(props: Props) {
         <Line
           type="monotone"
           dataKey="price"
-          stroke="#14b8a6"
+          stroke={chartTheme.series}
           strokeWidth={1.5}
           dot={false}
           isAnimationActive={false}
@@ -129,7 +136,7 @@ export function PriceHistoryChart(props: Props) {
 
   if (chartData.length === 0) {
     return (
-      <div className="h-[200px] flex items-center justify-center text-[#525252] text-[13px]">
+      <div className="h-[200px] flex items-center justify-center text-[13px]" style={{ color: chartTheme.axis }}>
         No price history available
       </div>
     );
@@ -146,15 +153,15 @@ export function PriceHistoryChart(props: Props) {
         <AreaChart data={chartData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id={`ph-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.18} />
-              <stop offset="70%" stopColor="#14b8a6" stopOpacity={0.05} />
-              <stop offset="100%" stopColor="#14b8a6" stopOpacity={0} />
+              <stop offset="0%" stopColor="#ffffff" stopOpacity={0.14} />
+              <stop offset="70%" stopColor="#ffffff" stopOpacity={0.04} />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} vertical={false} />
           <XAxis
             dataKey="date"
-            tick={{ fontSize: 10, fill: '#525252' }}
+            tick={{ fontSize: 10, fill: chartTheme.axis }}
             axisLine={false}
             tickLine={false}
             interval="preserveStartEnd"
@@ -162,20 +169,20 @@ export function PriceHistoryChart(props: Props) {
           <YAxis
             domain={[Math.max(0, minPrice - padding), maxPrice + padding]}
             tickFormatter={formatY}
-            tick={{ fontSize: 10, fill: '#525252' }}
+            tick={{ fontSize: 10, fill: chartTheme.axis }}
             axisLine={false}
             tickLine={false}
             width={48}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: chartTheme.grid, strokeWidth: 1 }} />
           <Area
             type="monotone"
             dataKey="price"
-            stroke="#14b8a6"
+            stroke={chartTheme.series}
             strokeWidth={2}
             fill={`url(#ph-${gradientId})`}
             dot={false}
-            activeDot={{ r: 4, fill: '#14b8a6', stroke: '#000', strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: chartTheme.series, stroke: '#000', strokeWidth: 2 }}
             isAnimationActive={true}
             animationDuration={600}
           />

@@ -24,9 +24,9 @@ function BlueprintGrid() {
           <path
             d="M 24 0 L 0 0 0 24"
             fill="none"
-            stroke="#14b8a6"
+            stroke="#ffffff"
             strokeWidth="0.5"
-            strokeOpacity="0.05"
+            strokeOpacity="0.15"
           />
         </pattern>
 
@@ -40,9 +40,9 @@ function BlueprintGrid() {
           <path
             d="M 120 0 L 0 0 0 120"
             fill="none"
-            stroke="#14b8a6"
+            stroke="#ffffff"
             strokeWidth="1"
-            strokeOpacity="0.12"
+            strokeOpacity="0.15"
           />
         </pattern>
 

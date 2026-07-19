@@ -45,9 +45,9 @@ function StatTile({
 }) {
   const valueClass =
     tone === 'accent'
-      ? 'text-[#5eead4]'
+      ? 'text-[#e5e5e5]'
       : tone === 'warning'
-        ? 'text-amber-300'
+        ? 'text-[#a3a3a3]'
         : 'text-white';
 
   return (
@@ -95,8 +95,8 @@ export function MortgageCalculator({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-2xl bg-[#14b8a6]/[0.1] border border-[#14b8a6]/20 flex items-center justify-center shrink-0">
-                <Calculator className="w-4 h-4 text-[#14b8a6]" />
+              <div className="w-9 h-9 rounded-2xl bg-[#f5f5f5]/[0.1] border border-[#f5f5f5]/20 flex items-center justify-center shrink-0">
+                <Calculator className="w-4 h-4 text-[#f5f5f5]" />
               </div>
               <p className="text-[10px] uppercase tracking-[0.24em] text-[#525252] font-assumptions">
                 {SECTION_LABELS[variant]}
@@ -154,24 +154,24 @@ export function MortgageCalculator({
                 onClick={() => handleBankChange(option.shortName)}
                 className={`rounded-2xl border p-4 text-left transition-colors cursor-pointer ${
                   isSelected
-                    ? 'border-[#14b8a6]/50 bg-[#14b8a6]/[0.08]'
+                    ? 'border-white bg-white text-black'
                     : 'border-white/[0.08] bg-[#0d0d0d] hover:border-white/[0.16]'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[13px] text-white font-semibold">{option.shortName}</p>
-                    <p className="text-[11px] text-[#737373] mt-1 leading-relaxed font-assumptions">{option.bank}</p>
+                    <p className={`text-[13px] font-semibold ${isSelected ? 'text-black' : 'text-white'}`}>{option.shortName}</p>
+                    <p className={`text-[11px] mt-1 leading-relaxed font-assumptions ${isSelected ? 'text-black/60' : 'text-[#737373]'}`}>{option.bank}</p>
                   </div>
                   <span className={`text-[11px] rounded-full px-2.5 py-1 border font-assumptions ${
                     isSelected
-                      ? 'border-[#14b8a6]/40 bg-[#14b8a6]/[0.12] text-[#5eead4]'
+                      ? 'border-black/20 bg-black/10 text-black'
                       : 'border-white/[0.08] bg-white/[0.04] text-[#a3a3a3]'
                   }`}>
                     {option.defaultRate.toFixed(1)}%
                   </span>
                 </div>
-                <p className="text-[11px] text-[#525252] mt-4 font-assumptions">
+                <p className={`text-[11px] mt-4 font-assumptions ${isSelected ? 'text-black/50' : 'text-[#525252]'}`}>
                   Range {option.minRate.toFixed(1)}% – {option.maxRate.toFixed(1)}%
                 </p>
               </button>
@@ -197,7 +197,7 @@ export function MortgageCalculator({
                     onClick={() => setDownPct(preset)}
                     className={`px-4 py-2 rounded-full text-[13px] cursor-pointer border transition-colors ${
                       downPct === preset
-                        ? 'bg-[#14b8a6] text-black border-[#14b8a6]'
+                        ? 'bg-white text-black border-white'
                         : 'bg-transparent text-[#737373] border-white/[0.08] hover:text-white hover:border-white/[0.16]'
                     }`}
                   >
@@ -218,7 +218,7 @@ export function MortgageCalculator({
                     onClick={() => setTenure(option)}
                     className={`px-4 py-2 rounded-full text-[13px] cursor-pointer border transition-colors ${
                       tenure === option
-                        ? 'bg-[#14b8a6] text-black border-[#14b8a6]'
+                        ? 'bg-white text-black border-white'
                         : 'bg-transparent text-[#737373] border-white/[0.08] hover:text-white hover:border-white/[0.16]'
                     }`}
                   >
@@ -249,7 +249,7 @@ export function MortgageCalculator({
                   step={0.1}
                   value={customRate}
                   onChange={e => setCustomRate(Number(e.target.value))}
-                  className="w-32 bg-[#161616] border border-white/[0.08] rounded-xl px-3 py-2 text-white text-[15px] focus:outline-none focus:border-[#14b8a6]/40 transition-colors num font-assumptions"
+                  className="w-32 bg-[#161616] border border-white/[0.08] rounded-xl px-3 py-2 text-white text-[15px] focus:outline-none focus:border-[#f5f5f5]/40 transition-colors num font-assumptions"
                 />
                 <span className="text-[13px] text-[#737373] font-assumptions">% per annum</span>
               </div>

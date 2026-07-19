@@ -155,33 +155,33 @@ const METRIC_ROWS: MetricRow[] = [
 
 const SLOT_ACCENTS = [
   {
-    bar: 'bg-accent',
-    badge: 'border-accent/25 bg-accent/10 text-accent-light',
-    button: 'border-accent/20 bg-accent/10 text-accent-light hover:bg-accent/16',
+    bar: 'bg-white',
+    badge: 'border-white/20 bg-white/10 text-white',
+    button: 'border-white/20 bg-white/10 text-white hover:bg-white/15',
   },
   {
-    bar: 'bg-emerald-400',
-    badge: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
-    button: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/16',
+    bar: 'bg-white/70',
+    badge: 'border-white/15 bg-white/[0.08] text-[#e5e5e5]',
+    button: 'border-white/15 bg-white/[0.08] text-[#e5e5e5] hover:bg-white/12',
   },
   {
-    bar: 'bg-amber-400',
-    badge: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
-    button: 'border-amber-400/20 bg-amber-400/10 text-amber-300 hover:bg-amber-400/16',
+    bar: 'bg-white/50',
+    badge: 'border-white/12 bg-white/[0.06] text-[#a3a3a3]',
+    button: 'border-white/12 bg-white/[0.06] text-[#a3a3a3] hover:bg-white/10',
   },
   {
-    bar: 'bg-sky-400',
-    badge: 'border-sky-400/25 bg-sky-400/10 text-sky-300',
-    button: 'border-sky-400/20 bg-sky-400/10 text-sky-300 hover:bg-sky-400/16',
+    bar: 'bg-white/35',
+    badge: 'border-white/10 bg-white/[0.04] text-[#737373]',
+    button: 'border-white/10 bg-white/[0.04] text-[#737373] hover:bg-white/[0.08]',
   },
 ];
 
 function cellToneClass(tone: CellTone, emphasized: boolean): string {
   if (tone === 'muted') return 'text-text-muted/60';
-  if (emphasized) return 'text-success';
-  if (tone === 'accent') return 'text-accent-light';
-  if (tone === 'positive') return 'text-success';
-  if (tone === 'negative') return 'text-danger';
+  if (emphasized) return 'text-white font-bold underline underline-offset-4 decoration-white/70';
+  if (tone === 'accent') return 'text-white';
+  if (tone === 'positive') return 'text-white font-semibold';
+  if (tone === 'negative') return 'text-[#a3a3a3]';
   return 'text-text-primary';
 }
 
@@ -241,7 +241,7 @@ export function ComparisonModal({
 
             <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-4 py-4 sm:px-6">
               <div className="flex items-start gap-3 min-w-0">
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border border-accent/20 bg-accent/10 text-accent-light">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.08] text-white">
                   <Scale className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
@@ -385,20 +385,18 @@ export function ComparisonModal({
                               key={`${row.id}-${listing.id}`}
                               className={`relative flex items-center px-3 py-3.5 sm:px-4 ${rowSurface}`}
                             >
-                              {isWinner && (
-                                <span className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-success" />
-                              )}
-
                               <div className="flex w-full items-center justify-between gap-3">
                                 {showDealScorePill ? (
-                                  <DealScorePill score={listing.deal_score} variant="compare" />
+                                  <span className={isWinner ? 'font-bold underline underline-offset-4 decoration-white/70' : undefined}>
+                                    <DealScorePill score={listing.deal_score} variant="compare" />
+                                  </span>
                                 ) : (
-                                  <span className={`text-[13px] font-semibold leading-5 sm:text-[14px] num font-numeric-table ${cellToneClass(cell.tone, isWinner)}`}>
+                                  <span className={`text-[13px] leading-5 sm:text-[14px] num font-numeric-table ${isWinner ? '' : 'font-semibold'} ${cellToneClass(cell.tone, isWinner)}`}>
                                     {cell.display}
                                   </span>
                                 )}
                                 {isWinner && row.winnerLabel && (
-                                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
+                                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white underline underline-offset-4 decoration-white/50">
                                     {row.winnerLabel}
                                   </span>
                                 )}

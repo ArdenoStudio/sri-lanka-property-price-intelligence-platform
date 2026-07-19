@@ -11,6 +11,7 @@ import {
 import { TrendingUp } from 'lucide-react';
 import { getPrices, type PriceHistory } from '../api';
 import { formatCurrencyAmount } from '../lib/pricing';
+import { chartTheme } from '../lib/chartTheme';
 import { EmptyStatePanel } from './ui/EmptyStatePanel';
 
 interface Props {
@@ -148,9 +149,10 @@ export function DistrictTrends({ district, propertyType, onViewListings }: Props
           {pctChange !== null && (
             <>
               <div className="w-px h-8 bg-white/[0.08]" />
-              <div className={`flex items-center gap-1 text-xs font-bold num ${
-                pctChange >= 0 ? 'text-emerald-400' : 'text-red-400'
-              }`}>
+              <div
+                className="flex items-center gap-1 text-xs font-bold num"
+                style={{ color: pctChange >= 0 ? chartTheme.pctUp : chartTheme.pctDown }}
+              >
                 <TrendingUp className={`w-3 h-3 ${pctChange < 0 ? 'rotate-180' : ''}`} />
                 {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(1)}%
               </div>
@@ -178,42 +180,41 @@ export function DistrictTrends({ district, propertyType, onViewListings }: Props
             <ComposedChart key={chartKey} data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.18} />
-                  <stop offset="70%" stopColor="#14b8a6" stopOpacity={0.05} />
-                  <stop offset="100%" stopColor="#14b8a6" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity={0.14} />
+                  <stop offset="70%" stopColor="#ffffff" stopOpacity={0.04} />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="0" vertical={false} stroke="#ffffff" strokeOpacity={0.03} />
+              <CartesianGrid strokeDasharray="0" vertical={false} stroke={chartTheme.grid} />
               <XAxis
                 dataKey="name"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#2e2e2e', fontSize: 10, fontWeight: 500 }}
+                tick={{ fill: chartTheme.axis, fontSize: 10, fontWeight: 500 }}
                 dy={10}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#2e2e2e', fontSize: 10, fontWeight: 500 }}
+                tick={{ fill: chartTheme.axis, fontSize: 10, fontWeight: 500 }}
                 tickFormatter={formatCurrency}
                 width={40}
               />
               <Tooltip
-                cursor={{ stroke: 'rgba(255,255,255,0.06)', strokeWidth: 1, strokeDasharray: '3 3' }}
+                cursor={{ stroke: chartTheme.grid, strokeWidth: 1, strokeDasharray: '3 3' }}
                 contentStyle={{
-                  backgroundColor: '#161616',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  backgroundColor: chartTheme.tooltipBg,
+                  border: `1px solid ${chartTheme.tooltipBorder}`,
                   borderRadius: '12px',
-                  color: '#f5f5f5',
+                  color: chartTheme.series,
                   fontSize: '13px',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
                   padding: '12px 16px',
-                  fontFamily: 'Inter Variable, Inter, sans-serif',
                 }}
                 itemStyle={{ fontWeight: 600 }}
                 labelStyle={{
-                  color: '#525252',
+                  color: chartTheme.axis,
                   marginBottom: '4px',
                   fontSize: '10px',
                   textTransform: 'uppercase',
@@ -230,11 +231,11 @@ export function DistrictTrends({ district, propertyType, onViewListings }: Props
                 <Area
                   type="monotone"
                   dataKey="pred"
-                  stroke="rgba(255,255,255,0.22)"
+                  stroke={chartTheme.forecast}
                   strokeWidth={1.5}
                   strokeDasharray="5 5"
                   fill="none"
-                  activeDot={{ r: 4, fill: '#161616', stroke: 'rgba(255,255,255,0.4)', strokeWidth: 2 }}
+                  activeDot={{ r: 4, fill: chartTheme.tooltipBg, stroke: 'rgba(255,255,255,0.4)', strokeWidth: 2 }}
                   isAnimationActive={false}
                   connectNulls
                 />
@@ -243,12 +244,12 @@ export function DistrictTrends({ district, propertyType, onViewListings }: Props
               <Area
                 type="monotone"
                 dataKey="price"
-                stroke="#14b8a6"
+                stroke={chartTheme.series}
                 strokeWidth={1.5}
                 fillOpacity={1}
                 fill="url(#colorPrice)"
                 isAnimationActive={false}
-                activeDot={{ r: 5, fill: '#161616', stroke: '#5eead4', strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: chartTheme.tooltipBg, stroke: chartTheme.series, strokeWidth: 2 }}
                 connectNulls={false}
               />
             </ComposedChart>

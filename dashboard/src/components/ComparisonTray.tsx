@@ -57,7 +57,7 @@ export function ComparisonTray({
             <div className="flex flex-col gap-4 p-3 sm:p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0">
-                  <div className="w-11 h-11 rounded-2xl bg-accent/15 border border-accent/20 flex items-center justify-center text-accent-light flex-shrink-0">
+                  <div className="w-11 h-11 rounded-2xl bg-white/[0.08] border border-white/15 flex items-center justify-center text-white flex-shrink-0">
                     <Table className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
@@ -95,7 +95,7 @@ export function ComparisonTray({
 
                     <div className="pr-8">
                       <div className="mb-2 flex items-center justify-between gap-2">
-                        <span className="rounded-full border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-light">
+                        <span className="rounded-full border border-white/15 bg-white/[0.08] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white">
                           Listing {index + 1}
                         </span>
                         <span className="text-[10px] uppercase tracking-[0.18em] text-text-muted">
@@ -115,7 +115,7 @@ export function ComparisonTray({
                       <div className="mt-4 grid grid-cols-2 gap-2">
                         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-2.5 py-2">
                           <p className="text-[9px] uppercase tracking-[0.18em] text-text-muted">Price / perch</p>
-                          <p className="mt-1 text-[12px] font-semibold text-accent-light num font-numeric-table">
+                          <p className="mt-1 text-[12px] font-semibold text-white num font-numeric-table">
                             {item.price_per_perch ? `${formatCompactLkr(item.price_per_perch)}` : 'N/A'}
                           </p>
                         </div>
@@ -173,7 +173,7 @@ export function ComparisonTray({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={onClear}
-                    className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] text-text-muted transition-colors hover:text-danger hover:border-danger/25 cursor-pointer"
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] text-text-muted transition-colors hover:text-white hover:border-white/[0.2] cursor-pointer"
                     aria-label="Clear all from comparison"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -181,7 +181,7 @@ export function ComparisonTray({
                   <button
                     onClick={onCompare}
                     disabled={selected.length < minCompare}
-                    className="flex min-w-[176px] items-center justify-center gap-2 rounded-2xl bg-[#14b8a6] px-5 py-3 text-[13px] font-semibold text-black transition-all hover:bg-[#5eead4] disabled:bg-white/[0.08] disabled:text-white/30 disabled:hover:bg-white/[0.08] cursor-pointer disabled:cursor-not-allowed"
+                    className="flex min-w-[176px] items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-[13px] font-semibold text-black transition-all hover:bg-[#e5e5e5] disabled:bg-white/[0.08] disabled:text-white/30 disabled:hover:bg-white/[0.08] cursor-pointer disabled:cursor-not-allowed"
                   >
                     <span>{selected.length >= minCompare ? `Compare ${selected.length} listings` : 'Select 2 to compare'}</span>
                     <ArrowRight className="w-4 h-4" />

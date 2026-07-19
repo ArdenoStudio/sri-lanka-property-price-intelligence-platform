@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, forwardRef } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface Pos { x: number; y: number }
@@ -13,7 +14,6 @@ function getCenter(el: HTMLElement, container: HTMLElement): Pos {
 function cubicPath(from: Pos, to: Pos, curvature = 0.5): string {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
-  // if mostly vertical, use vertical control points instead
   const isVertical = Math.abs(dy) > Math.abs(dx);
   let cx1, cy1, cx2, cy2;
   if (isVertical) {
@@ -29,24 +29,32 @@ function cubicPath(from: Pos, to: Pos, curvature = 0.5): string {
   return `M ${from.x} ${from.y} C ${cx1} ${cy1} ${cx2} ${cy2} ${to.x} ${to.y + yOffset}`;
 }
 
-function Beam({ from, to, color = 'rgba(129,140,248,0.55)' }: {
+function Beam({ from, to, delay = 0 }: {
   from: Pos | null;
   to: Pos | null;
-  color?: string;
+  delay?: number;
 }) {
+  const reduce = useReducedMotion();
   if (!from || !to) return null;
   const d = cubicPath(from, to);
 
   return (
     <g>
-      <path d={d} stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
-      <path
+      <path d={d} stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" fill="none" />
+      <motion.path
         d={d}
         fill="none"
-        stroke={color}
-        strokeWidth="2.25"
+        stroke="rgba(245,245,245,0.55)"
+        strokeWidth="2"
         strokeLinecap="round"
-        filter="url(#beam-glow)"
+        strokeDasharray="8 12"
+        initial={false}
+        animate={reduce ? { strokeDashoffset: 0 } : { strokeDashoffset: [0, -20] }}
+        transition={
+          reduce
+            ? undefined
+            : { duration: 1.8, delay, repeat: Infinity, ease: 'linear' }
+        }
       />
     </g>
   );
@@ -69,9 +77,9 @@ const Node = forwardRef<HTMLDivElement, NodeProps>(
         ref={ref}
         className={`z-10 flex items-center justify-center rounded-full border
           ${tone === 'success'
-            ? 'w-10 h-10 sm:w-12 sm:h-12 bg-[#0f0f1a] border-emerald-400/50 shadow-[0_0_24px_rgba(16,185,129,0.35)]'
+            ? 'w-10 h-10 sm:w-12 sm:h-12 bg-[#111111] border-white/30'
             : accent
-              ? 'w-11 h-11 sm:w-14 sm:h-14 bg-[#0f0f1a] border-accent/60 shadow-[0_0_24px_rgba(99,102,241,0.35)]'
+              ? 'w-11 h-11 sm:w-14 sm:h-14 bg-[#111111] border-white/25'
               : 'w-9 h-9 sm:w-11 sm:h-11 bg-bg-card border-border'
           } ${className}`}
       >
@@ -79,13 +87,13 @@ const Node = forwardRef<HTMLDivElement, NodeProps>(
       </div>
       <div className="text-center">
         <p className={`text-[10px] sm:text-[11px] font-bold leading-tight ${
-          tone === 'success' ? 'text-emerald-200' : (accent ? 'text-white' : 'text-text-secondary')
+          tone === 'success' || accent ? 'text-white' : 'text-text-secondary'
         }`}>
           {label}
         </p>
         {sub && (
           <p className={`text-[8px] sm:text-[9px] uppercase tracking-wider mt-0.5 ${
-            tone === 'success' ? 'text-emerald-400/70' : 'text-text-muted'
+            tone === 'success' ? 'text-white/70' : 'text-text-muted'
           }`}>{sub}</p>
         )}
       </div>
@@ -145,54 +153,32 @@ export function DataFlowBeam() {
 
   return (
     <div className="relative rounded-2xl overflow-hidden border border-border bg-bg-card">
-      {/* ambient glow */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(99,102,241,0.08) 0%, transparent 70%)' }} />
+        style={{ background: 'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
 
-      {/* header */}
       <div className="relative px-5 sm:px-6 pt-5 pb-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted mb-1">Data Pipeline</p>
         <h4 className="text-base font-bold leading-tight">How your data gets here</h4>
       </div>
 
-      {/* ── diagram container ───────────────────────────────────────────── */}
-      {/*
-        Mobile  (< sm): two rows — sources across top, pipeline across bottom
-        Desktop (≥ sm): single row — sources column left, pipeline right
-      */}
       <div
         ref={containerRef}
         className="relative flex flex-col sm:flex-row items-center sm:justify-between
                    px-4 sm:px-8 py-6 sm:py-8 gap-6 sm:gap-4"
       >
-        {/* SVG beam layer — covers full container on any size */}
         <svg
           className="absolute inset-0 pointer-events-none"
           width={svgSize.w} height={svgSize.h}
           style={{ overflow: 'visible' }}
         >
-          <defs>
-            <filter id="beam-glow" filterUnits="userSpaceOnUse" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-
-          {/* Sources → Scraper */}
-          <Beam from={p.ikman}          to={p.scraper} color="rgba(129,140,248,0.72)" />
-          <Beam from={p.onlineProperty} to={p.scraper} color="rgba(129,140,248,0.72)" />
-          <Beam from={p.houseLk}        to={p.scraper} color="rgba(129,140,248,0.72)" />
-          {/* Scraper → Cleaner */}
-          <Beam from={p.scraper} to={p.cleaner} color="rgba(167,139,250,0.72)" />
-          {/* Cleaner → DB */}
-          <Beam from={p.cleaner} to={p.db} color="rgba(244,114,182,0.72)" />
-          {/* DB → You */}
-          <Beam from={p.db} to={p.you} color="rgba(52,211,153,0.72)" />
+          <Beam from={p.ikman}          to={p.scraper} delay={0} />
+          <Beam from={p.onlineProperty} to={p.scraper} delay={0.15} />
+          <Beam from={p.houseLk}        to={p.scraper} delay={0.3} />
+          <Beam from={p.scraper} to={p.cleaner} delay={0.45} />
+          <Beam from={p.cleaner} to={p.db} delay={0.6} />
+          <Beam from={p.db} to={p.you} delay={0.75} />
         </svg>
 
-        {/* ── Sources ────────────────────────────────────────────────────
-            Mobile:  flex-row spread across full width
-            Desktop: flex-col stacked on the left                        */}
         <div className="flex flex-row sm:flex-col justify-around sm:justify-start
                         gap-2 sm:gap-4 z-10 w-full sm:w-auto">
           <Node ref={ikmanRef}          label="ikman.lk"          sub="source 1"><span className="text-text-muted"><GlobeIcon /></span></Node>
@@ -200,42 +186,37 @@ export function DataFlowBeam() {
           <Node ref={houseLkRef}        label="house.lk"          sub="source 3"><span className="text-text-muted"><GlobeIcon /></span></Node>
         </div>
 
-        {/* ── Pipeline nodes ─────────────────────────────────────────────
-            Mobile:  flex-row spread across full width  (wrapper visible)
-            Desktop: sm:contents — wrapper disappears, children join the
-                     parent flex-row as direct siblings                  */}
         <div className="flex sm:contents flex-row justify-around w-full sm:w-auto gap-2 sm:gap-0">
           <div className="z-10">
-            <Node ref={scraperRef} label="Scraper"  sub="playwright" accent><span className="text-accent-light"><TerminalIcon /></span></Node>
+            <Node ref={scraperRef} label="Scraper"  sub="playwright" accent><span className="text-white"><TerminalIcon /></span></Node>
           </div>
           <div className="z-10">
-            <Node ref={cleanerRef} label="Cleaner"  sub="normalise"  accent><span className="text-accent-light"><FilterIcon /></span></Node>
+            <Node ref={cleanerRef} label="Cleaner"  sub="normalise"  accent><span className="text-white"><FilterIcon /></span></Node>
           </div>
           <div className="z-10">
-            <Node ref={dbRef}      label="Database" sub="postgresql" accent><span className="text-accent-light"><DatabaseIcon /></span></Node>
+            <Node ref={dbRef}      label="Database" sub="postgresql" accent><span className="text-white"><DatabaseIcon /></span></Node>
           </div>
           <div className="z-10">
-            <Node ref={youRef}     label="You"      sub="live dashboard" tone="success"><span className="text-emerald-300"><UserIcon /></span></Node>
+            <Node ref={youRef}     label="You"      sub="live dashboard" tone="success"><span className="text-white"><UserIcon /></span></Node>
           </div>
         </div>
       </div>
 
-      {/* footer badges */}
       <div className="relative flex flex-wrap gap-3 sm:gap-4 px-5 sm:px-6 pb-5 pt-1 border-t border-border/50">
         <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-          <span className="w-1.5 h-1.5 rounded-full bg-success" />
+          <span className="w-1.5 h-1.5 rounded-full bg-white" />
           Updated daily · 2AM UTC
         </span>
         <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent-light" />
+          <span className="w-1.5 h-1.5 rounded-full bg-white/70" />
           Cleaned &amp; geocoded
         </span>
         <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-          <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+          <span className="w-1.5 h-1.5 rounded-full bg-white/45" />
           Outlier detection
         </span>
         <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-          <span className="w-1.5 h-1.5 rounded-full bg-success/60" />
+          <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
           35,000+ listings
         </span>
       </div>
