@@ -103,17 +103,6 @@
           "name": "Land For Sale"
         },
         "contact_card": {
-          "name": "[REDACTED]",
-          "email": {
-            "verified": true
-          },
-          "phone_numbers": [
-            {
-              "number": "[REDACTED]",
-              "verified": true
-            }
-          ],
-          "delivery_methods": [],
           "account_type": "private",
           "opt_out": false,
           "chat_enabled": true
@@ -205,17 +194,6 @@
           "name": "Land For Sale"
         },
         "contact_card": {
-          "name": "[REDACTED]",
-          "email": {
-            "verified": true
-          },
-          "phone_numbers": [
-            {
-              "number": "[REDACTED]",
-              "verified": true
-            }
-          ],
-          "delivery_methods": [],
           "account_type": "private",
           "opt_out": false,
           "chat_enabled": true
@@ -299,10 +277,6 @@
           "banner": {
             "id": "13e9e9d6-8896-40cc-bbd7-e49455721668",
             "base_uri": "https://i.ikman-st.com/u"
-          },
-          "contact_card": {
-            "email": "ikman@pitchcapital.lk",
-            "phone_numbers": []
           },
           "job_page": false,
           "location_id": 2173

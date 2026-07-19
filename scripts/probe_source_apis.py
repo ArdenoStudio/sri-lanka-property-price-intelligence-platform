@@ -22,12 +22,15 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 SAMPLES = ROOT / "docs" / "source-apis"
 UA = (
     "Mozilla/5.0 (compatible; NilamSourceApiProbe/0.1; "
     "+https://github.com/ArdenoStudio/sri-lanka-property-price-intelligence-platform)"
 )
 DELAY_S = 1.0
+
+from scraper.privacy import sanitize_ikman_raw_json
 
 
 def fetch(url: str, headers: dict | None = None, timeout: float = 30.0):
@@ -45,26 +48,6 @@ def fetch(url: str, headers: dict | None = None, timeout: float = 30.0):
 
 def sleep():
     time.sleep(DELAY_S)
-
-
-def redact_ikman(obj):
-    if isinstance(obj, dict):
-        out = {}
-        for k, v in obj.items():
-            if k == "contact_card" and isinstance(v, dict):
-                c = dict(v)
-                c["name"] = "[REDACTED]"
-                phones = c.get("phone_numbers") or []
-                c["phone_numbers"] = [
-                    {"number": "[REDACTED]", "verified": p.get("verified")} for p in phones
-                ]
-                out[k] = c
-            else:
-                out[k] = redact_ikman(v)
-        return out
-    if isinstance(obj, list):
-        return [redact_ikman(x) for x in obj]
-    return obj
 
 
 def probe_ikman(write_samples: bool) -> list[str]:
@@ -98,7 +81,7 @@ def probe_ikman(write_samples: bool) -> list[str]:
                                 "types": data["serp"].get("types"),
                                 "categories": (data["serp"].get("categories") or [])[:5],
                                 "locations": (data["serp"].get("locations") or [])[:5],
-                                "results": redact_ikman((data["serp"].get("results") or [])[:2]),
+                                "results": sanitize_ikman_raw_json((data["serp"].get("results") or [])[:2]),
                             },
                         }
                         path = SAMPLES / "ikman" / "samples" / "serp_property.json"
@@ -119,7 +102,7 @@ def probe_ikman(write_samples: bool) -> list[str]:
         lines.append(f"- ad_detail({ad_id[:8]}…): HTTP {status}")
         if write_samples and status == 200:
             try:
-                data = redact_ikman(json.loads(body))
+                data = sanitize_ikman_raw_json(json.loads(body))
                 (SAMPLES / "ikman" / "samples" / "ad_detail.json").write_text(
                     json.dumps(data, indent=2)
                 )

@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import insert
 from typing import List, Optional
 from db.connection import get_db, SessionLocal
 from db.models import Listing, RawListing, ScrapeRun, PriceAggregate, JobRun, ListingSnapshot
+from scraper.privacy import redact_contact_channels
 from api.estimate_logic import (
     MAX_DISPLAY_COMPS,
     MAX_ESTIMATE_COMPS,
@@ -179,6 +180,10 @@ def _status_for(now: datetime, last_success: Optional[datetime], last_running: O
         if now - last_success <= timedelta(hours=int(expected_hours * 1.5)):
             return "ok"
     return "delayed"
+
+
+def _public_description(value: Optional[str]) -> Optional[str]:
+    return redact_contact_channels(value)
 
 
 def _listing_counts_by_source(db: Session) -> tuple[dict[str, int], str]:
@@ -1055,7 +1060,7 @@ def get_listing_detail(listing_id: int, db: Session = Depends(get_db)):
             "source": raw.source,
             "source_id": raw.source_id,
             "title": raw.title,
-            "description": raw.description,
+            "description": _public_description(raw.description),
             "price_lkr": None,
             "original_price_lkr": None,
             "price_drop_pct": None,
@@ -1088,7 +1093,7 @@ def get_listing_detail(listing_id: int, db: Session = Depends(get_db)):
         "source": l.source,
         "source_id": l.source_id,
         "title": raw_title or l.source_id,
-        "description": description,
+        "description": _public_description(description),
         "price_lkr": float(l.price_lkr) if l.price_lkr else None,
         "original_price_lkr": float(l.original_price_lkr) if l.original_price_lkr else None,
         "price_drop_pct": (

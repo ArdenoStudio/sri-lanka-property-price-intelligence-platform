@@ -193,11 +193,12 @@ raw_location    = "{location.name}, {area.name}"   # city, district
 raw_size        = " | ".join(details)             # or land size line only
 property_type   = CATEGORY_MAP[category.id]       # 415→house, 942→land, 937→apartment, 939/940→commercial
 listing_type    = "rent" if type in (for_rent,to_rent) else "sale"
-raw_json        = full result (+ beds/baths parsed)
+raw_json        = sanitized result (+ beds/baths parsed, no contact_card PII)
 description     = null until detail
 ```
 
 Parse beds/baths from `details[]` into `raw_json` so cleaner/`process_all` can be taught to read them (today cleaner only regexes title/`raw_size`).
+Strip every `contact_card` subtree before persistence; keep only non-identifying metadata if we need contact capability flags.
 
 **Cleaner follow-up (small):** if `raw_json.bedrooms` present, prefer it over title regex — unlocks deal-score bedroom buckets without waiting for enricher.
 
@@ -255,7 +256,7 @@ raw_json      = {rooms, bathrooms, lat, lon, region, price, price_type, ...}
 ### F. What we still cannot do with these APIs
 - house.lk structured ingest without CF.
 - onlineproperty structured price/size (RTCL v1 denied).
-- Seller contact / chat (out of scope; PII — do not store phones from ikman `contact_card` unless product requires it).
+- Seller contact / chat (out of scope; PII — do not store ikman `contact_card` names, emails, or phones in `raw_json` unless product requirements and legal review change).
 - Official ToS-blessed bulk redistribution — treat as internal ingestion, polite rates.
 - Perfect cross-source dedup (still price+district heuristics).
 
@@ -320,7 +321,7 @@ Keep Playwright **only** for house.lk (and ikman emergency fallback if API 5xx).
 | ikman API rate limits / 503 | Backoff; cache categories/locations; stop-after-dupes |
 | ikman `next_page_token` semantics change | Probe script; fall back to page-only if needed |
 | Duplicate rows during id migration | Bridge by URL slug first; unique index stays `(source, source_id)` |
-| Storing seller phones from SERP | Strip `contact_card` before `raw_json` persist (PDPA) |
+| Storing seller phones from SERP | Strip/sanitize every `contact_card` before `raw_json` persist (PDPA) |
 | ToS / blocking | Polite RPS; identifiable UA; no auth abuse; HTML fallback |
 | Land type LPW intermittent 522 | Retry; don’t fail whole job |
 

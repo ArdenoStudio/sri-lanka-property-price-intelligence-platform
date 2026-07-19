@@ -51,6 +51,8 @@ Response shape:
 
 Each `results[]` item includes: `id`, `slug`, `title`, `type`, `date`, `area`, `location`, `category`, `details[]`, `money`, `url`, `images`, `promotions`, and often `contact_card` (PII).
 
+**Storage contract:** if we ingest this payload into `raw_json`, sanitize every `contact_card` subtree first. Keep only non-identifying metadata such as `account_type`, `chat_enabled`, `delivery_methods`, and `opt_out`; do not persist seller names, email addresses, or phone numbers.
+
 Sample: [`samples/serp_property.json`](samples/serp_property.json)
 
 **Volume (2026-07-19):** category `409` ≈ 65k ads; `for_sale` ≈ 55k; `for_rent` ≈ 9.7k.
@@ -63,6 +65,8 @@ curl -sS "https://api.ikman.lk/v1/ads/<ad_id>" \
 ```
 
 Returns `{ "ad": { ..., "properties": [...], "description": "...", "statistics": {"views": N} }, "similar_ads": [], "safety_tips": [...] }`.
+
+If description text is ever surfaced in our product, redact phone / email / WhatsApp strings before returning it from public APIs.
 
 `properties[]` is the structured attribute list our detail enricher already reads from `window.initialData` (`key`/`label`/`value` for size, bedrooms, etc.).
 

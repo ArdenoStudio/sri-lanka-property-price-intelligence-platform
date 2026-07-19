@@ -8,6 +8,7 @@ import structlog
 from db.models import RawListing, ListingSnapshot
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
+from scraper.privacy import sanitize_ikman_raw_json
 from scraper.location_targets import CoverageTarget, should_stop_after_page
 from scraper.utils import build_snapshot_fingerprint
 
@@ -229,7 +230,7 @@ class IkmanScraper:
                                 raw_size=raw_meta,
                                 property_type=property_type,
                                 listing_type=listing_type,
-                                raw_json={"full_meta": raw_meta},
+                                raw_json=sanitize_ikman_raw_json({"full_meta": raw_meta}),
                                 scraped_at=datetime.utcnow()
                             ).on_conflict_do_nothing()
 
@@ -257,7 +258,7 @@ class IkmanScraper:
                                 raw_size=raw_meta,
                                 property_type=property_type,
                                 listing_type=listing_type,
-                                raw_json={"full_meta": raw_meta},
+                                raw_json=sanitize_ikman_raw_json({"full_meta": raw_meta}),
                                 fingerprint=fingerprint,
                                 scraped_at=datetime.utcnow(),
                             ).on_conflict_do_nothing(
@@ -454,7 +455,13 @@ class IkmanScraper:
                                     raw_size=raw_meta,
                                     property_type=property_type,
                                     listing_type=listing_type,
-                                    raw_json={"full_meta": raw_meta, "coverage_target": label, "coverage_kind": kind},
+                                    raw_json=sanitize_ikman_raw_json(
+                                        {
+                                            "full_meta": raw_meta,
+                                            "coverage_target": label,
+                                            "coverage_kind": kind,
+                                        }
+                                    ),
                                     scraped_at=datetime.utcnow(),
                                 ).on_conflict_do_nothing()
                                 res = self.db.execute(stmt)
@@ -481,7 +488,13 @@ class IkmanScraper:
                                     raw_size=raw_meta,
                                     property_type=property_type,
                                     listing_type=listing_type,
-                                    raw_json={"full_meta": raw_meta, "coverage_target": label, "coverage_kind": kind},
+                                    raw_json=sanitize_ikman_raw_json(
+                                        {
+                                            "full_meta": raw_meta,
+                                            "coverage_target": label,
+                                            "coverage_kind": kind,
+                                        }
+                                    ),
                                     fingerprint=fingerprint,
                                     scraped_at=datetime.utcnow(),
                                 ).on_conflict_do_nothing(
@@ -692,7 +705,8 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
                                 source="ikman", source_id=source_id, url=listing_url,
                                 title=title, raw_price=raw_price, raw_location=raw_location,
                                 raw_size=raw_meta, property_type=property_type,
-                                listing_type=listing_type, raw_json={"full_meta": raw_meta},
+                                listing_type=listing_type,
+                                raw_json=sanitize_ikman_raw_json({"full_meta": raw_meta}),
                                 scraped_at=datetime.utcnow()
                             ).on_conflict_do_nothing()
                             res = db.execute(stmt)
@@ -720,7 +734,7 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
                                 raw_size=raw_meta,
                                 property_type=property_type,
                                 listing_type=listing_type,
-                                raw_json={"full_meta": raw_meta},
+                                raw_json=sanitize_ikman_raw_json({"full_meta": raw_meta}),
                                 fingerprint=fingerprint,
                                 scraped_at=datetime.utcnow(),
                             ).on_conflict_do_nothing(

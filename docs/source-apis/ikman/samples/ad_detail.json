@@ -20,17 +20,6 @@
       "name": "Land For Sale"
     },
     "contact_card": {
-      "name": "[REDACTED]",
-      "email": {
-        "verified": true
-      },
-      "phone_numbers": [
-        {
-          "number": "[REDACTED]",
-          "verified": true
-        }
-      ],
-      "delivery_methods": [],
       "account_type": "private",
       "opt_out": false,
       "chat_enabled": true
