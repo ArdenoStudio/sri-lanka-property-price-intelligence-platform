@@ -1,0 +1,351 @@
+{
+  "categories": [
+    {
+      "id": 409,
+      "children": [
+        417,
+        942,
+        415,
+        937,
+        939,
+        941,
+        416,
+        938,
+        940,
+        413,
+        936,
+        943,
+        411,
+        410,
+        412,
+        422
+      ],
+      "name": "Property",
+      "ad_types": [],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "type": "property",
+      "slug": "property",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 410,
+      "children": [],
+      "name": "Apartments",
+      "ad_types": [
+        "for_sale",
+        "to_buy",
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_rent",
+      "deactivated": true,
+      "slug": "apartments",
+      "form_view_version": "1",
+      "post_ad_form_view_version": "1"
+    },
+    {
+      "id": 411,
+      "children": [],
+      "name": "Houses",
+      "ad_types": [
+        "for_sale",
+        "to_buy",
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_sale",
+      "deactivated": true,
+      "slug": "houses",
+      "form_view_version": "1",
+      "post_ad_form_view_version": "1"
+    },
+    {
+      "id": 412,
+      "children": [],
+      "name": "New Developments",
+      "ad_types": [
+        "for_sale"
+      ],
+      "serp_type": "sub_shop",
+      "available_serp_layouts": [
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_sale",
+      "deactivated": true,
+      "slug": "new-developments",
+      "form_view_version": "1",
+      "post_ad_form_view_version": "1"
+    },
+    {
+      "id": 413,
+      "children": [],
+      "name": "Room & Annex Rentals",
+      "ad_types": [
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_rent",
+      "slug": "room-annex-rentals",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 415,
+      "children": [],
+      "name": "Houses For Sale",
+      "ad_types": [
+        "for_sale",
+        "to_buy"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_sale",
+      "slug": "houses-for-sale",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 416,
+      "children": [],
+      "name": "House Rentals",
+      "ad_types": [
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_rent",
+      "slug": "house-rentals",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 417,
+      "children": [],
+      "name": "Land",
+      "ad_types": [
+        "for_sale",
+        "to_buy",
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_sale",
+      "deactivated": true,
+      "slug": "land",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "1"
+    },
+    {
+      "id": 422,
+      "children": [],
+      "name": "Commercial Property",
+      "ad_types": [
+        "for_sale",
+        "to_buy",
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_sale",
+      "deactivated": true,
+      "slug": "commercial-property",
+      "form_view_version": "1",
+      "post_ad_form_view_version": "1"
+    },
+    {
+      "id": 936,
+      "children": [],
+      "name": "Holiday & Short-Term Rental",
+      "ad_types": [
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_rent",
+      "slug": "holiday-short-term-rental",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 937,
+      "children": [],
+      "name": "Apartments For Sale",
+      "ad_types": [
+        "for_sale",
+        "to_buy"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_sale",
+      "slug": "apartments-for-sale",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 938,
+      "children": [],
+      "name": "Apartment Rentals",
+      "ad_types": [
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_rent",
+      "slug": "apartment-rentals",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 939,
+      "children": [],
+      "name": "Commercial Properties For Sale",
+      "ad_types": [
+        "for_sale",
+        "to_buy"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_sale",
+      "slug": "commercial-properties-for-sale",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 940,
+      "children": [],
+      "name": "Commercial Property Rentals",
+      "ad_types": [
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_rent",
+      "slug": "commercial-property-rentals",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 941,
+      "children": [],
+      "name": "New Projects",
+      "ad_types": [
+        "for_sale"
+      ],
+      "serp_type": "sub_shop",
+      "available_serp_layouts": [
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_sale",
+      "deactivated": true,
+      "slug": "new-projects",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 942,
+      "children": [],
+      "name": "Land For Sale",
+      "ad_types": [
+        "for_sale",
+        "to_buy"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_sale",
+      "slug": "land-for-sale",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    },
+    {
+      "id": 943,
+      "children": [],
+      "name": "Land Rentals",
+      "ad_types": [
+        "for_rent",
+        "to_rent"
+      ],
+      "serp_type": "ads",
+      "available_serp_layouts": [
+        "fluid",
+        "single_column"
+      ],
+      "default_serp_layout": "single_column",
+      "default_ad_type": "for_rent",
+      "slug": "land-for-rent",
+      "form_view_version": "3",
+      "post_ad_form_view_version": "2"
+    }
+  ]
+}

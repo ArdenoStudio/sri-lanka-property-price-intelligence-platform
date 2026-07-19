@@ -1,0 +1,313 @@
+{
+  "pagination": {
+    "page": 1,
+    "per_page": 25,
+    "total": 65475,
+    "pages": 2619,
+    "next_page_url": "https://api.ikman.lk/v1/serp?category=409&page=2&next_page_token=1784476656",
+    "next_page_token": "1784476656"
+  },
+  "serp": {
+    "types": [
+      {
+        "key": "for_sale",
+        "count": 55406
+      },
+      {
+        "key": "to_buy",
+        "count": 137
+      },
+      {
+        "key": "for_rent",
+        "count": 9671
+      },
+      {
+        "key": "to_rent",
+        "count": 261
+      }
+    ],
+    "categories": [
+      {
+        "id": 942,
+        "name": "Land For Sale",
+        "count": 31527
+      },
+      {
+        "id": 415,
+        "name": "Houses For Sale",
+        "count": 19235
+      },
+      {
+        "id": 416,
+        "name": "House Rentals",
+        "count": 3651
+      },
+      {
+        "id": 937,
+        "name": "Apartments For Sale",
+        "count": 3189
+      },
+      {
+        "id": 940,
+        "name": "Commercial Property Rentals",
+        "count": 2576
+      }
+    ],
+    "locations": [
+      {
+        "id": 1506,
+        "name": "Colombo",
+        "count": 41204
+      },
+      {
+        "id": 1577,
+        "name": "Gampaha",
+        "count": 11613
+      },
+      {
+        "id": 1620,
+        "name": "Kalutara",
+        "count": 3368
+      },
+      {
+        "id": 1636,
+        "name": "Kandy",
+        "count": 1359
+      },
+      {
+        "id": 1674,
+        "name": "Kurunegala",
+        "count": 1326
+      }
+    ],
+    "sort_option": "date",
+    "sort_order": "desc",
+    "results": [
+      {
+        "id": "6a2cb4d30277c4957529efda",
+        "slug": "residential-land-in-piliyandala-for-sale-colombo-1",
+        "title": "Residential Land in Piliyandala",
+        "type": "for_sale",
+        "date": "2026-06-13T08:01:57+05:30",
+        "deactivates": "2026-08-12T08:01:57+05:30",
+        "area": {
+          "id": 1506,
+          "name": "Colombo"
+        },
+        "location": {
+          "id": 1553,
+          "name": "Piliyandala"
+        },
+        "category": {
+          "id": 942,
+          "name": "Land For Sale"
+        },
+        "contact_card": {
+          "name": "[REDACTED]",
+          "email": {
+            "verified": true
+          },
+          "phone_numbers": [
+            {
+              "number": "[REDACTED]",
+              "verified": true
+            }
+          ],
+          "delivery_methods": [],
+          "account_type": "private",
+          "opt_out": false,
+          "chat_enabled": true
+        },
+        "features": {
+          "buy_now": false,
+          "listing_fee": true
+        },
+        "by_paying_member": false,
+        "by_authorized_dealer": false,
+        "by_featured_member": false,
+        "membership_details": {
+          "level": "free"
+        },
+        "info": "Rs 1,325,000 per perch",
+        "status": "published",
+        "details": [
+          "8.5 perches"
+        ],
+        "url": "http://ikman.lk/en/ad/residential-land-in-piliyandala-for-sale-colombo-1",
+        "images": {
+          "ids": [
+            "431273da-bcdb-4ee2-a167-44fea2824b17",
+            "9e6b0133-1c33-4123-a633-f715eccccadd",
+            "c399d06e-01ce-43b7-9935-08242d2629dc"
+          ],
+          "base_uri": "https://i.ikman-st.com"
+        },
+        "account": {
+          "id": "592713f72ffef40001407bb2",
+          "traits": {}
+        },
+        "promotions": {
+          "top_ad": false,
+          "bump_up": true,
+          "urgent_ad": false,
+          "spotlight": false,
+          "featured_ad": true
+        },
+        "display_preferences": {
+          "use_featured_ads_ui": true
+        },
+        "money": {
+          "label": "Price",
+          "negotiable": "Negotiable",
+          "amount": "Rs 1,325,000 per perch"
+        },
+        "layouts": {
+          "classic": {
+            "info": "Rs 1,325,000 per perch",
+            "details": [
+              "8.5 perches"
+            ],
+            "serp_images_enabled": true
+          },
+          "single_column": {
+            "info": "Rs 1,325,000 per perch",
+            "details": [
+              "8.5 perches",
+              "Residential"
+            ],
+            "serp_images_enabled": true
+          },
+          "fluid": {
+            "info": "Rs 1,325,000 per perch",
+            "details": [],
+            "serp_images_enabled": true
+          }
+        },
+        "last_bump_up_date": "2026-07-19T16:47:09+05:30"
+      },
+      {
+        "id": "6a5ceda68fc7c8fc230054ab",
+        "slug": "lands-for-sale-hiriketiya-for-sale-matara-2",
+        "title": "Lands for Sale - Hiriketiya",
+        "type": "for_sale",
+        "date": "2026-07-19T21:27:25+05:30",
+        "deactivates": "2026-09-17T21:27:25+05:30",
+        "area": {
+          "id": 1724,
+          "name": "Matara"
+        },
+        "location": {
+          "id": 1728,
+          "name": "Dikwella"
+        },
+        "category": {
+          "id": 942,
+          "name": "Land For Sale"
+        },
+        "contact_card": {
+          "name": "[REDACTED]",
+          "email": {
+            "verified": true
+          },
+          "phone_numbers": [
+            {
+              "number": "[REDACTED]",
+              "verified": true
+            }
+          ],
+          "delivery_methods": [],
+          "account_type": "private",
+          "opt_out": false,
+          "chat_enabled": true
+        },
+        "features": {
+          "buy_now": false,
+          "listing_fee": false
+        },
+        "by_paying_member": true,
+        "by_authorized_dealer": false,
+        "by_featured_member": false,
+        "membership_details": {
+          "level": "premium"
+        },
+        "info": "Rs 1,200,000 per perch",
+        "status": "published",
+        "details": [
+          "6.5 perches"
+        ],
+        "url": "http://ikman.lk/en/ad/lands-for-sale-hiriketiya-for-sale-matara-2",
+        "images": {
+          "ids": [
+            "893ee5fe-d9bb-4743-9478-7f6c0eebd6c2",
+            "72d2c7c1-8e36-4692-a00c-5e7f37e44ae0",
+            "562b0d16-1097-4e1f-9223-3e0d15b60fc6",
+            "19731d87-5e3b-4e03-b939-ecc56d8a8116",
+            "71440b5f-1bcf-4cd3-927a-4c2bbd71ba65"
+          ],
+          "base_uri": "https://i.ikman-st.com"
+        },
+        "account": {
+          "id": "672b4f73fd2cfe0031352e88",
+          "traits": {
+            "member": true,
+            "verified": true
+          }
+        },
+        "promotions": {
+          "top_ad": false,
+          "bump_up": false,
+          "urgent_ad": false,
+          "spotlight": false,
+          "featured_ad": false
+        },
+        "money": {
+          "label": "Price",
+          "amount": "Rs 1,200,000 per perch"
+        },
+        "layouts": {
+          "classic": {
+            "info": "Rs 1,200,000 per perch",
+            "details": [
+              "6.5 perches"
+            ],
+            "serp_images_enabled": true
+          },
+          "single_column": {
+            "info": "Rs 1,200,000 per perch",
+            "details": [
+              "6.5 perches",
+              "Commercial, Residential, Other"
+            ],
+            "serp_images_enabled": true
+          },
+          "fluid": {
+            "info": "Rs 1,200,000 per perch",
+            "details": [],
+            "serp_images_enabled": true
+          }
+        },
+        "shop": {
+          "id": "6736de95971b810001740c68",
+          "slug": "pitch-capital-pvt-ltd-",
+          "name": "Pitch Capital Pvt Ltd",
+          "tagline": "Where Dreams Come Home",
+          "description": "Giving you the perfect property solutions so that you can spend your time comfortably, enjoyably, and safely among the sole asset where your investment lasts for generations.\r\n\r\nFor any clarifications please contact us and we are more than happy to resolve an issues or problems you may face and serve you well.",
+          "logo": {
+            "id": "1380c5fb-12dc-4565-88ed-492e609b3401",
+            "base_uri": "https://i.ikman-st.com/u"
+          },
+          "banner": {
+            "id": "13e9e9d6-8896-40cc-bbd7-e49455721668",
+            "base_uri": "https://i.ikman-st.com/u"
+          },
+          "contact_card": {
+            "email": "ikman@pitchcapital.lk",
+            "phone_numbers": []
+          },
+          "job_page": false,
+          "location_id": 2173
+        }
+      }
+    ]
+  }
+}
