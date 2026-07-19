@@ -25,6 +25,7 @@ const INFO_CARDS = [
 ];
 
 export function About({ stats: _stats }: Props) {
+  void _stats;
   return (
     <section className="border-t border-white/[0.06] pt-16">
       {/* Editorial headline */}

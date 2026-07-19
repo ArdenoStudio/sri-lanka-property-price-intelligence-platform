@@ -1,4 +1,3 @@
-import { motion, useReducedMotion } from 'framer-motion';
 import { Github, MessageSquare } from 'lucide-react';
 
 const GITHUB_URL =
@@ -7,17 +6,12 @@ const FEEDBACK_URL = 'https://forms.gle/placeholder';
 
 // ── Blueprint grid (abs. positioned SVG) ───────────────────────────────────
 function BlueprintGrid() {
-  const prefersReduced = useReducedMotion();
   return (
-    <motion.svg
+    <svg
       aria-hidden="true"
       className="absolute inset-0 w-full h-full pointer-events-none"
       xmlns="http://www.w3.org/2000/svg"
       preserveAspectRatio="xMidYMid slice"
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: prefersReduced ? 0 : 1.2, ease: 'easeOut' }}
     >
       <defs>
         {/* Fine grid: 24px cells */}
@@ -67,29 +61,12 @@ function BlueprintGrid() {
         <rect width="100%" height="100%" fill="url(#footer-bp-fine)" />
         <rect width="100%" height="100%" fill="url(#footer-bp-coarse)" />
       </g>
-    </motion.svg>
+    </svg>
   );
 }
 
-
-
-// ── Variants ───────────────────────────────────────────────────────────────
-const containerVariants = {
-  hidden:   {},
-  visible:  { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
-};
-
-const itemVariants = {
-  hidden:   { opacity: 0, y: 8 },
-  visible:  { opacity: 1, y: 0 },
-};
-
 // ── Footer ─────────────────────────────────────────────────────────────────
 export function Footer() {
-  const prefersReduced = useReducedMotion();
-  const dur = prefersReduced ? 0 : 0.4;
-  const spring: [number, number, number, number] = [0.22, 1, 0.36, 1];
-
   return (
     <footer
       className="relative mt-8 overflow-hidden"
@@ -97,34 +74,18 @@ export function Footer() {
     >
       <BlueprintGrid />
 
-      <motion.div
-        className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8"
-        initial={{ opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-60px' }}
-        transition={{ duration: prefersReduced ? 0 : 0.55, ease: spring }}
-      >
-        <motion.div
-          className="py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
           {/* Left — wordmark */}
-          <motion.div variants={itemVariants} transition={{ duration: dur, ease: spring }}>
+          <div>
             <p className="text-[14px] font-semibold text-white tracking-tight">PropertyLK</p>
             <p className="text-[12px] mt-1" style={{ color: '#525252' }}>
               Sri Lanka Property Intelligence
             </p>
-          </motion.div>
+          </div>
 
           {/* Center — links */}
-          <motion.div
-            className="flex items-center gap-6"
-            variants={itemVariants}
-            transition={{ duration: dur, ease: spring }}
-          >
+          <div className="flex items-center gap-6">
             <a
               href={GITHUB_URL}
               target="_blank"
@@ -151,16 +112,14 @@ export function Footer() {
               />
               <span className="group-hover:text-white transition-colors">Feedback</span>
             </a>
-          </motion.div>
+          </div>
 
           {/* Right — copyright */}
-          <motion.a
+          <a
             href="https://ardeno-studio-website.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 text-right no-underline group cursor-pointer"
-            variants={itemVariants}
-            transition={{ duration: dur, ease: spring }}
           >
             <div>
               <p className="text-[12px]" style={{ color: '#525252' }}>
@@ -182,9 +141,9 @@ export function Footer() {
                 d="M 1114.464844 1093.320312 L 902.367188 666.722656 C 839.917969 722.578125 784.960938 820.574219 788.027344 900.875 L 852.203125 1027.425781 C 854.507812 1031.96875 858.433594 1035.472656 863.210938 1037.246094 L 1089.253906 1121.335938 C 1106.46875 1127.742188 1122.644531 1109.769531 1114.464844 1093.320312 Z M 733.84375 860.191406 C 733.300781 860.992188 732.796875 861.84375 732.347656 862.757812 L 651.828125 1025.953125 C 649.539062 1030.585938 645.566406 1034.179688 640.71875 1035.984375 L 410.511719 1121.617188 C 393.394531 1127.992188 377.25 1110.242188 385.203125 1093.804688 L 726.917969 387.246094 C 734.253906 372.085938 755.8125 371.960938 763.3125 387.042969 L 895.113281 652.152344 C 822.84375 703.808594 766.253906 776.003906 733.84375 860.191406"
               />
             </svg>
-          </motion.a>
-        </motion.div>
-      </motion.div>
+          </a>
+        </div>
+      </div>
 
     </footer>
   );

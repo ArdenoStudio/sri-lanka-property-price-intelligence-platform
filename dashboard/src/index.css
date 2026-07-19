@@ -263,52 +263,6 @@ h1, h2, h3, h4, h5, h6 {
 .font-assumptions { font-family: var(--font-body); }
 
 /* ============================================================
-   SCROLL REVEAL — IntersectionObserver adds .visible class
-   ============================================================ */
-.reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition:
-    opacity var(--motion-slow) var(--ease-spring),
-    transform var(--motion-slow) var(--ease-spring);
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ============================================================
-   NOISE OVERLAY — subtle analog grain texture
-   ============================================================ */
-.noise-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  pointer-events: none;
-  opacity: 0.028;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 128px;
-  mix-blend-mode: overlay;
-}
-
-
-/* ============================================================
-   SCROLL PROGRESS BAR — 2px fixed top line
-   ============================================================ */
-.scroll-progress-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 2px;
-  width: 100%;
-  background: linear-gradient(90deg, #14b8a6, #5eead4);
-  z-index: 9997;
-  transform-origin: left;
-  transform: scaleX(0);
-  will-change: transform;
-}
-
-/* ============================================================
    LIVE DOT — slow 3s pulse (premium, not frantic)
    ============================================================ */
 @keyframes live-pulse {

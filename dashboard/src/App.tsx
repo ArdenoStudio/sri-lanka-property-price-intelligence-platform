@@ -11,9 +11,6 @@ import { ListingsGrid } from './components/ListingsGrid';
 import { About } from './components/About';
 import { Footer } from './components/Footer';
 import { ComparisonTray } from './components/ComparisonTray';
-import { PageLoader } from './components/PageLoader';
-import { NoiseOverlay } from './components/NoiseOverlay';
-import { ScrollProgressBar } from './components/ScrollProgressBar';
 import { RevealSection } from './components/RevealSection';
 import { MobileNav } from './components/MobileNav';
 import { Analytics } from '@vercel/analytics/react';
@@ -120,7 +117,6 @@ function Dashboard() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [totalListings, setTotalListings] = useState(0);
   const [pipeline, setPipeline] = useState<PipelineStatusResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(false);
   const [listingsError, setListingsError] = useState<string | null>(null);
   const listingsRequestId = useRef(0);
@@ -356,154 +352,145 @@ function Dashboard() {
   }, [COMPARISON_MAX]);
 
   return (
-    <>
-      <PageLoader
-        minDuration={1800}
-        onComplete={() => setLoading(false)}
+    <div className="min-h-screen relative overflow-x-hidden">
+      <Header />
+
+      <main
+        id="main-content"
+        className="relative max-w-7xl mx-auto px-6 lg:px-8 pb-32 pt-10 md:pt-12"
+      >
+        <StatsBar stats={stats} />
+
+        <RevealSection className="mt-4">
+          <PipelineStatus status={pipeline} />
+        </RevealSection>
+
+        <RevealSection className="mt-8">
+          <div id="map">
+            <Suspense fallback={<MapSkeleton />}>
+              <MapSection
+                points={heatmap}
+                onDistrictSelect={(d) => setSelectedDistrict(d)}
+                onBrowseListings={scrollToListings}
+                selectedDistrict={selectedDistrict}
+              />
+            </Suspense>
+          </div>
+        </RevealSection>
+
+        <RevealSection className="pt-20">
+          <div id="trends">
+            <Suspense fallback={<TrendsSkeleton />}>
+              <DistrictTrends
+                district={selectedDistrict}
+                propertyType={selectedType}
+                onViewListings={scrollToListings}
+              />
+            </Suspense>
+          </div>
+        </RevealSection>
+
+        <RevealSection className="pt-20">
+          <div id="listings">
+            <Filters
+              districts={districts}
+              selectedDistrict={selectedDistrict}
+              onDistrictChange={setSelectedDistrict}
+              selectedType={selectedType}
+              onTypeChange={setSelectedType}
+              listingType={listingType}
+              onListingTypeChange={setListingType}
+              minPrice={minPrice}
+              onMinPriceChange={setMinPrice}
+              maxPrice={maxPrice}
+              onMaxPriceChange={setMaxPrice}
+              minBeds={minBeds}
+              onMinBedsChange={setMinBeds}
+              minBaths={minBaths}
+              onMinBathsChange={setMinBaths}
+              minSizePerches={minSizePerches}
+              maxSizePerches={maxSizePerches}
+              onMinSizePerchesChange={setMinSizePerches}
+              onMaxSizePerchesChange={setMaxSizePerches}
+              minSizeSqft={minSizeSqft}
+              maxSizeSqft={maxSizeSqft}
+              onMinSizeSqftChange={setMinSizeSqft}
+              onMaxSizeSqftChange={setMaxSizeSqft}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              selectedSource={selectedSource}
+              onSourceChange={setSelectedSource}
+              totalResults={totalListings}
+              onOpenSavedSearches={() => setIsSavedSearchesOpen(true)}
+            />
+
+            <ListingsGrid
+              listings={listings}
+              loading={listingsLoading}
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={totalListings}
+              onPageChange={setPage}
+              selectedForComparison={selectedForComparison.map(l => l.id)}
+              onToggleComparison={toggleComparison}
+              onClearFilters={clearListingFilters}
+              error={listingsError}
+            />
+          </div>
+        </RevealSection>
+
+        <RevealSection className="pt-20">
+          <div id="about">
+            <About stats={stats} />
+          </div>
+        </RevealSection>
+      </main>
+
+      <ComparisonTray
+        selected={selectedForComparison}
+        maxSlots={COMPARISON_MAX}
+        minCompare={COMPARISON_MIN}
+        onRemove={(id) => setSelectedForComparison(prev => prev.filter(l => l.id !== id))}
+        onClear={() => setSelectedForComparison([])}
+        onCompare={() => {
+          if (selectedForComparison.length >= COMPARISON_MIN) {
+            setIsCompareModalOpen(true);
+          }
+        }}
       />
 
-      {!loading && (
-        <div className="min-h-screen relative overflow-x-hidden">
-          <Header />
+      <Suspense fallback={<ModalSkeleton />}>
+        <ComparisonModal
+          isOpen={isCompareModalOpen}
+          onClose={() => setIsCompareModalOpen(false)}
+          listings={selectedForComparison}
+          minCompare={COMPARISON_MIN}
+        />
+      </Suspense>
 
-          <main
-            id="main-content"
-            className="relative max-w-7xl mx-auto px-6 lg:px-8 pb-32 pt-10 md:pt-12"
-          >
-            <StatsBar stats={stats} />
+      <Suspense fallback={null}>
+        <SavedSearches
+          isOpen={isSavedSearchesOpen}
+          onClose={() => setIsSavedSearchesOpen(false)}
+          currentFilters={currentFilters}
+          currentResultCount={totalListings}
+          onApplySearch={applySearch}
+        />
+      </Suspense>
 
-            <RevealSection className="mt-4">
-              <PipelineStatus status={pipeline} />
-            </RevealSection>
-
-            <RevealSection className="mt-8">
-              <div id="map">
-                <Suspense fallback={<MapSkeleton />}>
-                  <MapSection
-                    points={heatmap}
-                    onDistrictSelect={(d) => setSelectedDistrict(d)}
-                    onBrowseListings={scrollToListings}
-                    selectedDistrict={selectedDistrict}
-                  />
-                </Suspense>
-              </div>
-            </RevealSection>
-
-            <RevealSection className="pt-20" delay={50}>
-              <div id="trends">
-                <Suspense fallback={<TrendsSkeleton />}>
-                  <DistrictTrends
-                    district={selectedDistrict}
-                    propertyType={selectedType}
-                    onViewListings={scrollToListings}
-                  />
-                </Suspense>
-              </div>
-            </RevealSection>
-
-            <RevealSection className="pt-20">
-              <div id="listings">
-                <Filters
-                  districts={districts}
-                  selectedDistrict={selectedDistrict}
-                  onDistrictChange={setSelectedDistrict}
-                  selectedType={selectedType}
-                  onTypeChange={setSelectedType}
-                  listingType={listingType}
-                  onListingTypeChange={setListingType}
-                  minPrice={minPrice}
-                  onMinPriceChange={setMinPrice}
-                  maxPrice={maxPrice}
-                  onMaxPriceChange={setMaxPrice}
-                  minBeds={minBeds}
-                  onMinBedsChange={setMinBeds}
-                  minBaths={minBaths}
-                  onMinBathsChange={setMinBaths}
-                  minSizePerches={minSizePerches}
-                  maxSizePerches={maxSizePerches}
-                  onMinSizePerchesChange={setMinSizePerches}
-                  onMaxSizePerchesChange={setMaxSizePerches}
-                  minSizeSqft={minSizeSqft}
-                  maxSizeSqft={maxSizeSqft}
-                  onMinSizeSqftChange={setMinSizeSqft}
-                  onMaxSizeSqftChange={setMaxSizeSqft}
-                  sortBy={sortBy}
-                  onSortChange={setSortBy}
-                  selectedSource={selectedSource}
-                  onSourceChange={setSelectedSource}
-                  totalResults={totalListings}
-                  onOpenSavedSearches={() => setIsSavedSearchesOpen(true)}
-                />
-
-                <ListingsGrid
-                  listings={listings}
-                  loading={listingsLoading}
-                  page={page}
-                  pageSize={PAGE_SIZE}
-                  total={totalListings}
-                  onPageChange={setPage}
-                  selectedForComparison={selectedForComparison.map(l => l.id)}
-                  onToggleComparison={toggleComparison}
-                  onClearFilters={clearListingFilters}
-                  error={listingsError}
-                />
-              </div>
-            </RevealSection>
-
-            <RevealSection className="pt-20">
-              <div id="about">
-                <About stats={stats} />
-              </div>
-            </RevealSection>
-          </main>
-
-          <ComparisonTray
-            selected={selectedForComparison}
-            maxSlots={COMPARISON_MAX}
-            minCompare={COMPARISON_MIN}
-            onRemove={(id) => setSelectedForComparison(prev => prev.filter(l => l.id !== id))}
-            onClear={() => setSelectedForComparison([])}
-            onCompare={() => {
-              if (selectedForComparison.length >= COMPARISON_MIN) {
-                setIsCompareModalOpen(true);
-              }
-            }}
-          />
-
-          <Suspense fallback={<ModalSkeleton />}>
-            <ComparisonModal
-              isOpen={isCompareModalOpen}
-              onClose={() => setIsCompareModalOpen(false)}
-              listings={selectedForComparison}
-              minCompare={COMPARISON_MIN}
-            />
-          </Suspense>
-
-          <Suspense fallback={null}>
-            <SavedSearches
-              isOpen={isSavedSearchesOpen}
-              onClose={() => setIsSavedSearchesOpen(false)}
-              currentFilters={currentFilters}
-              currentResultCount={totalListings}
-              onApplySearch={applySearch}
-            />
-          </Suspense>
-
-          <Suspense fallback={<ChatSkeleton />}>
-            <ChatWidget onFilters={(f) => {
-              if (f.district) setSelectedDistrict(f.district);
-              if (f.property_type) setSelectedType(f.property_type);
-              if (f.listing_type) setListingType(f.listing_type);
-              if (f.bedrooms) setMinBeds(f.bedrooms);
-              if (f.min_price) setMinPrice(f.min_price);
-              if (f.max_price) setMaxPrice(f.max_price);
-            }} />
-          </Suspense>
-          <MobileNav />
-          <Footer />
-        </div>
-      )}
-    </>
+      <Suspense fallback={<ChatSkeleton />}>
+        <ChatWidget onFilters={(f) => {
+          if (f.district) setSelectedDistrict(f.district);
+          if (f.property_type) setSelectedType(f.property_type);
+          if (f.listing_type) setListingType(f.listing_type);
+          if (f.bedrooms) setMinBeds(f.bedrooms);
+          if (f.min_price) setMinPrice(f.min_price);
+          if (f.max_price) setMaxPrice(f.max_price);
+        }} />
+      </Suspense>
+      <MobileNav />
+      <Footer />
+    </div>
   );
 }
 
@@ -511,8 +498,6 @@ function Dashboard() {
 function App() {
   return (
     <>
-      <NoiseOverlay />
-      <ScrollProgressBar />
       <Analytics />
       <Routes>
         <Route path="/" element={<Dashboard />} />
