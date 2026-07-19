@@ -76,7 +76,7 @@ export function StatsBar({ stats }: Props) {
         <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-5">
           Sri Lanka · Property Intelligence
         </p>
-        <h1 className="text-[clamp(3rem,8vw,7rem)] font-bold tracking-[-0.04em] leading-[0.92] text-white">
+        <h1 className="font-display text-[clamp(3rem,8vw,7rem)] font-normal tracking-[-0.02em] leading-[0.96] text-white">
           Market<br />
           <span className="text-[#737373]">Intelligence</span>
         </h1>
