@@ -4,8 +4,8 @@ on:
   schedule:
     - cron: '0 22 * * *'    # 3:30 AM Sri Lanka time (UTC+5:30), after cleaner finishes
   workflow_dispatch:          # Manual trigger from GitHub UI
-  push:
-    branches: [master]
+  pull_request:
+    types: [closed]
     paths:
       - 'scripts/trigger-geocode'
 
@@ -14,6 +14,7 @@ env:
 
 jobs:
   geocode:
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 60       # Nominatim rate-limits to ~1 req/sec — allow extra time
 

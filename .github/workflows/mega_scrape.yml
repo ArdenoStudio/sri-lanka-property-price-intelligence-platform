@@ -1,16 +1,34 @@
 name: Mega Scrape (Manual)
 
+# Also hosts the force Source Ops pipeline entrypoint: bot merges do not fire
+# path-filtered `push` workflows, so pull_request closed + merged is used.
+# This file is already registered in GitHub Actions (force_pipeline.yml was not).
+
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'mega = deep scrape only; pipeline = scrape → clean → geocode → aggregate'
+        required: true
+        default: 'pipeline'
+        type: choice
+        options:
+          - pipeline
+          - mega
+  pull_request:
+    types: [closed]
+    paths:
+      - 'scripts/trigger-pipeline'
+      - '.github/workflows/mega_scrape.yml'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   mega-scrape:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'mega'
     runs-on: ubuntu-latest
     timeout-minutes: 360
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -56,3 +74,107 @@ jobs:
           name: mega-scrape-logs
           path: logs/
           retention-days: 7
+
+  scrape:
+    name: Scrape sources
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'pipeline')
+      || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Install Playwright system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+            libdrm2 libgbm1 libgtk-3-0 libnspr4 libnss3 libxcomposite1 \
+            libxdamage1 libxfixes3 libxkbcommon0 libxrandr2 xvfb
+      - run: python -m playwright install chromium
+      - name: Run all scrapers
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NOMINATIM_USER_AGENT: ${{ secrets.NOMINATIM_USER_AGENT }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SCRAPER_MAX_RETRIES: 3
+          SCRAPER_BACKOFF_BASE_SECONDS: 5
+          SCRAPER_BACKOFF_MAX_SECONDS: 60
+          SCRAPER_STOP_AFTER_BLOCKS: 5
+          ONLINEPROPERTY_READ_TIMEOUT: 90
+          ONLINEPROPERTY_CONNECT_TIMEOUT: 15
+          LOG_LEVEL: INFO
+        run: >-
+          python3 run_all_scrapers.py --coverage --skip-processing
+          --ikman-pages 75 --lpw-pages 25 --lamudi-pages 35
+          --onlineproperty-pages 50
+          --subdistricts-per-district 3 --subdistrict-pages 3
+
+  clean:
+    name: Clean listings
+    needs: scrape
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'pipeline')
+      || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Run cleaner
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOG_LEVEL: INFO
+        run: python run_clean.py
+
+  geocode:
+    name: Geocode listings
+    needs: clean
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'pipeline')
+      || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Run geocoder
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NOMINATIM_USER_AGENT: ${{ secrets.NOMINATIM_USER_AGENT }}
+          LOG_LEVEL: INFO
+        run: python run_geocode.py
+
+  aggregate:
+    name: Aggregate prices
+    needs: geocode
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'pipeline')
+      || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Run aggregates
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOG_LEVEL: INFO
+        run: python run_aggregate.py
