@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 SAMPLES = ROOT / "docs" / "source-apis"
 UA = (
-    "Mozilla/5.0 (compatible; NilamSourceApiProbe/0.1; "
+    "Mozilla/5.0 (compatible; PropertyLkSourceApiProbe/0.1; "
     "+https://github.com/ArdenoStudio/sri-lanka-property-price-intelligence-platform)"
 )
 DELAY_S = 1.0

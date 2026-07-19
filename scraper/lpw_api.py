@@ -26,7 +26,7 @@ BASE = "https://www.lankapropertyweb.com"
 SEARCH_URL = f"{BASE}/api/v3/search2"
 BOOTSTRAP_URL = f"{BASE}/sale/index.php"
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; NilamPropertyBot/1.0; +https://github.com/ArdenoStudio/"
+    "Mozilla/5.0 (compatible; PropertyLkBot/1.0; +https://github.com/ArdenoStudio/"
     "sri-lanka-property-price-intelligence-platform)"
 )
 

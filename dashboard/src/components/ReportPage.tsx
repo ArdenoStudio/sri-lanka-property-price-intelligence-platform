@@ -101,7 +101,7 @@ export function ReportPage() {
   const districtLabel = district ? `${district} District` : 'Sri Lanka';
   const reportTitle = hasReportParameters
     ? `${propertyLabel} ${listingType === 'sale' ? 'market report' : 'rental report'} — ${districtLabel}`
-    : 'Nilam Report Studio';
+    : 'property.lk Report Studio';
   const shareTitle = `${propertyLabel} intelligence report — ${districtLabel}`;
   const shareText = `Market-reference report for a ${propertyLabel.toLowerCase()} ${listingType === 'sale' ? 'purchase' : 'rental'} in ${districtLabel}.`;
   const hasNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -173,9 +173,9 @@ export function ReportPage() {
           <Link
             to="/"
             className="w-fit text-left no-underline"
-            aria-label="Back to Nilam home"
+            aria-label="Back to property.lk home"
           >
-            <span className="nilam-wordmark block text-[2.4rem] leading-none text-white">Nilam</span>
+            <span className="brand-wordmark block text-[2rem] leading-none text-white">property.lk</span>
             <span className="mt-1 block text-[11px] uppercase tracking-[0.24em] text-[#737373]">
               Report Studio
             </span>
@@ -190,7 +190,7 @@ export function ReportPage() {
                 className="max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] leading-[0.95] text-white"
                 style={{ fontFamily: REPORT_TITLE_FONT }}
               >
-                Generate a polished property report from a live Nilam estimate.
+                Generate a polished property report from a live property.lk estimate.
               </h1>
               <p className="mt-5 max-w-2xl text-[15px] leading-7 text-[#8a8a8a]">
                 Reports are built from the estimate workflow so district, size, and bedroom filters can
@@ -208,7 +208,7 @@ export function ReportPage() {
                   href="/#about"
                   className="inline-flex items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.03] px-6 py-3 text-[14px] font-medium text-white no-underline transition-colors hover:bg-white/[0.06]"
                 >
-                  Learn about Nilam
+                  Learn about property.lk
                 </a>
               </div>
             </div>
@@ -225,7 +225,7 @@ export function ReportPage() {
                     key={detail}
                     className="flex items-start gap-3 rounded-3xl border border-white/[0.08] bg-white/[0.02] px-4 py-4"
                   >
-                    <span className="nilam-wordmark mt-0.5 text-[1.15rem] leading-none text-[#5eead4]">
+                    <span className="brand-wordmark mt-0.5 text-[1.15rem] leading-none text-[#5eead4]">
                       0{index + 1}
                     </span>
                     <p className="text-[13px] leading-6 text-[#c9c9c9]">{detail}</p>

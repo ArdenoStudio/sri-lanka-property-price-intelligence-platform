@@ -90,9 +90,9 @@ export function MobileNav() {
               <div>
                 <p
                   id="mobile-nav-sheet-title"
-                  className="nilam-wordmark text-[1.6rem] leading-none text-white"
+                  className="brand-wordmark text-[1.35rem] leading-none text-white"
                 >
-                  Nilam
+                  property.lk
                 </p>
                 <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-[#737373]">
                   Jump between live market views, methodology, and printable reports.

@@ -83,7 +83,7 @@ export default async function handler(req: Request) {
             <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#14b8a6' }} />
           </div>
           <span style={{ color: '#a3a3a3', fontSize: '16px', fontWeight: 600, letterSpacing: '0.05em' }}>
-            PropertyLK
+            property.lk
           </span>
         </div>
 

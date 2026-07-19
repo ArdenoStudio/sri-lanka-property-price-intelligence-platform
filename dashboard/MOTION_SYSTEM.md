@@ -1,6 +1,6 @@
-# Nilam motion system
+# property.lk motion system
 
-This repo still uses `PropertyLK` naming in code, but the motion direction below defines a tighter system for Nilam.
+Brand is **property.lk**. Motion direction below defines the tighter system for the product UI.
 
 ## Goal
 

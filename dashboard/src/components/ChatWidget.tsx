@@ -763,7 +763,7 @@ export function ChatWidget({ onFilters }: { onFilters?: (filters: NonNullable<Ch
           <div className="aw-panel">
             <div className="aw-header">
               <div className="aw-header-copy">
-                <p className="aw-eyebrow">Nilam property Q&amp;A</p>
+                <p className="aw-eyebrow">property.lk Q&amp;A</p>
                 <h2 className="aw-heading">Ask with context</h2>
                 <p className="aw-subheading">
                   Quieter, data-led answers for districts, bedrooms, comparable listings, and yield checks.
@@ -788,7 +788,7 @@ export function ChatWidget({ onFilters }: { onFilters?: (filters: NonNullable<Ch
                   <div className="aw-intro aw-msg">
                     <p className="aw-intro-title">Start with a sharp question.</p>
                     <p className="aw-intro-copy">
-                      Nilam is strongest when you include district, property type, and bedrooms. These prompts lean on
+                      property.lk is strongest when you include district, property type, and bedrooms. These prompts lean on
                       richer API data instead of generic chat filler.
                     </p>
                   </div>
@@ -812,7 +812,7 @@ export function ChatWidget({ onFilters }: { onFilters?: (filters: NonNullable<Ch
               {messages.map(message => (
                 <div key={message.id} className={`aw-message-group aw-msg ${message.role}`}>
                   <span className={`aw-message-label ${message.role}`}>
-                    {message.role === 'user' ? 'You' : 'Nilam AI'}
+                    {message.role === 'user' ? 'You' : 'property.lk AI'}
                   </span>
                   <div className={`aw-bubble ${message.role}`}>
                     {message.role === 'assistant' ? formatMessage(message.content) : message.content}
@@ -822,7 +822,7 @@ export function ChatWidget({ onFilters }: { onFilters?: (filters: NonNullable<Ch
 
               {loading && (
                 <div className="aw-message-group aw-msg assistant">
-                  <span className="aw-message-label">Nilam AI</span>
+                  <span className="aw-message-label">property.lk AI</span>
                   <div className="aw-loading">
                     {[0, 0.18, 0.36].map((delay, index) => (
                       <span

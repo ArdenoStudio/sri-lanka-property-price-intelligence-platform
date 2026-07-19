@@ -25,7 +25,7 @@ log = structlog.get_logger()
 
 API_BASE = "https://api.ikman.lk"
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; NilamPropertyBot/1.0; +https://github.com/ArdenoStudio/"
+    "Mozilla/5.0 (compatible; PropertyLkBot/1.0; +https://github.com/ArdenoStudio/"
     "sri-lanka-property-price-intelligence-platform)"
 )
 

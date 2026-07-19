@@ -1,4 +1,4 @@
-/** Build WhatsApp share URLs for Nilam estimate / deal-score cards. */
+/** Build WhatsApp share URLs for property.lk estimate / deal-score cards. */
 
 export function buildWhatsAppShareUrl(text: string): string {
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -21,7 +21,7 @@ export function buildEstimateShareText(opts: {
   const conf = opts.confidence ? `Confidence: ${opts.confidence}` : null;
 
   return [
-    `Nilam estimate${where}`,
+    `property.lk estimate${where}`,
     opts.propertyType ? `Type: ${opts.propertyType}` : null,
     `Median: ${opts.medianLabel}`,
     range,

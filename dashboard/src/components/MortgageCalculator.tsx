@@ -30,7 +30,7 @@ const SECTION_TITLES = {
 } as const;
 
 const SECTION_DESCRIPTIONS = {
-  detail: 'Nilam uses indicative Sri Lankan bank rates so you can compare payment scenarios before speaking to a lender.',
+  detail: 'property.lk uses indicative Sri Lankan bank rates so you can compare payment scenarios before speaking to a lender.',
   estimate: 'Use the estimated asking value as your base and compare how the monthly payment changes by bank, tenure, and down payment.',
 } as const;
 
@@ -271,7 +271,7 @@ export function MortgageCalculator({
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
             <p className="text-[11px] text-[#a3a3a3] font-assumptions">Indicative rate source</p>
             <p className="text-[13px] text-white mt-2 leading-relaxed font-assumptions">
-              Manual Nilam bank-rate table, last refreshed {RATES_LAST_UPDATED}.
+              Manual property.lk bank-rate table, last refreshed {RATES_LAST_UPDATED}.
             </p>
           </div>
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
