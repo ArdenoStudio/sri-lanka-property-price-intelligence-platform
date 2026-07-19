@@ -4,6 +4,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { getStats, getDistricts, getHeatmap, getListings, getPipelineStatus } from './api';
 import type { Stats, District, HeatmapPoint, Listing, PipelineStatusResponse } from './api';
 import { Header } from './components/Header';
+import { HeroSection } from './components/HeroSection';
 import { StatsBar } from './components/StatsBar';
 import { PipelineStatus } from './components/PipelineStatus';
 import { Filters } from './components/Filters';
@@ -354,6 +355,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen relative overflow-x-hidden">
       <Header />
+      <HeroSection />
 
       <main
         id="main-content"

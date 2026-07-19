@@ -417,6 +417,27 @@ h1, h2, h3, h4, h5, h6 {
   animation-delay: 150ms;
 }
 
+/* Hero — full-bleed B&W texture + staggered enter + slow ken */
+@keyframes heroKen {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+.hero-bleed {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 35%, #2a2a2a 0%, #0a0a0a 55%, #000 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.015) 2px, rgba(255, 255, 255, 0.015) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.012) 2px, rgba(255, 255, 255, 0.012) 3px);
+  filter: grayscale(1) contrast(1.05);
+  animation: heroKen 22s var(--ease-apple) infinite alternate;
+  will-change: transform;
+}
+.hero-in {
+  animation: cssFadeIn 0.7s var(--ease-spring) both;
+}
+.hero-in-d1 { animation-delay: 120ms; }
+.hero-in-d2 { animation-delay: 240ms; }
+.hero-in-d3 { animation-delay: 360ms; }
+
 @keyframes cssListingFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
