@@ -3,7 +3,7 @@ import { Share2, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ListingDetail } from '../api';
 import { formatCurrencyAmount } from '../lib/pricing';
-import { getDealScoreMeta } from '../lib/dealScore';
+import { getDealScoreMeta, isTypicalDealScore } from '../lib/dealScore';
 
 interface Props {
   listing: ListingDetail;
@@ -19,7 +19,7 @@ export function ShareButton({ listing }: Props) {
 
   const shareUrl = `${window.location.origin}/listing/${listing.id}`;
   const shareTitle = listing.title || `Property in ${listing.district}`;
-  const dealSummary = listing.deal_score != null && Math.abs(listing.deal_score) >= 10
+  const dealSummary = listing.deal_score != null && !isTypicalDealScore(listing.deal_score)
     ? getDealScoreMeta(listing.deal_score).shortCopy.toLowerCase()
     : '';
   const shareText = [

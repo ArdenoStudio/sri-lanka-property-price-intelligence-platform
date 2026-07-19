@@ -27,6 +27,12 @@ export interface DealScoreBand {
   tone: DealScoreTone;
 }
 
+export const DEAL_SCORE_LIGHT_SURFACE_TOKENS = {
+  bg: '#ffffffb8',
+  border: '#64748b24',
+  shadow: '0 12px 36px rgba(15, 23, 42, 0.08)',
+} as const;
+
 export const DEAL_SCORE_BANDS: DealScoreBand[] = [
   {
     id: 'much-higher',
@@ -41,8 +47,8 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
       bgDark: 'rgba(198, 90, 67, 0.14)',
       borderDark: 'rgba(198, 90, 67, 0.28)',
       fgLight: '#8d321d',
-      bgLight: 'rgba(198, 90, 67, 0.11)',
-      borderLight: 'rgba(141, 50, 29, 0.18)',
+      bgLight: '#c65a431c',
+      borderLight: '#8d321d2e',
     },
   },
   {
@@ -58,8 +64,8 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
       bgDark: 'rgba(201, 137, 40, 0.14)',
       borderDark: 'rgba(201, 137, 40, 0.28)',
       fgLight: '#86520e',
-      bgLight: 'rgba(201, 137, 40, 0.12)',
-      borderLight: 'rgba(134, 82, 14, 0.18)',
+      bgLight: '#c989281f',
+      borderLight: '#86520e2e',
     },
   },
   {
@@ -75,8 +81,8 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
       bgDark: 'rgba(124, 140, 163, 0.12)',
       borderDark: 'rgba(124, 140, 163, 0.24)',
       fgLight: '#526173',
-      bgLight: 'rgba(124, 140, 163, 0.11)',
-      borderLight: 'rgba(82, 97, 115, 0.16)',
+      bgLight: '#7c8ca31c',
+      borderLight: '#52617329',
     },
   },
   {
@@ -92,8 +98,8 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
       bgDark: 'rgba(22, 139, 150, 0.14)',
       borderDark: 'rgba(22, 139, 150, 0.28)',
       fgLight: '#0d5f67',
-      bgLight: 'rgba(22, 139, 150, 0.11)',
-      borderLight: 'rgba(13, 95, 103, 0.17)',
+      bgLight: '#168b961c',
+      borderLight: '#0d5f672b',
     },
   },
   {
@@ -109,8 +115,8 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
       bgDark: 'rgba(23, 134, 97, 0.14)',
       borderDark: 'rgba(23, 134, 97, 0.28)',
       fgLight: '#0f5f43',
-      bgLight: 'rgba(23, 134, 97, 0.11)',
-      borderLight: 'rgba(15, 95, 67, 0.17)',
+      bgLight: '#1786611c',
+      borderLight: '#0f5f432b',
     },
   },
 ];
@@ -130,15 +136,19 @@ export function formatBandRange(min: number, max: number): string {
   return `${start} to ${end}`;
 }
 
+export function isTypicalDealScore(score: number): boolean {
+  return getDealScoreBand(score).id === 'typical';
+}
+
 export function getReadableDelta(score: number): string {
   const rounded = Math.abs(Math.round(clampDealScore(score)));
-  if (rounded < 10) return 'Typical range';
+  if (isTypicalDealScore(score)) return 'Typical range';
   return score > 0 ? `${rounded}% below similar` : `${rounded}% above similar`;
 }
 
 export function getDetailSentence(score: number): string {
   const rounded = Math.abs(Math.round(clampDealScore(score)));
-  if (rounded < 10) {
+  if (isTypicalDealScore(score)) {
     return 'This asking price is close to the usual range for similar Nilam listings.';
   }
   return score > 0

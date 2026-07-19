@@ -48,24 +48,24 @@ Use these when the score sits on a soft, bright, low-contrast background.
 
 | Token | Value |
 |---|---|
-| `deal-surface-light-bg` | `rgba(255, 255, 255, 0.72)` |
-| `deal-surface-light-border` | `rgba(100, 116, 139, 0.14)` |
+| `deal-surface-light-bg` | `#ffffffb8` |
+| `deal-surface-light-border` | `#64748b24` |
 | `deal-surface-light-shadow` | `0 12px 36px rgba(15, 23, 42, 0.08)` |
 | `deal-score-much-higher-fg-light` | `#8d321d` |
-| `deal-score-much-higher-bg-light` | `rgba(198, 90, 67, 0.11)` |
-| `deal-score-much-higher-border-light` | `rgba(141, 50, 29, 0.18)` |
+| `deal-score-much-higher-bg-light` | `#c65a431c` |
+| `deal-score-much-higher-border-light` | `#8d321d2e` |
 | `deal-score-higher-fg-light` | `#86520e` |
-| `deal-score-higher-bg-light` | `rgba(201, 137, 40, 0.12)` |
-| `deal-score-higher-border-light` | `rgba(134, 82, 14, 0.18)` |
+| `deal-score-higher-bg-light` | `#c989281f` |
+| `deal-score-higher-border-light` | `#86520e2e` |
 | `deal-score-typical-fg-light` | `#526173` |
-| `deal-score-typical-bg-light` | `rgba(124, 140, 163, 0.11)` |
-| `deal-score-typical-border-light` | `rgba(82, 97, 115, 0.16)` |
+| `deal-score-typical-bg-light` | `#7c8ca31c` |
+| `deal-score-typical-border-light` | `#52617329` |
 | `deal-score-lower-fg-light` | `#0d5f67` |
-| `deal-score-lower-bg-light` | `rgba(22, 139, 150, 0.11)` |
-| `deal-score-lower-border-light` | `rgba(13, 95, 103, 0.17)` |
+| `deal-score-lower-bg-light` | `#168b961c` |
+| `deal-score-lower-border-light` | `#0d5f672b` |
 | `deal-score-much-lower-fg-light` | `#0f5f43` |
-| `deal-score-much-lower-bg-light` | `rgba(23, 134, 97, 0.11)` |
-| `deal-score-much-lower-border-light` | `rgba(15, 95, 67, 0.17)` |
+| `deal-score-much-lower-bg-light` | `#1786611c` |
+| `deal-score-much-lower-border-light` | `#0f5f432b` |
 
 ### Dark surface tokens
 

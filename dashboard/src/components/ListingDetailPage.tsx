@@ -23,6 +23,7 @@ import { MortgageCalculator } from './MortgageCalculator';
 import { RentalYieldPanel } from './RentalYieldPanel';
 import { EMITeaser } from './EMITeaser';
 import { useCurrency } from '../hooks/useCurrency';
+import { getDealScoreMeta, isTypicalDealScore } from '../lib/dealScore';
 
 const TYPE_COLORS: Record<string, string> = {
   land: 'bg-amber-500/[0.12] text-amber-400 border-amber-500/20',
@@ -179,9 +180,12 @@ export function ListingDetail() {
         document.querySelector('meta[property="og:title"]')?.setAttribute('content', d.title || 'Property — PropertyLK');
         document.querySelector('meta[property="og:url"]')?.setAttribute('content', window.location.href);
         if (d.price_lkr) {
+          const dealSummary = d.deal_score != null && !isTypicalDealScore(d.deal_score)
+            ? ` · ${getDealScoreMeta(d.deal_score).shortCopy.toLowerCase()}`
+            : '';
           document.querySelector('meta[property="og:description"]')?.setAttribute(
             'content',
-            `${d.property_type} in ${d.district} for ${formatConverted(d.price_lkr)}${d.deal_score && d.deal_score > 0 ? ` · ${d.deal_score.toFixed(0)}% below market` : ''}`
+            `${d.property_type} in ${d.district} for ${formatConverted(d.price_lkr)}${dealSummary}`
           );
         }
       } catch {

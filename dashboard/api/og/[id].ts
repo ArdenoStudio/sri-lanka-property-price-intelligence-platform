@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { getDealScoreMeta, isTypicalDealScore } from '../../src/lib/dealScore';
 
 const API_BASE = process.env.VITE_API_URL || process.env.API_URL || 'https://api.propertylk.com';
 
@@ -32,7 +33,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       data?.property_type ? data.property_type.charAt(0).toUpperCase() + data.property_type.slice(1) : '',
       data?.district ? `in ${data.district}` : '',
       data?.price_lkr ? formatPrice(data.price_lkr) : '',
-      data?.deal_score > 0 ? `· ${data.deal_score.toFixed(0)}% below market` : '',
+      data?.deal_score != null && !isTypicalDealScore(data.deal_score)
+        ? `· ${getDealScoreMeta(data.deal_score).shortCopy.toLowerCase()}`
+        : '',
     ].filter(Boolean);
     description = escapeHtml(parts.join(' ') || description);
     imageUrl = `https://propertylk.vercel.app/api/og-image/${id}`;

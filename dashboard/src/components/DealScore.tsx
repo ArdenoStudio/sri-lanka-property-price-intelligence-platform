@@ -1,4 +1,5 @@
 import {
+  DEAL_SCORE_LIGHT_SURFACE_TOKENS,
   DEAL_SCORE_BANDS,
   formatBandRange,
   formatSignedScore,
@@ -7,6 +8,7 @@ import {
   getDealScoreMeta,
   getReadableDelta,
   getSurfaceTone,
+  isTypicalDealScore,
   type DealScoreSurface,
 } from '../lib/dealScore';
 
@@ -48,7 +50,7 @@ export function DealScorePill({
       {isCompare ? (
         <>
           <span className="num">{formatSignedScore(meta.score)}%</span>
-          <span>{Math.abs(meta.score) < 10 ? 'Typical' : meta.score > 0 ? 'below' : 'above'}</span>
+          <span>{isTypicalDealScore(meta.score) ? 'Typical' : meta.score > 0 ? 'below' : 'above'}</span>
         </>
       ) : (
         <span className="num">{getReadableDelta(meta.score)}</span>
@@ -128,8 +130,8 @@ export function DealScoreLegend({
   const activeBand = score != null ? getDealScoreBand(score) : null;
   const headingColor = surface === 'light' ? '#334155' : '#f5f5f5';
   const bodyColor = surface === 'light' ? '#64748b' : '#737373';
-  const defaultBorder = surface === 'light' ? 'rgba(100, 116, 139, 0.14)' : 'rgba(255, 255, 255, 0.08)';
-  const defaultBg = surface === 'light' ? 'rgba(255, 255, 255, 0.48)' : 'rgba(255, 255, 255, 0.02)';
+  const defaultBorder = surface === 'light' ? DEAL_SCORE_LIGHT_SURFACE_TOKENS.border : 'rgba(255, 255, 255, 0.08)';
+  const defaultBg = surface === 'light' ? DEAL_SCORE_LIGHT_SURFACE_TOKENS.bg : 'rgba(255, 255, 255, 0.02)';
 
   return (
     <div className="mt-5">

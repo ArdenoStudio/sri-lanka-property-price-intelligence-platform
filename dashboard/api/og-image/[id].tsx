@@ -1,4 +1,5 @@
 import { ImageResponse } from '@vercel/og';
+import { getDealScoreMeta, getSurfaceTone } from '../../src/lib/dealScore';
 
 export const config = { runtime: 'edge' };
 
@@ -14,7 +15,6 @@ export default async function handler(req: Request) {
   const url = new URL(req.url);
   const id = url.pathname.split('/').pop();
 
-  let title = 'Property Listing';
   let price = '';
   let district = 'Sri Lanka';
   let propertyType = 'Property';
@@ -23,7 +23,6 @@ export default async function handler(req: Request) {
 
   try {
     const data = await fetch(`${API_BASE}/listings/${id}`).then(r => r.json());
-    if (data?.title) title = data.title;
     if (data?.price_lkr) price = formatPrice(data.price_lkr);
     if (data?.district) district = data.district;
     if (data?.property_type) propertyType = data.property_type.charAt(0).toUpperCase() + data.property_type.slice(1);
@@ -33,12 +32,9 @@ export default async function handler(req: Request) {
     // Use defaults
   }
 
-  const dealLabel = dealScore != null && dealScore > 0
-    ? `${dealScore.toFixed(0)}% below market`
-    : dealScore != null && dealScore < 0
-    ? `${Math.abs(dealScore).toFixed(0)}% above market`
-    : null;
-  const dealColor = dealScore != null && dealScore > 0 ? '#10b981' : '#ef4444';
+  const dealMeta = dealScore != null ? getDealScoreMeta(dealScore) : null;
+  const dealTone = dealMeta ? getSurfaceTone(dealMeta.band, 'dark') : null;
+  const dealLabel = dealMeta?.shortCopy ?? null;
 
   return new ImageResponse(
     <div
@@ -139,13 +135,13 @@ export default async function handler(req: Request) {
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
-              background: `${dealColor}15`,
-              border: `1px solid ${dealColor}30`,
+              background: dealTone?.bg,
+              border: `1px solid ${dealTone?.border}`,
               borderRadius: '20px',
               padding: '6px 16px',
               fontSize: '15px',
               fontWeight: 700,
-              color: dealColor,
+              color: dealTone?.fg,
               width: 'fit-content',
             }}>
               {dealLabel}
