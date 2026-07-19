@@ -1,14 +1,15 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../api';
 import { resolveListingPrice } from '../lib/pricing';
 import { getDealScoreBand } from '../lib/dealScore';
-import { PriceHistoryChart } from './PriceHistoryChart';
 import { useCurrency } from '../hooks/useCurrency';
-import { EMITeaser } from './EMITeaser';
 import { DealScorePill } from './DealScore';
 import { EmptyStatePanel } from './ui/EmptyStatePanel';
+
+const MOBILE_FACT_LIMIT = 4;
+const DESKTOP_FACT_LIMIT = 6;
 
 function PlusCheckIcon({ checked }: { checked: boolean }) {
   return (
@@ -42,6 +43,79 @@ function formatDate(iso: string | null): string {
   return d.toLocaleDateString('en-LK', { month: 'short', day: 'numeric' });
 }
 
+function formatLabel(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatSourceLabel(source: string): string {
+  const normalized = source.trim().toLowerCase();
+  if (normalized === 'lpw') return 'LPW';
+  if (normalized === 'onlineproperty') return 'OnlineProperty';
+  return formatLabel(source) ?? source;
+}
+
+function formatLocality(listing: Listing, mode: 'mobile' | 'desktop'): string | null {
+  const primary = listing.city || listing.district || listing.raw_location;
+  if (mode === 'mobile') return primary;
+
+  const full = [listing.city, listing.district].filter(Boolean).join(', ');
+  return full || primary;
+}
+
+function formatSizeLabel(listing: Listing): string | null {
+  if (listing.size_perches != null) {
+    return `${listing.size_perches} perch${listing.size_perches === 1 ? '' : 'es'}`;
+  }
+
+  if (listing.size_sqft != null) {
+    return `${listing.size_sqft.toLocaleString('en-LK')} sqft`;
+  }
+
+  return null;
+}
+
+function formatListingTypeLabel(listingType: string | null): string | null {
+  if (!listingType) return null;
+  return listingType === 'rent' ? 'For rent' : 'For sale';
+}
+
+function formatDaysLabel(days: number | null, fallback: string | null): string | null {
+  if (days === 0) return 'New today';
+  if (days != null) return `${days}d on market`;
+  const seen = formatDate(fallback);
+  return seen ? `Seen ${seen}` : null;
+}
+
+function getDaysTone(days: number | null): 'success' | 'warning' | 'muted' {
+  if (days == null || days < 7) return 'success';
+  if (days < 30) return 'warning';
+  return 'muted';
+}
+
+function MetaPill({
+  children,
+  tone = 'neutral',
+}: {
+  children: ReactNode;
+  tone?: 'neutral' | 'muted' | 'warning' | 'success';
+}) {
+  const toneClass = {
+    neutral: 'border-white/[0.08] bg-white/[0.03] text-[#d4d4d4]',
+    muted: 'border-white/[0.06] bg-white/[0.02] text-[#8a8a8a]',
+    warning: 'border-amber-500/20 bg-amber-950/50 text-amber-300',
+    success: 'border-emerald-500/20 bg-emerald-950/40 text-emerald-300',
+  }[tone];
+
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-medium ${toneClass}`}>
+      {children}
+    </span>
+  );
+}
+
 interface Props {
   listings: Listing[];
   loading: boolean;
@@ -69,7 +143,7 @@ export function ListingsGrid({
 }: Props) {
   const totalPages = Math.ceil(total / pageSize);
   const topRef = useRef<HTMLDivElement>(null);
-  const { currency, rates } = useCurrency();
+  const { currency, rates, formatConverted } = useCurrency();
 
   function handlePageChange(p: number) {
     onPageChange(p);
@@ -128,16 +202,79 @@ export function ListingsGrid({
             emptyText: 'Price N/A',
           });
           const isCompared = selectedForComparison.includes(listing.id);
-          const hasPriceDrop = listing.price_drop_pct != null && listing.price_drop_pct > 0
-            && listing.original_price_lkr != null && listing.price_lkr != null;
           const dealBand = listing.deal_score != null ? getDealScoreBand(listing.deal_score) : null;
-
-          const detailParts = [
-            listing.size_perches && `${listing.size_perches} perch`,
-            listing.bedrooms && `${listing.bedrooms} BR`,
-            listing.bathrooms && `${listing.bathrooms} BA`,
-            listing.listing_type === 'rent' ? 'For Rent' : 'For Sale',
+          const isLand = listing.property_type?.toLowerCase() === 'land';
+          const propertyLabel = formatLabel(listing.property_type) ?? 'Property';
+          const mobileLocality = formatLocality(listing, 'mobile');
+          const desktopLocality = formatLocality(listing, 'desktop');
+          const sizeLabel = formatSizeLabel(listing);
+          const pricePerPerchLabel = listing.price_per_perch != null
+            ? `${formatConverted(listing.price_per_perch, { variant: 'table' })}/perch`
+            : null;
+          const daysLabel = formatDaysLabel(listing.days_on_market, listing.first_seen_at);
+          const footerMeta = [
+            listing.days_on_market === 0
+              ? 'New today'
+              : listing.days_on_market != null
+                ? `${listing.days_on_market}d on market`
+                : formatDate(listing.first_seen_at),
+            formatSourceLabel(listing.source),
           ].filter(Boolean);
+
+          const orderedFacts = [
+            listing.deal_score != null
+              ? {
+                  key: 'deal-score',
+                  node: <DealScorePill score={listing.deal_score} />,
+                }
+              : null,
+            listing.price_drop_pct != null && listing.price_drop_pct > 0
+              ? {
+                  key: 'price-drop',
+                  node: <MetaPill tone="warning">↓ {listing.price_drop_pct.toFixed(0)}% drop</MetaPill>,
+                }
+              : null,
+            !isLand && listing.bedrooms != null
+              ? {
+                  key: 'bedrooms',
+                  node: <MetaPill>{listing.bedrooms} BR</MetaPill>,
+                }
+              : null,
+            !isLand && listing.bathrooms != null
+              ? {
+                  key: 'bathrooms',
+                  node: <MetaPill>{listing.bathrooms} BA</MetaPill>,
+                }
+              : null,
+            sizeLabel
+              ? {
+                  key: 'size',
+                  node: <MetaPill>{sizeLabel}</MetaPill>,
+                }
+              : null,
+            pricePerPerchLabel && priceDisplay.source !== 'price_per_perch'
+              ? {
+                  key: 'price-per-perch',
+                  node: <MetaPill>{pricePerPerchLabel}</MetaPill>,
+                }
+              : null,
+            daysLabel
+              ? {
+                  key: 'days',
+                  node: <MetaPill tone={getDaysTone(listing.days_on_market)}>{daysLabel}</MetaPill>,
+                }
+              : null,
+            formatListingTypeLabel(listing.listing_type)
+              ? {
+                  key: 'listing-type',
+                  node: <MetaPill tone="muted">{formatListingTypeLabel(listing.listing_type)!}</MetaPill>,
+                }
+              : null,
+          ].filter(Boolean) as Array<{ key: string; node: ReactNode }>;
+
+          // Hybrid cards keep the headline stack fixed and cap dense fact fields by breakpoint.
+          const mobileFacts = orderedFacts.slice(0, MOBILE_FACT_LIMIT);
+          const desktopFacts = orderedFacts.slice(0, DESKTOP_FACT_LIMIT);
 
           return (
             <article
@@ -183,18 +320,19 @@ export function ListingsGrid({
 
               <Link
                 to={`/listing/${listing.id}`}
-                className="p-6 flex flex-col h-full no-underline cursor-pointer"
+                className="flex h-full flex-col p-5 pr-12 no-underline cursor-pointer sm:p-6 sm:pr-14"
               >
-                {/* Type + location */}
-                <div className="mb-3 pr-9">
-                  <p className="text-[11px] uppercase tracking-[0.12em] text-[#737373] leading-none">
-                    {[listing.property_type, listing.district].filter(Boolean).join(' · ') || 'Property'}
+                <div className="mb-3 pr-6">
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-[#737373] leading-none sm:hidden">
+                    {[propertyLabel, mobileLocality].filter(Boolean).join(' · ')}
+                  </p>
+                  <p className="hidden text-[11px] uppercase tracking-[0.12em] text-[#737373] leading-none sm:block">
+                    {[propertyLabel, desktopLocality].filter(Boolean).join(' · ')}
                   </p>
                 </div>
 
-                {/* PRICE — HERO */}
                 <div className="mb-2">
-                  <p className="text-[1.75rem] font-bold text-white tracking-tight leading-none num font-price-hero">
+                  <p className="text-[1.55rem] font-bold text-white tracking-tight leading-none num font-price-hero sm:text-[1.75rem]">
                     {priceDisplay.text}
                   </p>
                   {priceDisplay.suffix && (
@@ -202,55 +340,30 @@ export function ListingsGrid({
                   )}
                 </div>
 
-                {/* Details */}
-                {detailParts.length > 0 && (
-                  <p className="text-[13px] text-[#a3a3a3] mb-2">
-                    {detailParts.join(' · ')}
-                  </p>
-                )}
-
-                {/* Title */}
                 {listing.title && (
-                  <p className="text-[13px] text-[#737373] line-clamp-1 mb-2">
+                  <p className="mb-3 text-[13px] leading-relaxed text-[#a3a3a3] line-clamp-2">
                     {listing.title}
                   </p>
                 )}
 
-                {/* Deal signals */}
-                {(listing.deal_score !== null ||
-                  (listing.price_drop_pct !== null && listing.price_drop_pct > 0)) && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {listing.deal_score !== null && (
-                      <DealScorePill score={listing.deal_score} />
-                    )}
-                    {listing.price_drop_pct !== null && listing.price_drop_pct > 0 && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-950/60 text-amber-400 num">
-                        ↓ {listing.price_drop_pct.toFixed(0)}% drop
-                      </span>
-                    )}
+                {mobileFacts.length > 0 && (
+                  <div className="mb-4 flex flex-wrap gap-1.5 sm:hidden">
+                    {mobileFacts.map((fact) => (
+                      <div key={fact.key}>{fact.node}</div>
+                    ))}
+                  </div>
+                )}
+                {desktopFacts.length > 0 && (
+                  <div className="mb-4 hidden flex-wrap gap-1.5 sm:flex">
+                    {desktopFacts.map((fact) => (
+                      <div key={fact.key}>{fact.node}</div>
+                    ))}
                   </div>
                 )}
 
-                {/* EMI teaser */}
-                <EMITeaser priceLkr={listing.price_lkr} listingType={listing.listing_type} />
-
-                {/* Price drop sparkline */}
-                {hasPriceDrop && (
-                  <div className="mb-2 opacity-70">
-                    <PriceHistoryChart
-                      size="sparkline"
-                      data={[
-                        { date: 'original', price: listing.original_price_lkr },
-                        { date: 'current', price: listing.price_lkr },
-                      ]}
-                    />
-                  </div>
-                )}
-
-                {/* Footer — meta + link */}
-                <div className="mt-auto pt-3 pr-6 flex items-center justify-between">
+                <div className="mt-auto pt-2 pr-2 flex items-center justify-between">
                   <p className="text-[11px] text-[#525252] num">
-                    {[formatDate(listing.first_seen_at), listing.source].filter(Boolean).join(' · ')}
+                    {footerMeta.join(' · ')}
                   </p>
                 </div>
               </Link>
