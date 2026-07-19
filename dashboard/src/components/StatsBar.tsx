@@ -78,7 +78,7 @@ export function StatsBar({ stats }: Props) {
         </p>
         <h1
           className="text-[clamp(2.75rem,7vw,5.5rem)] leading-[1.05] text-white"
-          style={{ fontFamily: 'var(--font-body)', letterSpacing: '-0.025em', fontWeight: 500 }}
+          style={{ fontFamily: 'var(--font-body)', letterSpacing: '-0.02em', fontWeight: 400 }}
         >
           Market<br />
           <span className="text-[#8a8a8a]">Intelligence</span>
