@@ -29,6 +29,7 @@ export function CurrencySwitcher({ variant = 'header' }: CurrencySwitcherProps) 
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const isHeader = variant === 'header';
 
   useEffect(() => {
     if (!open) return;
@@ -54,9 +55,9 @@ export function CurrencySwitcher({ variant = 'header' }: CurrencySwitcherProps) 
     };
   }, [open]);
 
-  const triggerClassName = variant === 'toolbar'
-    ? 'inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-[#a3a3a3] transition-colors hover:bg-white/[0.06] hover:text-white'
-    : 'inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-[#a3a3a3] transition-colors hover:bg-white/[0.06] hover:text-white';
+  const triggerClassName = open
+    ? `inline-flex items-center gap-1.5 ${isHeader ? 'rounded-md' : 'rounded-full'} border border-white bg-white px-3 py-1.5 text-[12px] text-black transition-colors`
+    : `inline-flex items-center gap-1.5 ${isHeader ? 'rounded-md' : 'rounded-full'} border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-[#a3a3a3] transition-colors hover:bg-white/[0.06] hover:text-white`;
 
   return (
     <div className="relative" ref={ref}>
@@ -99,7 +100,7 @@ export function CurrencySwitcher({ variant = 'header' }: CurrencySwitcherProps) 
                     <span className={`text-[13px] ${currency === code ? 'text-white font-medium' : 'text-[#a3a3a3]'}`}>
                       {label}
                     </span>
-                    {currency === code && <Check className="w-3.5 h-3.5 text-[#14b8a6] shrink-0" />}
+                    {currency === code && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
                   </button>
                 ))}
               </div>

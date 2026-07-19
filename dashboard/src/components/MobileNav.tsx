@@ -66,7 +66,7 @@ export function MobileNav() {
   return (
     <>
       <div className="mobile-nav-wrapper">
-        <InteractiveMenu items={primaryItems} accentColor="#14b8a6" />
+        <InteractiveMenu items={primaryItems} accentColor="#f5f5f5" />
       </div>
 
       {menuOpen && (
@@ -125,7 +125,7 @@ export function MobileNav() {
                     }}
                     className={`flex w-full items-center justify-between rounded-3xl border px-4 py-3.5 text-left transition-colors ${
                       isActive
-                        ? 'border-[#14b8a6]/30 bg-[#14b8a6]/[0.08] text-white'
+                        ? 'border-white bg-white text-black'
                         : 'border-white/[0.08] bg-white/[0.02] text-[#d4d4d4]'
                     }`}
                     aria-current={isActive ? 'page' : undefined}
@@ -134,7 +134,7 @@ export function MobileNav() {
                       <span
                         className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl border ${
                           isActive
-                            ? 'border-[#14b8a6]/20 bg-[#14b8a6]/[0.08] text-[#5eead4]'
+                            ? 'border-black/10 bg-black/5 text-black'
                             : 'border-white/[0.08] bg-white/[0.04] text-[#a3a3a3]'
                         }`}
                       >
@@ -145,13 +145,19 @@ export function MobileNav() {
                         <span className="block text-[14px] font-medium text-inherit">
                           {item.label}
                         </span>
-                        <span className="mt-1 block text-[11px] leading-relaxed text-[#737373]">
+                        <span
+                          className={`mt-1 block text-[11px] leading-relaxed ${
+                            isActive ? 'text-black/65' : 'text-[#737373]'
+                          }`}
+                        >
                           {item.description}
                         </span>
                       </span>
                     </span>
 
-                    <ChevronRight className="h-4 w-4 shrink-0 text-[#525252]" />
+                    <ChevronRight
+                      className={`h-4 w-4 shrink-0 ${isActive ? 'text-black/40' : 'text-[#525252]'}`}
+                    />
                   </button>
                 );
               })}

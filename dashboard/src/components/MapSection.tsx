@@ -23,14 +23,14 @@ function formatPrice(price: number | null): string {
   return formatCurrencyAmount(price, 'LKR', { variant: 'table' });
 }
 
-// Color = avg price — muted palette that reads well on dark map tiles
+// Color = avg price — grayscale only (white → gray by ratio)
 function getColorByPrice(price: number | null, minPrice: number, maxPrice: number): string {
-  if (!price || maxPrice === minPrice) return '#7c9cbf';
+  if (!price || maxPrice === minPrice) return '#a3a3a3';
   const ratio = (price - minPrice) / (maxPrice - minPrice);
-  if (ratio > 0.72) return '#e05c5c'; // Hot   — dusty red
-  if (ratio > 0.45) return '#d4924a'; // High  — muted amber
-  if (ratio > 0.22) return '#4fae8a'; // Med   — muted teal
-  return '#7c9cbf';                   // Low   — slate blue
+  if (ratio > 0.72) return '#f5f5f5'; // Hot  — near white
+  if (ratio > 0.45) return '#d4d4d4'; // High — light gray
+  if (ratio > 0.22) return '#a3a3a3'; // Med  — mid gray
+  return '#737373';                   // Low  — darker gray
 }
 
 // Size = listing volume
@@ -72,10 +72,10 @@ export function MapSection({ points, onDistrictSelect, onBrowseListings, selecte
         {points.length > 0 && (
           <div className="flex items-center gap-1.5">
             {([
-              { label: 'Low',  color: '#7c9cbf' },
-              { label: 'Med',  color: '#4fae8a' },
-              { label: 'High', color: '#d4924a' },
-              { label: 'Hot',  color: '#e05c5c' },
+              { label: 'Low',  color: '#737373' },
+              { label: 'Med',  color: '#a3a3a3' },
+              { label: 'High', color: '#d4d4d4' },
+              { label: 'Hot',  color: '#f5f5f5' },
             ] as { label: string; color: string }[]).map(({ label, color }) => (
               <span
                 key={label}
@@ -89,7 +89,7 @@ export function MapSection({ points, onDistrictSelect, onBrowseListings, selecte
         )}
       </div>
 
-      <div className="card overflow-hidden" style={{ height: 420 }}>
+      <div className="card overflow-hidden h-[260px] md:h-[420px]">
         {points.length === 0 ? (
           <EmptyStatePanel
             eyebrow="Market Heatmap"
@@ -109,8 +109,8 @@ export function MapSection({ points, onDistrictSelect, onBrowseListings, selecte
           >
             <MapController />
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             />
             {points.map((pt) => {
               const radius = getRadius(pt.count, maxCount);
@@ -159,11 +159,11 @@ export function MapSection({ points, onDistrictSelect, onBrowseListings, selecte
                       </p>
                       {pt.avg_price && (
                         <p className="text-text-secondary">
-                          Avg: <span className="font-semibold text-accent-light">{formatPrice(pt.avg_price)}</span>
+                          Avg: <span className="font-semibold text-white">{formatPrice(pt.avg_price)}</span>
                         </p>
                       )}
                       <button
-                        className="mt-2 text-xs text-accent-light hover:underline cursor-pointer bg-transparent border-none p-0"
+                        className="mt-2 text-xs text-white hover:underline cursor-pointer bg-transparent border-none p-0"
                         onClick={() => onDistrictSelect(pt.district)}
                       >
                         View listings &rarr;

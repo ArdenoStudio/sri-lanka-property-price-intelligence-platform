@@ -42,11 +42,11 @@ export function MinimalSelect({ options, value, onChange, prefix }: {
             {options.map(opt => (
               <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpen(false); }}
                 className={`relative w-full flex items-center justify-between gap-2 px-4 py-2.5 text-[13px] text-left transition-colors cursor-pointer bg-transparent border-none ${
-                  opt.value === value ? 'text-[#14b8a6]' : 'text-[#525252] hover:text-white hover:bg-white/[0.04]'
+                  opt.value === value ? 'text-white' : 'text-[#525252] hover:text-white hover:bg-white/[0.04]'
                 }`}>
                 <span>{opt.label}</span>
                 {opt.value === value && opt.value !== '' && (
-                  <svg viewBox="0 0 12 12" className="w-3 h-3 flex-shrink-0 text-[#14b8a6]" fill="none">
+                  <svg viewBox="0 0 12 12" className="w-3 h-3 flex-shrink-0 text-white" fill="none">
                     <polyline points="2,6.5 5,9.5 10,3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}

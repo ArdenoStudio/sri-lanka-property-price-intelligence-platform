@@ -15,16 +15,16 @@
   --color-border-hover:  rgba(255, 255, 255, 0.14);
   --color-border-strong: rgba(255, 255, 255, 0.18);
 
-  /* Accent — teal, used ≤4× per viewport */
-  --color-accent:       #14b8a6;
-  --color-accent-light: #5eead4;
-  --color-accent-glow:  rgba(20, 184, 166, 0.15);
-  --color-accent-dim:   rgba(20, 184, 166, 0.12);
+  /* Accent — ink / paper (strict B&W) */
+  --color-accent:       #ffffff;
+  --color-accent-light: #e5e5e5;
+  --color-accent-glow:  rgba(255, 255, 255, 0.10);
+  --color-accent-dim:   rgba(255, 255, 255, 0.06);
 
-  /* Semantic */
-  --color-success: #34d399;
-  --color-warning: #fbbf24;
-  --color-danger:  #f87171;
+  /* Semantic — weight/contrast, not hue */
+  --color-success: #ffffff;
+  --color-warning: #d4d4d4;
+  --color-danger:  #f5f5f5;
 
   /* Text — Apple's precise gray scale */
   --color-text-primary:   #f5f5f5;
@@ -70,13 +70,14 @@
   --radius-xl:   28px;
   --radius-pill: 9999px;
 
-  /* Motion — Apple's spring feel */
+  /* Motion — property.lk ease-out only (no bounce); see src/lib/motion.ts */
   --motion-instant: 80ms;
   --motion-fast:    160ms;
   --motion-normal:  280ms;
   --motion-slow:    480ms;
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
   --ease-apple:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: var(--ease-out); /* legacy alias — do not use spring physics */
 }
 
 /* ============================================================
@@ -93,9 +94,9 @@
 
 
 
-/* Focus ring — keyboard-only, teal accent */
+/* Focus ring — keyboard-only, ink */
 :focus-visible {
-  outline: 2px solid #5eead4;
+  outline: 2px solid #f5f5f5;
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -217,11 +218,11 @@ h1, h2, h3, h4, h5, h6 {
 .premium-interactive:active { transform: scale(0.98); }
 
 .gradient-accent {
-  background: linear-gradient(135deg, #14b8a6 0%, #5eead4 100%);
+  background: linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%);
 }
 
 .text-gradient {
-  background: linear-gradient(to right, #f5f5f5, #5eead4);
+  background: linear-gradient(to right, #f5f5f5, #e5e5e5);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -345,20 +346,12 @@ h1, h2, h3, h4, h5, h6 {
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ============================================================
-   LISTINGS GRID — magazine 1px gap trick
+   LISTINGS GRID — horizontal B&W rows
    ============================================================ */
 .listings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 24px;
-  overflow: hidden;
-}
-
-@media (max-width: 640px) {
-  .listings-grid { grid-template-columns: 1fr; }
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ============================================================
@@ -382,7 +375,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #5eead4;
+  background: #e5e5e5;
   border: 2px solid #000000;
   cursor: pointer;
   pointer-events: all;
@@ -391,13 +384,13 @@ h1, h2, h3, h4, h5, h6 {
 .price-range-input:hover::-webkit-slider-thumb,
 .price-range-input:focus-visible::-webkit-slider-thumb {
   transform: scale(1.2);
-  box-shadow: 0 0 0 6px rgba(20, 184, 166, 0.25);
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.18);
 }
 .price-range-input::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #5eead4;
+  background: #e5e5e5;
   border: 2px solid #000000;
   cursor: pointer;
   pointer-events: all;
@@ -416,6 +409,27 @@ h1, h2, h3, h4, h5, h6 {
 .css-fade-in-delay {
   animation-delay: 150ms;
 }
+
+/* Hero — full-bleed B&W texture + staggered enter + slow ken */
+@keyframes heroKen {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+.hero-bleed {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 35%, #2a2a2a 0%, #0a0a0a 55%, #000 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.015) 2px, rgba(255, 255, 255, 0.015) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.012) 2px, rgba(255, 255, 255, 0.012) 3px);
+  filter: grayscale(1) contrast(1.05);
+  animation: heroKen 22s var(--ease-apple) infinite alternate;
+  will-change: transform;
+}
+.hero-in {
+  animation: cssFadeIn 0.7s var(--ease-spring) both;
+}
+.hero-in-d1 { animation-delay: 120ms; }
+.hero-in-d2 { animation-delay: 240ms; }
+.hero-in-d3 { animation-delay: 360ms; }
 
 @keyframes cssListingFadeIn {
   from { opacity: 0; }
@@ -492,13 +506,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .mobile-menu__item:focus-visible {
-  outline: 2px solid #5eead4;
+  outline: 2px solid #e5e5e5;
   outline-offset: 2px;
 }
 
 /* Active item background */
 .mobile-menu__item.active {
-  background: rgba(20, 184, 166, 0.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* Top accent line for active item */
@@ -510,7 +524,7 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateX(-50%);
   width: var(--lineWidth, 0px);
   height: 2px;
-  background: var(--mobile-menu-accent, #14b8a6);
+  background: var(--mobile-menu-accent, #f5f5f5);
   border-radius: 0 0 2px 2px;
   transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -535,7 +549,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Active icon — colored + bounce */
 .mobile-menu__item.active .mobile-menu__icon-svg {
-  color: var(--mobile-menu-accent, #14b8a6);
+  color: var(--mobile-menu-accent, #f5f5f5);
   animation: mobileIconBounce 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -555,7 +569,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Active label — lighter, slides up */
 .mobile-menu__text.active {
-  color: var(--mobile-menu-accent, #14b8a6);
+  color: var(--mobile-menu-accent, #f5f5f5);
   opacity: 1;
   transform: translateY(0);
 }

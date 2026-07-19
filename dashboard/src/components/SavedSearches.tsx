@@ -196,7 +196,7 @@ export function SavedSearches({
               </div>
 
               {statusMessage && (
-                <div className="mt-4 rounded-2xl border border-[#14b8a6]/20 bg-[#14b8a6]/[0.08] px-3.5 py-3 text-[12px] text-[#ccfbf1]">
+                <div className="mt-4 rounded-2xl border border-white/15 bg-white/[0.06] px-3.5 py-3 text-[12px] text-[#e5e5e5]">
                   {statusMessage}
                 </div>
               )}
@@ -250,7 +250,7 @@ export function SavedSearches({
                   disabled={!canSave}
                   className={`mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-medium transition-all cursor-pointer border-none ${
                     canSave
-                      ? 'bg-[#14b8a6]/[0.12] hover:bg-[#14b8a6]/[0.2] text-[#bffaf3] border border-[#14b8a6]/30'
+                      ? 'bg-white hover:bg-[#e5e5e5] text-black'
                       : 'bg-white/[0.04] text-[#525252] cursor-not-allowed'
                   }`}
                 >
@@ -264,7 +264,7 @@ export function SavedSearches({
               {searches.length === 0 ? (
                 <div className="rounded-[28px] border border-dashed border-white/[0.1] bg-[#161616] px-5 py-10 text-center">
                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-white/[0.08] bg-black/30">
-                    <Sparkles className="w-5 h-5 text-[#14b8a6]" />
+                    <Sparkles className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="text-[22px] text-white" style={{ fontFamily: DISPLAY_FONT }}>
                     Start a compact watchlist
@@ -318,7 +318,7 @@ export function SavedSearches({
                               {search.name}
                             </h3>
                             {isCurrent && (
-                              <span className="rounded-full border border-[#14b8a6]/25 bg-[#14b8a6]/[0.08] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[#99f6e4]">
+                              <span className="rounded-full border border-white/20 bg-white/[0.08] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-white">
                                 Live
                               </span>
                             )}
@@ -333,7 +333,7 @@ export function SavedSearches({
                           className="flex-shrink-0 w-8 h-8 rounded-full bg-white/[0.04] hover:bg-red-500/[0.15] flex items-center justify-center transition-all cursor-pointer border-none"
                           title="Delete"
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-[#737373] hover:text-red-400" />
+                          <Trash2 className="w-3.5 h-3.5 text-[#737373] hover:text-[#a3a3a3]" />
                         </button>
                       </div>
 
@@ -376,7 +376,7 @@ export function SavedSearches({
                             onClick={() => handleToggleNotifications(search.id)}
                             className={`flex h-9 min-w-9 items-center justify-center rounded-full border transition-colors cursor-pointer ${
                               search.notificationsEnabled
-                                ? 'border-[#14b8a6]/30 bg-[#14b8a6]/[0.12] text-[#99f6e4]'
+                                ? 'border-white/25 bg-white/[0.1] text-white'
                                 : 'border-white/[0.08] bg-white/[0.03] text-[#737373] hover:text-white'
                             }`}
                             aria-label={search.notificationsEnabled ? 'Disable local match tracking' : 'Enable local match tracking'}

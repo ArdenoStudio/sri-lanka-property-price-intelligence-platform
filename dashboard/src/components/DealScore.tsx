@@ -26,6 +26,7 @@ export function DealScorePill({
   const meta = getDealScoreMeta(score);
   const tone = getSurfaceTone(meta.band, surface);
   const isCompare = variant === 'compare';
+  const hairline = surface === 'light' ? 'rgba(10, 10, 10, 0.2)' : 'rgba(255, 255, 255, 0.22)';
 
   return (
     <span
@@ -36,17 +37,14 @@ export function DealScorePill({
       }`}
       style={{
         color: tone.fg,
-        backgroundColor: tone.bg,
-        borderColor: tone.border,
+        backgroundColor: 'transparent',
+        borderColor: hairline,
+        borderWidth: 1,
+        fontWeight: 600,
       }}
       aria-label={getDealScoreAriaLabel(score)}
       title={meta.sentence}
     >
-      <span
-        className="h-1.5 w-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: tone.accent }}
-        aria-hidden="true"
-      />
       {isCompare ? (
         <>
           <span className="num">{formatSignedScore(meta.score)}%</span>
@@ -69,23 +67,29 @@ export function DealScoreMeter({
   const meta = getDealScoreMeta(score);
   const tone = getSurfaceTone(meta.band, surface);
   const position = ((meta.score + 100) / 200) * 100;
-  const labelColor = surface === 'light' ? '#64748b' : '#737373';
-  const markerBorder = surface === 'light' ? 'rgba(255, 255, 255, 0.96)' : '#111111';
+  const labelColor = surface === 'light' ? '#525252' : 'rgba(255, 255, 255, 0.45)';
+  const tickIdle = surface === 'light' ? 'rgba(10, 10, 10, 0.1)' : 'rgba(255, 255, 255, 0.12)';
+  const tickActive = surface === 'light' ? 'rgba(10, 10, 10, 0.55)' : 'rgba(255, 255, 255, 0.72)';
+  const centerLine = surface === 'light' ? 'rgba(10, 10, 10, 0.14)' : 'rgba(255, 255, 255, 0.14)';
+  const markerBorder = surface === 'light' ? '#ffffff' : '#0a0a0a';
+  const markerFill = surface === 'light' ? '#0a0a0a' : '#ffffff';
 
   return (
     <div>
       <div className="relative">
-        <div className="grid grid-cols-5 gap-1">
+        {/* 5-tick mono bar */}
+        <div className="grid grid-cols-5 gap-1" aria-hidden="true">
           {DEAL_SCORE_BANDS.map((band) => {
-            const bandTone = getSurfaceTone(band, surface);
             const isActive = band.id === meta.band.id;
             return (
               <div
                 key={band.id}
-                className="h-2 rounded-full"
+                className="h-2 rounded-sm border"
                 style={{
-                  backgroundColor: bandTone.bg,
-                  boxShadow: isActive ? `inset 0 0 0 1px ${bandTone.border}` : undefined,
+                  backgroundColor: isActive ? tickActive : 'transparent',
+                  borderColor: isActive ? tickActive : tickIdle,
+                  borderWidth: 1,
+                  opacity: isActive ? 1 : 0.85,
                 }}
               />
             );
@@ -93,7 +97,7 @@ export function DealScoreMeter({
         </div>
         <div
           className="absolute top-1/2 h-5 w-px -translate-y-1/2"
-          style={{ left: '50%', backgroundColor: surface === 'light' ? 'rgba(82, 97, 115, 0.18)' : 'rgba(255, 255, 255, 0.12)' }}
+          style={{ left: '50%', backgroundColor: centerLine }}
           aria-hidden="true"
         />
         <div
@@ -102,11 +106,12 @@ export function DealScoreMeter({
           aria-hidden="true"
         >
           <div
-            className="h-3.5 w-3.5 rounded-full border-2"
+            className="h-3 w-3 rounded-full border"
             style={{
-              backgroundColor: tone.accent,
+              backgroundColor: markerFill,
               borderColor: markerBorder,
-              boxShadow: `0 0 0 4px ${tone.bg}`,
+              borderWidth: 1,
+              boxShadow: `0 0 0 3px ${tone.bg}`,
             }}
           />
         </div>
@@ -128,10 +133,12 @@ export function DealScoreLegend({
   surface?: DealScoreSurface;
 }) {
   const activeBand = score != null ? getDealScoreBand(score) : null;
-  const headingColor = surface === 'light' ? '#334155' : '#f5f5f5';
-  const bodyColor = surface === 'light' ? '#64748b' : '#737373';
-  const defaultBorder = surface === 'light' ? DEAL_SCORE_LIGHT_SURFACE_TOKENS.border : 'rgba(255, 255, 255, 0.08)';
-  const defaultBg = surface === 'light' ? DEAL_SCORE_LIGHT_SURFACE_TOKENS.bg : 'rgba(255, 255, 255, 0.02)';
+  const headingColor = surface === 'light' ? '#171717' : 'rgba(255, 255, 255, 0.88)';
+  const bodyColor = surface === 'light' ? '#525252' : 'rgba(255, 255, 255, 0.45)';
+  const defaultBorder = surface === 'light' ? DEAL_SCORE_LIGHT_SURFACE_TOKENS.border : 'rgba(255, 255, 255, 0.1)';
+  const defaultBg = 'transparent';
+  const activeBorder = surface === 'light' ? 'rgba(10, 10, 10, 0.35)' : 'rgba(255, 255, 255, 0.32)';
+  const activeBg = surface === 'light' ? 'rgba(10, 10, 10, 0.03)' : 'rgba(255, 255, 255, 0.04)';
 
   return (
     <div className="mt-5">
@@ -150,20 +157,22 @@ export function DealScoreLegend({
               key={band.id}
               className="rounded-xl border px-3 py-2"
               style={{
-                borderColor: isActive ? tone.border : defaultBorder,
-                backgroundColor: isActive ? tone.bg : defaultBg,
+                borderColor: isActive ? activeBorder : defaultBorder,
+                backgroundColor: isActive ? activeBg : defaultBg,
+                borderWidth: 1,
               }}
             >
               <div className="flex items-center gap-2">
-                <span
-                  className="h-2 w-2 rounded-full shrink-0"
-                  style={{ backgroundColor: tone.accent }}
-                  aria-hidden="true"
-                />
-                <p className="text-[11px] font-semibold" style={{ color: isActive ? tone.fg : headingColor }}>
+                <p
+                  className="text-[11px]"
+                  style={{
+                    color: isActive ? tone.fg : headingColor,
+                    fontWeight: isActive ? 700 : 500,
+                  }}
+                >
                   {band.legendLabel}
                 </p>
-                <span className="ml-auto text-[10px] num" style={{ color: bodyColor }}>
+                <span className="ml-auto text-[10px] num" style={{ color: bodyColor, fontWeight: isActive ? 600 : 400 }}>
                   {formatBandRange(band.min, band.max)}
                 </span>
               </div>
@@ -189,8 +198,8 @@ export function DealScoreCard({
 
   const meta = getDealScoreMeta(score);
   const tone = getSurfaceTone(meta.band, surface);
-  const eyebrowColor = surface === 'light' ? '#64748b' : '#737373';
-  const copyColor = surface === 'light' ? '#475569' : '#a3a3a3';
+  const eyebrowColor = surface === 'light' ? '#525252' : 'rgba(255, 255, 255, 0.45)';
+  const copyColor = surface === 'light' ? '#404040' : 'rgba(255, 255, 255, 0.55)';
 
   return (
     <div aria-label={getDealScoreAriaLabel(score)}>

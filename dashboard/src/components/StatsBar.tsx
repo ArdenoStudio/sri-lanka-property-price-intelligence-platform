@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
 import type { Stats } from '../api';
 import { formatCurrencyAmount } from '../lib/pricing';
 
-// ---- Formatters ----
 function formatPrice(price: number | null): string {
   return formatCurrencyAmount(price, 'LKR', { variant: 'hero' });
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return 'Never';
+  if (!iso) return '—';
   const d = new Date(iso);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
@@ -20,175 +18,43 @@ function formatDate(iso: string | null): string {
   return d.toLocaleDateString('en-LK', { month: 'short', day: 'numeric' });
 }
 
-// ---- Counter animation ----
-function useCountUp(target: number, duration = 1200): number {
-  const [value, setValue] = useState(0);
-  const rafRef = useRef(0);
-  const prevTarget = useRef(0);
-
-  useEffect(() => {
-    if (!target || target === prevTarget.current) return;
-    prevTarget.current = target;
-    const start = Date.now();
-    const from = value;
-
-    const tick = () => {
-      const t = Math.min((Date.now() - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setValue(Math.round(from + (target - from) * eased));
-      if (t < 1) rafRef.current = requestAnimationFrame(tick);
-    };
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [target, duration]);
-
-  return value;
-}
-
 interface Props {
   stats: Stats | null;
 }
 
+/** Post-hero trust strip — type only, no cards, no second headline. */
 export function StatsBar({ stats }: Props) {
-  const avgRaw = useCountUp(stats?.avg_price_lkr ?? 0, 1400);
-  const totalRaw = useCountUp(stats?.total_listings ?? 0, 1200);
-  const districtsRaw = useCountUp(stats?.districts_covered ?? 0, 1000);
-
-  const changePct = stats?.price_change_pct ?? null;
-  const weeklyNew = stats?.listings_last_7_days ?? 0;
-
-  // Subline: listing type breakdown
-  const typeBreakdown = stats?.listings_by_type
-    ? Object.entries(stats.listings_by_type)
-        .sort(([, a], [, b]) => b - a)
-        .map(([t]) => t.charAt(0).toUpperCase() + t.slice(1))
-        .join(' · ')
-    : 'Land · House · Apartment · Commercial';
-
-  const loading = !stats;
+  const avg = stats?.avg_price_lkr ?? null;
+  const total = stats?.total_listings ?? null;
+  const districts = stats?.districts_covered ?? null;
+  const updated = formatDate(stats?.last_updated ?? null);
 
   return (
-    <section className="pt-4 pb-10">
-      <div
-        className="mb-16 text-center flex flex-col items-center css-fade-in"
-      >
-        <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-5">
-          Sri Lanka · Property Intelligence
-        </p>
-        <h1
-          className="text-[clamp(2.75rem,7vw,5.5rem)] leading-[1.05] text-white"
-          style={{ fontFamily: 'var(--font-body)', letterSpacing: '-0.02em', fontWeight: 400 }}
-        >
-          Market<br />
-          <span className="text-[#8a8a8a]">Intelligence</span>
-        </h1>
-        <p className="mt-7 text-[#a3a3a3] text-[15px] leading-relaxed text-center sm:whitespace-nowrap">
-          Real-time property data across Sri Lanka. Updated daily from 5,000+ listings.
-        </p>
-      </div>
-
-      {/* ---- Bento stats grid ---- */}
-      <div className="css-fade-in css-fade-in-delay">
-        <div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 rounded-3xl overflow-hidden"
-          style={{
-            gap: '1px',
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.07)',
-          }}
-        >
-          {/* ---- Hero card: Avg Price (span 2 on lg) ---- */}
-          <div className="relative bg-[#111111] p-8 lg:col-span-2 flex flex-col justify-between min-h-[180px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#14b8a6] to-[#0d9488]" />
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse 60% 50% at 20% 0%, rgba(20,184,166,0.07) 0%, transparent 70%)' }}
-            />
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">Average Price</p>
-              {loading ? (
-                <div className="animate-pulse">
-                  <div className="h-12 bg-white/[0.06] rounded-lg w-48 mb-4" />
-                  <div className="h-6 bg-white/[0.04] rounded-full w-36" />
-                </div>
-              ) : (
-                <>
-                  <p className="text-[clamp(2.5rem,5vw,4rem)] font-bold text-white tracking-[-0.04em] leading-none num font-price-hero">
-                    {formatPrice(avgRaw || null)}
-                  </p>
-                  {changePct !== null && (
-                    <span className={`mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full num ${
-                      changePct >= 0 ? 'bg-red-950 text-red-400' : 'bg-emerald-950 text-emerald-400'
-                    }`}>
-                      <span className="text-[14px] leading-none" aria-hidden="true">{changePct >= 0 ? '▲' : '▼'}</span>
-                      {changePct >= 0 ? '+' : ''}{changePct}% vs last month
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* ---- Total Listings ---- */}
-          <div className="relative bg-[#111111] p-8 flex flex-col justify-between min-h-[140px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">Listings</p>
-              {loading ? (
-                <div className="animate-pulse">
-                  <div className="h-9 bg-white/[0.06] rounded-lg w-28 mb-3" />
-                  <div className="h-3 bg-white/[0.04] rounded w-20" />
-                </div>
-              ) : (
-                <>
-                  <p className="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-white tracking-[-0.03em] leading-none num">
-                    {totalRaw.toLocaleString()}
-                  </p>
-                  <p className="text-[11px] text-[#737373] mt-3">+{weeklyNew.toLocaleString()} this week</p>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* ---- Districts ---- */}
-          <div className="relative bg-[#111111] p-8 flex flex-col justify-between min-h-[140px] transition-colors duration-200 hover:bg-[#161616] overflow-hidden">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-3">Districts</p>
-              {loading ? (
-                <div className="animate-pulse">
-                  <div className="h-9 bg-white/[0.06] rounded-lg w-16 mb-3" />
-                  <div className="h-3 bg-white/[0.04] rounded w-24" />
-                </div>
-              ) : (
-                <>
-                  <p className="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-white tracking-[-0.03em] leading-none num">
-                    {districtsRaw}
-                  </p>
-                  <p className="text-[11px] text-[#737373] mt-3">Across Sri Lanka</p>
-                </>
-              )}
-            </div>
-          </div>
+    <section aria-label="Market coverage" className="border-b border-white/[0.08] pb-8">
+      <dl className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+        <div>
+          <dt className="text-[11px] uppercase tracking-[0.18em] text-[#737373]">Avg asking</dt>
+          <dd className="mt-1 font-display text-[1.35rem] tabular-nums text-white">
+            {avg != null ? formatPrice(avg) : '—'}
+          </dd>
         </div>
-
-        {/* Subline */}
-        <p className="text-[#737373] text-[11px] mt-4 leading-relaxed flex items-center gap-2 flex-wrap">
-          {loading ? (
-            <span className="animate-pulse inline-block h-3 bg-white/[0.05] rounded w-64" />
-          ) : (
-            <>
-              {stats?.total_listings?.toLocaleString()} listings across {typeBreakdown}
-              {stats?.last_updated && (
-                <>
-                  <span> · Updated {formatDate(stats.last_updated)}</span>
-                  <span className="inline-flex items-center gap-1.5 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-dot shrink-0" aria-label="Live data" />
-                  </span>
-                </>
-              )}
-            </>
-          )}
-        </p>
-      </div>
+        <div>
+          <dt className="text-[11px] uppercase tracking-[0.18em] text-[#737373]">Listings</dt>
+          <dd className="mt-1 font-display text-[1.35rem] tabular-nums text-white">
+            {total != null ? total.toLocaleString() : '—'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[11px] uppercase tracking-[0.18em] text-[#737373]">Districts</dt>
+          <dd className="mt-1 font-display text-[1.35rem] tabular-nums text-white">
+            {districts != null ? districts : '—'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[11px] uppercase tracking-[0.18em] text-[#737373]">Updated</dt>
+          <dd className="mt-1 font-display text-[1.35rem] text-white">{updated}</dd>
+        </div>
+      </dl>
     </section>
   );
 }

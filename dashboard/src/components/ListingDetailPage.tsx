@@ -27,11 +27,11 @@ import { getDealScoreMeta, isTypicalDealScore } from '../lib/dealScore';
 import { DealScoreCard } from './DealScore';
 
 const TYPE_COLORS: Record<string, string> = {
-  land: 'bg-amber-500/[0.12] text-amber-400 border-amber-500/20',
-  house: 'bg-blue-500/[0.12] text-blue-400 border-blue-500/20',
-  apartment: 'bg-purple-500/[0.12] text-purple-400 border-purple-500/20',
-  commercial: 'bg-orange-500/[0.12] text-orange-400 border-orange-500/20',
-  villa: 'bg-emerald-500/[0.12] text-emerald-400 border-emerald-500/20',
+  land: 'bg-white/[0.06] text-[#a3a3a3] border-white/15',
+  house: 'bg-white/[0.08] text-white border-white/20',
+  apartment: 'bg-white/[0.07] text-[#e5e5e5] border-white/18',
+  commercial: 'bg-white/[0.05] text-[#737373] border-white/12',
+  villa: 'bg-white/[0.08] text-white border-white/20',
 };
 
 function formatTimeAgo(iso: string | null | undefined): string {
@@ -50,9 +50,9 @@ function formatTimeAgo(iso: string | null | undefined): string {
 }
 
 function daysColor(days: number | null | undefined): string {
-  if (days == null || days < 7) return '#10b981';
-  if (days < 30) return '#f59e0b';
-  return '#ef4444';
+  if (days == null || days < 7) return '#ffffff';
+  if (days < 30) return '#a3a3a3';
+  return '#737373';
 }
 
 function formatDaysListed(days: number | null | undefined, fallback: string | null | undefined): string | null {
@@ -93,7 +93,7 @@ function SimilarCard({ listing, formatConverted }: { listing: SimilarListing; fo
           {listing.property_type}
         </span>
         {listing.deal_score != null && listing.deal_score > 0 && (
-          <span className="text-[10px] text-emerald-400 font-medium bg-emerald-400/[0.08] px-2 py-0.5 rounded-full border border-emerald-400/20">
+          <span className="text-[10px] text-white font-medium bg-white/[0.08] px-2 py-0.5 rounded-full border border-white/20">
             +{listing.deal_score.toFixed(0)}% deal
           </span>
         )}
@@ -139,7 +139,7 @@ function ErrorState({ onBack }: { onBack: () => void }) {
         <h1 className="text-2xl font-bold text-white mb-6">This listing doesn't exist</h1>
         <button
           onClick={onBack}
-          className="px-6 py-2.5 bg-[#14b8a6] text-black text-[13px] font-bold rounded-xl cursor-pointer border-none hover:bg-[#0d9488] transition-colors"
+          className="px-6 py-2.5 bg-white text-black text-[13px] font-bold rounded-xl cursor-pointer border-none hover:bg-[#d4d4d4] transition-colors"
         >
           Back to listings
         </button>
@@ -243,12 +243,12 @@ export function ListingDetail() {
         </button>
 
         {daysSinceLastSeen != null && daysSinceLastSeen > 7 && (
-          <div className="bg-amber-500/[0.08] border border-amber-500/20 rounded-2xl px-4 py-3 mb-8 flex items-center gap-3">
-            <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
-            <p className="text-[13px] text-amber-400">
+          <div className="bg-white/[0.06] border border-white/15 rounded-2xl px-4 py-3 mb-8 flex items-center gap-3">
+            <Calendar className="w-4 h-4 text-[#a3a3a3] shrink-0" />
+            <p className="text-[13px] text-[#a3a3a3]">
               Last confirmed {daysSinceLastSeen} days ago — this listing may no longer be available.{' '}
               {detail.url && (
-                <a href={detail.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">
+                <a href={detail.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-[#a3a3a3]">
                   Verify on source
                 </a>
               )}
@@ -280,8 +280,8 @@ export function ListingDetail() {
 
             {detail.price_drop_pct != null && detail.price_drop_pct > 0 && (
               <div className="flex items-center gap-1.5 mb-3">
-                <TrendingDown className="w-4 h-4 text-amber-400" />
-                <span className="text-[13px] text-amber-400 font-medium">
+                <TrendingDown className="w-4 h-4 text-[#a3a3a3]" />
+                <span className="text-[13px] text-[#a3a3a3] font-medium">
                   {detail.price_drop_pct.toFixed(1)}% price drop from {detail.original_price_lkr ? formatConverted(detail.original_price_lkr, { variant: 'table' }) : 'original'}
                 </span>
               </div>
@@ -298,7 +298,7 @@ export function ListingDetail() {
                   href={detail.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#14b8a6] text-black text-[13px] font-bold rounded-xl hover:bg-[#0d9488] transition-colors no-underline"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-black text-[13px] font-bold rounded-xl hover:bg-[#d4d4d4] transition-colors no-underline"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   View source
@@ -371,7 +371,7 @@ export function ListingDetail() {
               {detail.description.length > 300 && (
                 <button
                   onClick={() => setDescExpanded(v => !v)}
-                  className="text-[12px] text-[#14b8a6] hover:text-[#5eead4] mt-3 cursor-pointer bg-transparent border-none p-0 transition-colors"
+                  className="text-[12px] text-[#f5f5f5] hover:text-[#e5e5e5] mt-3 cursor-pointer bg-transparent border-none p-0 transition-colors"
                 >
                   {descExpanded ? 'Show less' : 'Read more'}
                 </button>
@@ -420,7 +420,7 @@ export function ListingDetail() {
                 href={`https://www.openstreetmap.org/?mlat=${detail.lat}&mlon=${detail.lng}#map=16/${detail.lat}/${detail.lng}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 mt-3 text-[12px] text-[#525252] hover:text-[#14b8a6] transition-colors no-underline"
+                className="inline-flex items-center gap-1.5 mt-3 text-[12px] text-[#525252] hover:text-[#f5f5f5] transition-colors no-underline"
               >
                 <ExternalLink className="w-3 h-3" />
                 Open in OpenStreetMap

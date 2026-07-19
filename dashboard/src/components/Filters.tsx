@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Bookmark, ChevronDown } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { District } from '../api';
 import { formatCurrencyAmount } from '../lib/pricing';
+import { tx } from '../lib/motion';
 import { MinimalSelect } from './ui/MinimalSelect';
 import type { SelectOption } from './ui/MinimalSelect';
 import { useCurrency } from '../hooks/useCurrency';
@@ -69,7 +70,7 @@ function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChan
       )}
       <div className="relative h-8 flex items-center">
         <div className="absolute inset-x-0 h-[2px] rounded-full bg-white/[0.08]" />
-        <div className="absolute h-[2px] rounded-full bg-[#14b8a6]"
+        <div className="absolute h-[2px] rounded-full bg-white"
           style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
         <input type="range" min={0} max={SLIDER_MAX} step={1} value={localMin}
           aria-label="Minimum price"
@@ -185,7 +186,7 @@ function SizeRangeSlider({ min, max, onMinChange, onMaxChange, unit }: {
       </div>
       <div className="relative h-8 flex items-center">
         <div className="absolute inset-x-0 h-[2px] rounded-full bg-white/[0.08]" />
-        <div className="absolute h-[2px] rounded-full bg-[#14b8a6]"
+        <div className="absolute h-[2px] rounded-full bg-white"
           style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
         <input type="range" min={0} max={MAX} step={STEP} value={localMin}
           aria-label={`Minimum size in ${unit}`}
@@ -299,7 +300,7 @@ function RoomsDropdown({ minBeds, onMinBedsChange, minBaths, onMinBathsChange }:
   const pillCls = (active: boolean) =>
     `px-2.5 py-1 rounded-full text-[12px] font-medium transition-colors border cursor-pointer ${
       active
-        ? 'bg-[#14b8a6] border-[#14b8a6] text-black'
+        ? 'bg-white border-white text-black'
         : 'bg-transparent border-white/[0.1] text-[#525252] hover:text-white hover:border-white/[0.25]'
     }`;
 
@@ -415,6 +416,7 @@ export function Filters({
   minSizeSqft, maxSizeSqft, onMinSizeSqftChange, onMaxSizeSqftChange,
   sortBy, onSortChange, selectedSource, onSourceChange, totalResults, onOpenSavedSearches,
 }: Props) {
+  const reduce = useReducedMotion();
   const hasFilters = !!(
     selectedDistrict || selectedType || listingType || selectedSource ||
     minPrice !== '' || maxPrice !== '' ||
@@ -449,7 +451,7 @@ export function Filters({
               {selectedType === opt.value && (
                 <motion.span layoutId="active-type-pill"
                   className="absolute inset-0 bg-white rounded-full"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
+                  transition={tx(0.2, reduce)} />
               )}
               <span className="relative z-10">{opt.label}</span>
             </button>
@@ -468,7 +470,7 @@ export function Filters({
               {listingType === opt.value && (
                 <motion.span layoutId="active-listing-pill"
                   className="absolute inset-0 bg-white rounded-full"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
+                  transition={tx(0.2, reduce)} />
               )}
               <span className="relative z-10">{opt.label}</span>
             </button>
@@ -512,7 +514,7 @@ export function Filters({
 
         {hasFilters && (
           <button onClick={clearAll}
-            className="flex items-center gap-1 text-[11px] text-[#14b8a6] whitespace-nowrap flex-shrink-0 cursor-pointer bg-transparent border-none p-0 hover:text-[#5eead4] transition-colors ml-2">
+            className="flex items-center gap-1 text-[11px] text-[#a3a3a3] whitespace-nowrap flex-shrink-0 cursor-pointer bg-transparent border-none p-0 hover:text-white transition-colors ml-2">
             <X className="w-3 h-3" /> Clear
           </button>
         )}

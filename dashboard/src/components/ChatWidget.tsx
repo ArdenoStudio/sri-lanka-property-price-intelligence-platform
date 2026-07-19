@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { ChatResponse } from '../api';
 import { sendChatMessage } from '../api';
 
-const ACCENT = '#14b8a6';
-const ACCENT_RGB = '20,184,166';
+const ACCENT = '#f5f5f5';
+const ACCENT_RGB = '245,245,245';
 const STORAGE_KEY = 'propertylk_chat_v1';
 const genId = () => Math.random().toString(36).slice(2, 10);
 
@@ -231,7 +231,6 @@ const STYLES = `
     height: 6px;
     border-radius: 999px;
     background: ${ACCENT};
-    box-shadow: 0 0 0 4px rgba(${ACCENT_RGB}, .12);
   }
 
   .aw-heading {
@@ -433,8 +432,7 @@ const STYLES = `
   }
 
   .aw-input-wrap.focused {
-    border-color: rgba(${ACCENT_RGB}, .34);
-    box-shadow: 0 0 0 1px rgba(${ACCENT_RGB}, .08);
+    border-color: rgba(255,255,255,.28);
   }
 
   .aw-textarea {
@@ -473,7 +471,7 @@ const STYLES = `
   .aw-send:not(:disabled) {
     cursor: pointer;
     background: ${ACCENT};
-    box-shadow: 0 8px 22px rgba(${ACCENT_RGB}, .22);
+    color: #000;
   }
 
   .aw-send:not(:disabled):hover { transform: translateY(-1px); }

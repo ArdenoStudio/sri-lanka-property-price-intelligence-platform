@@ -29,9 +29,9 @@ export function EmptyStatePanel({
 
   const ctaClassName = [
     'font-body inline-flex items-center justify-center gap-2',
-    'rounded-full border border-[#14b8a6]/30 bg-[#14b8a6]/[0.06]',
-    'px-4 py-2.5 text-[13px] font-semibold text-[#5eead4]',
-    'transition-colors hover:bg-[#14b8a6]/[0.12] hover:border-[#14b8a6]/50',
+    'rounded-full border border-white/30 bg-transparent',
+    'px-4 py-2.5 text-[13px] font-semibold text-white',
+    'transition-colors hover:bg-white/[0.08] hover:border-white/50',
   ].join(' ');
 
   return (

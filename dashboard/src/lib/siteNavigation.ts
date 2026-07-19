@@ -41,16 +41,17 @@ const destinationEntries = [
       icon: Home,
       kind: 'home',
       path: '/',
-      description: 'Back to the live market overview.',
+      description: 'Back to property.lk.',
     },
   ],
   [
     'listings',
     {
       id: 'listings',
-      label: 'Listings',
+      label: 'Browse',
       icon: LayoutGrid,
-      kind: 'section',
+      kind: 'route',
+      path: '/browse',
       hash: '#listings',
       description: 'Browse filtered and comparable listings.',
     },
@@ -61,7 +62,8 @@ const destinationEntries = [
       id: 'map',
       label: 'Map',
       icon: Map,
-      kind: 'section',
+      kind: 'route',
+      path: '/map',
       hash: '#map',
       description: 'See pricing and inventory by district.',
     },
@@ -83,7 +85,8 @@ const destinationEntries = [
       id: 'trends',
       label: 'Trends',
       icon: TrendingUp,
-      kind: 'section',
+      kind: 'route',
+      path: '/trends',
       hash: '#trends',
       description: 'Track market movement across districts.',
     },
@@ -94,7 +97,8 @@ const destinationEntries = [
       id: 'about',
       label: 'About',
       icon: Info,
-      kind: 'section',
+      kind: 'route',
+      path: '/about',
       hash: '#about',
       description: 'Methodology, updates, and data coverage.',
     },
@@ -148,23 +152,20 @@ export const MOBILE_MORE_ITEM = {
   icon: Menu,
 };
 
-const SECTION_HASH_TO_DESTINATION: Record<string, NavDestinationId> = {
-  '#map': 'map',
-  '#trends': 'trends',
-  '#listings': 'listings',
-  '#about': 'about',
-};
-
 export function getActiveDestinationId(
   pathname: string,
   hash: string
 ): NavDestinationId {
   if (pathname === '/estimate') return 'estimate';
   if (pathname === '/report') return 'report';
-  if (pathname.startsWith('/listing/')) return 'listings';
-  if (pathname === '/' && hash in SECTION_HASH_TO_DESTINATION) {
-    return SECTION_HASH_TO_DESTINATION[hash];
-  }
+  if (pathname === '/browse' || pathname.startsWith('/listing/')) return 'listings';
+  if (pathname === '/map') return 'map';
+  if (pathname === '/trends') return 'trends';
+  if (pathname === '/about') return 'about';
+  if (pathname === '/' && hash === '#listings') return 'listings';
+  if (pathname === '/' && hash === '#map') return 'map';
+  if (pathname === '/' && hash === '#trends') return 'trends';
+  if (pathname === '/' && hash === '#about') return 'about';
   return 'home';
 }
 
