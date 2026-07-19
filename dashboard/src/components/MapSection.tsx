@@ -1,6 +1,8 @@
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { useEffect } from 'react';
 import type { HeatmapPoint } from '../api';
+import { formatCurrencyAmount } from '../lib/pricing';
+import { EmptyStatePanel } from './ui/EmptyStatePanel';
 
 // Sri Lanka tight bounds
 const SL_BOUNDS: [[number, number], [number, number]] = [[5.9, 79.5], [9.9, 81.9]];
@@ -18,9 +20,7 @@ function MapController() {
 
 function formatPrice(price: number | null): string {
   if (!price) return 'N/A';
-  if (price >= 1_000_000) return `Rs ${(price / 1_000_000).toFixed(1)}M`;
-  if (price >= 1_000) return `Rs ${(price / 1_000).toFixed(0)}K`;
-  return `Rs ${price.toFixed(0)}`;
+  return formatCurrencyAmount(price, 'LKR', { variant: 'table' });
 }
 
 // Color = avg price — muted palette that reads well on dark map tiles
@@ -50,10 +50,11 @@ function getFillOpacity(count: number, maxCount: number): number {
 interface Props {
   points: HeatmapPoint[];
   onDistrictSelect: (district: string) => void;
+  onBrowseListings: () => void;
   selectedDistrict?: string;
 }
 
-export function MapSection({ points, onDistrictSelect, selectedDistrict }: Props) {
+export function MapSection({ points, onDistrictSelect, onBrowseListings, selectedDistrict }: Props) {
   const maxCount = Math.max(...points.map((p) => p.count), 1);
   const prices = points.map((p) => p.avg_price).filter((p): p is number => p != null);
   const minPrice = prices.length ? Math.min(...prices) : 0;
@@ -68,99 +69,112 @@ export function MapSection({ points, onDistrictSelect, selectedDistrict }: Props
             Color = avg price &middot; Size = volume. Click a district to filter.
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          {([
-            { label: 'Low',  color: '#7c9cbf' },
-            { label: 'Med',  color: '#4fae8a' },
-            { label: 'High', color: '#d4924a' },
-            { label: 'Hot',  color: '#e05c5c' },
-          ] as { label: string; color: string }[]).map(({ label, color }) => (
-            <span
-              key={label}
-              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold border border-white/[0.08] text-[#525252]"
-            >
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-              {label}
-            </span>
-          ))}
-        </div>
+        {points.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            {([
+              { label: 'Low',  color: '#7c9cbf' },
+              { label: 'Med',  color: '#4fae8a' },
+              { label: 'High', color: '#d4924a' },
+              { label: 'Hot',  color: '#e05c5c' },
+            ] as { label: string; color: string }[]).map(({ label, color }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold border border-white/[0.08] text-[#525252]"
+              >
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                {label}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card overflow-hidden" style={{ height: 420 }}>
-        <MapContainer
-          center={SL_CENTER}
-          zoom={SL_ZOOM}
-          scrollWheelZoom={false}
-          style={{ height: '100%', width: '100%' }}
-          zoomControl={true}
-        >
-          <MapController />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        {points.length === 0 ? (
+          <EmptyStatePanel
+            eyebrow="Market Heatmap"
+            title="No mapped inventory for this view"
+            body="This market slice does not have enough geo-resolved listings to render a district map right now. The listings feed may still carry live inventory."
+            ctaLabel="Open listings"
+            onCta={onBrowseListings}
+            className="h-full rounded-none border-0"
           />
-          {points.map((pt) => {
-            const radius = getRadius(pt.count, maxCount);
-            const color = getColorByPrice(pt.avg_price, minPrice, maxPrice);
-            const fillOpacity = getFillOpacity(pt.count, maxCount);
-            const isSelected = selectedDistrict === pt.district;
+        ) : (
+          <MapContainer
+            center={SL_CENTER}
+            zoom={SL_ZOOM}
+            scrollWheelZoom={false}
+            style={{ height: '100%', width: '100%' }}
+            zoomControl={true}
+          >
+            <MapController />
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {points.map((pt) => {
+              const radius = getRadius(pt.count, maxCount);
+              const color = getColorByPrice(pt.avg_price, minPrice, maxPrice);
+              const fillOpacity = getFillOpacity(pt.count, maxCount);
+              const isSelected = selectedDistrict === pt.district;
 
-            return (
-              <CircleMarker
-                key={pt.district}
-                center={[pt.lat, pt.lng]}
-                radius={isSelected ? radius + 4 : radius}
-                pathOptions={{
-                  fillColor: color,
-                  fillOpacity,
-                  color: isSelected ? '#ffffff' : color,
-                  weight: isSelected ? 3 : 1.5,
-                  opacity: 0.96,
-                }}
-                eventHandlers={{
-                  mouseover: (e) => {
-                    (e.target as any).setStyle({
-                      weight: isSelected ? 3 : 2.2,
-                      fillOpacity: Math.min(0.92, fillOpacity + 0.1),
-                    });
-                    (e.target as any).openPopup();
-                  },
-                  mouseout: (e) => {
-                    (e.target as any).setStyle({
-                      weight: isSelected ? 3 : 1.5,
-                      fillOpacity,
-                    });
-                    (e.target as any).closePopup();
-                  },
-                  click: () => onDistrictSelect(pt.district),
-                }}
-              >
-                <Tooltip permanent direction="top" offset={[0, -(radius + 4)]} className="map-district-label">
-                  {pt.district}
-                </Tooltip>
-                <Popup>
-                  <div className="text-sm min-w-[140px]">
-                    <p className="font-bold text-base mb-1">{pt.district}</p>
-                    <p className="text-text-secondary">
-                      <span className="font-semibold text-text-primary">{pt.count}</span> listings
-                    </p>
-                    {pt.avg_price && (
+              return (
+                <CircleMarker
+                  key={pt.district}
+                  center={[pt.lat, pt.lng]}
+                  radius={isSelected ? radius + 4 : radius}
+                  pathOptions={{
+                    fillColor: color,
+                    fillOpacity,
+                    color: isSelected ? '#ffffff' : color,
+                    weight: isSelected ? 3 : 1.5,
+                    opacity: 0.96,
+                  }}
+                  eventHandlers={{
+                    mouseover: (e) => {
+                      (e.target as any).setStyle({
+                        weight: isSelected ? 3 : 2.2,
+                        fillOpacity: Math.min(0.92, fillOpacity + 0.1),
+                      });
+                      (e.target as any).openPopup();
+                    },
+                    mouseout: (e) => {
+                      (e.target as any).setStyle({
+                        weight: isSelected ? 3 : 1.5,
+                        fillOpacity,
+                      });
+                      (e.target as any).closePopup();
+                    },
+                    click: () => onDistrictSelect(pt.district),
+                  }}
+                >
+                  <Tooltip permanent direction="top" offset={[0, -(radius + 4)]} className="map-district-label">
+                    {pt.district}
+                  </Tooltip>
+                  <Popup>
+                    <div className="text-sm min-w-[140px]">
+                      <p className="font-bold text-base mb-1">{pt.district}</p>
                       <p className="text-text-secondary">
-                        Avg: <span className="font-semibold text-accent-light">{formatPrice(pt.avg_price)}</span>
+                        <span className="font-semibold text-text-primary">{pt.count}</span> listings
                       </p>
-                    )}
-                    <button
-                      className="mt-2 text-xs text-accent-light hover:underline cursor-pointer bg-transparent border-none p-0"
-                      onClick={() => onDistrictSelect(pt.district)}
-                    >
-                      View listings &rarr;
-                    </button>
-                  </div>
-                </Popup>
-              </CircleMarker>
-            );
-          })}
-        </MapContainer>
+                      {pt.avg_price && (
+                        <p className="text-text-secondary">
+                          Avg: <span className="font-semibold text-accent-light">{formatPrice(pt.avg_price)}</span>
+                        </p>
+                      )}
+                      <button
+                        className="mt-2 text-xs text-accent-light hover:underline cursor-pointer bg-transparent border-none p-0"
+                        onClick={() => onDistrictSelect(pt.district)}
+                      >
+                        View listings &rarr;
+                      </button>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
+          </MapContainer>
+        )}
       </div>
     </section>
   );

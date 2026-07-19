@@ -1,0 +1,93 @@
+{
+  "ad": {
+    "id": "6a2cb4d30277c4957529efda",
+    "slug": "residential-land-in-piliyandala-for-sale-colombo-1",
+    "title": "Residential Land in Piliyandala",
+    "description": "In Seylinco gardens \nClose to Mandawila road \n1.2Km to 120 Horana main road\n2.5Km to the piliyandala town\nVery good and safe residential area\nNo brokers please",
+    "type": "for_sale",
+    "date": "2026-06-28T08:53:29+05:30",
+    "deactivates": "2026-08-12T08:01:57+05:30",
+    "area": {
+      "id": 1506,
+      "name": "Colombo"
+    },
+    "location": {
+      "id": 1553,
+      "name": "Piliyandala"
+    },
+    "category": {
+      "id": 942,
+      "name": "Land For Sale"
+    },
+    "contact_card": {
+      "account_type": "private",
+      "opt_out": false,
+      "chat_enabled": true
+    },
+    "features": {
+      "buy_now": false,
+      "listing_fee": true
+    },
+    "by_paying_member": false,
+    "by_authorized_dealer": false,
+    "by_featured_member": false,
+    "membership_details": {
+      "level": "free"
+    },
+    "info": "Rs 1,325,000 per perch",
+    "status": "published",
+    "details": [
+      "8.5 perches"
+    ],
+    "url": "http://ikman.lk/en/ad/residential-land-in-piliyandala-for-sale-colombo-1",
+    "images": {
+      "ids": [
+        "431273da-bcdb-4ee2-a167-44fea2824b17",
+        "9e6b0133-1c33-4123-a633-f715eccccadd",
+        "c399d06e-01ce-43b7-9935-08242d2629dc"
+      ],
+      "base_uri": "https://i.ikman-st.com"
+    },
+    "account": {
+      "id": "592713f72ffef40001407bb2",
+      "traits": {}
+    },
+    "properties": [
+      {
+        "label": "Address",
+        "value": "piliyandala",
+        "key": "address"
+      },
+      {
+        "label": "Land type",
+        "value": "Residential",
+        "key": "item_type"
+      },
+      {
+        "label": "Land size",
+        "value": "8.5 perches",
+        "key": "size"
+      }
+    ],
+    "promotions": {
+      "top_ad": false,
+      "bump_up": true,
+      "urgent_ad": false,
+      "spotlight": false,
+      "featured_ad": true
+    },
+    "money": {
+      "label": "Price",
+      "negotiable": "Negotiable",
+      "amount": "Rs 1,325,000 per perch"
+    },
+    "last_bump_up_date": "2026-07-19T16:47:09+05:30",
+    "statistics": {
+      "views": 1102
+    }
+  },
+  "similar_ads": [],
+  "safety_tips": [
+    "ikman support will never message you in chat. Don\u2019t click links, share OTPs/cards, or pay without seeing the item. ikman has no delivery service."
+  ]
+}

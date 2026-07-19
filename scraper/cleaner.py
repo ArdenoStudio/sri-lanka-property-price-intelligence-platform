@@ -582,6 +582,57 @@ class DataCleaner:
             return 1
         return None
 
+    @staticmethod
+    def _raw_json_dict(raw_json) -> dict:
+        return raw_json if isinstance(raw_json, dict) else {}
+
+    def bedrooms_from_raw(self, raw) -> Optional[int]:
+        """Prefer structured API bedrooms, then title/size heuristics."""
+        payload = self._raw_json_dict(getattr(raw, "raw_json", None))
+        for key in ("bedrooms", "rooms"):
+            val = payload.get(key)
+            if val is None or val == "":
+                continue
+            try:
+                n = int(float(val))
+                if 1 <= n <= 20:
+                    return n
+            except (TypeError, ValueError):
+                continue
+        return self.parse_bedrooms(getattr(raw, "title", None), getattr(raw, "raw_size", None) or "")
+
+    def bathrooms_from_raw(self, raw) -> Optional[int]:
+        payload = self._raw_json_dict(getattr(raw, "raw_json", None))
+        val = payload.get("bathrooms")
+        if val is None or val == "":
+            return None
+        try:
+            n = int(float(val))
+            return n if 1 <= n <= 20 else None
+        except (TypeError, ValueError):
+            return None
+
+    def coords_from_raw(self, raw) -> tuple[Optional[float], Optional[float]]:
+        """Source-provided lat/lng (e.g. LPW API) — skip Nominatim when present."""
+        payload = self._raw_json_dict(getattr(raw, "raw_json", None))
+        lat = payload.get("lat")
+        lng = payload.get("lng")
+        if lng is None:
+            lng = payload.get("lon")
+        try:
+            lat_f = float(lat) if lat is not None and lat != "" else None
+            lng_f = float(lng) if lng is not None and lng != "" else None
+        except (TypeError, ValueError):
+            return None, None
+        if lat_f is None or lng_f is None:
+            return None, None
+        if not (-90 <= lat_f <= 90 and -180 <= lng_f <= 180):
+            return None, None
+        # Reject null-island / zero placeholders
+        if abs(lat_f) < 1e-6 and abs(lng_f) < 1e-6:
+            return None, None
+        return lat_f, lng_f
+
     def parse_size(self, raw_size: str, title: str = "") -> Tuple[Optional[float], Optional[float]]:
         """Parses size from raw_size or title. Returns (perches, sqft)"""
         text_to_search = (str(raw_size or "") + " " + str(title or "")).lower().strip()
@@ -771,22 +822,36 @@ class DataCleaner:
                 # 1. Basic Cleaning
                 price_lkr, price_per_perch = self.parse_price(raw.raw_price)
                 size_perches, size_sqft = self.parse_size(raw.raw_size, raw.title)
-                bedrooms = self.parse_bedrooms(raw.title, raw.raw_size)
+                bedrooms = self.bedrooms_from_raw(raw)
+                bathrooms = self.bathrooms_from_raw(raw)
                 district, city, confidence = self.parse_location(raw.raw_location, raw.title)
+                source_lat, source_lng = self.coords_from_raw(raw)
 
                 if not price_lkr and price_per_perch and size_perches:
                     price_lkr = price_per_perch * size_perches
                 elif price_lkr and not price_per_perch and size_perches:
                     price_per_perch = price_lkr / size_perches
 
+                if source_lat is not None and source_lng is not None:
+                    confidence = "high"
+
                 location = self._get_or_create_location(district, city, confidence)
                 location_id = location.id if location else None
-                lat = location.lat if location else None
-                lng = location.lng if location else None
+                if source_lat is not None and source_lng is not None:
+                    lat, lng = source_lat, source_lng
+                    if location and (location.lat is None or location.lng is None):
+                        location.lat = source_lat
+                        location.lng = source_lng
+                        location.source = f"{raw.source}_api"
+                        location.confidence = "high"
+                else:
+                    lat = location.lat if location else None
+                    lng = location.lng if location else None
 
                 # 2. Build values dict
                 is_outlier, outlier_reason = False, None
-                is_short_term = self.detect_short_term(
+                payload = self._raw_json_dict(raw.raw_json)
+                is_short_term = bool(payload.get("is_short_term")) or self.detect_short_term(
                     raw.raw_price, raw.title, raw.description
                 )
                 dummy = Listing(
@@ -796,7 +861,8 @@ class DataCleaner:
                     raw_location=raw.raw_location, district=district, city=city,
                     geocode_confidence=confidence, property_type=raw.property_type,
                     listing_type=raw.listing_type, size_perches=size_perches,
-                    size_sqft=size_sqft, bedrooms=bedrooms, raw_id=raw.id,
+                    size_sqft=size_sqft, bedrooms=bedrooms, bathrooms=bathrooms,
+                    raw_id=raw.id,
                     location_id=location_id, lat=lat, lng=lng,
                     is_short_term=is_short_term,
                 )
@@ -810,6 +876,28 @@ class DataCleaner:
                 else:
                     stats["passed"] += 1
 
+                conflict_set = {
+                    "price_lkr": price_lkr,
+                    "price_per_perch": price_per_perch,
+                    "is_outlier": dummy.is_outlier or False,
+                    "outlier_reason": dummy.outlier_reason,
+                    "raw_location": raw.raw_location,
+                    "district": district,
+                    "city": city,
+                    "is_short_term": is_short_term,
+                    "scraped_at": raw.scraped_at,
+                    "last_seen_at": datetime.utcnow(),
+                    "bedrooms": bedrooms,
+                    "bathrooms": bathrooms,
+                    "size_perches": size_perches,
+                    "size_sqft": size_sqft,
+                    "geocode_confidence": confidence,
+                }
+                if lat is not None and lng is not None:
+                    conflict_set["lat"] = lat
+                    conflict_set["lng"] = lng
+                    conflict_set["location_id"] = location_id
+
                 # 3. Upsert — ON CONFLICT (source, source_id) update price fields
                 stmt = pg_insert(Listing).values(
                     raw_id=raw.id, source=raw.source, source_id=raw.source_id,
@@ -819,24 +907,14 @@ class DataCleaner:
                     district=district, city=city, geocode_confidence=confidence,
                     property_type=raw.property_type, listing_type=raw.listing_type,
                     size_perches=size_perches, size_sqft=size_sqft, bedrooms=bedrooms,
+                    bathrooms=bathrooms,
                     location_id=location_id, lat=lat, lng=lng,
                     is_outlier=dummy.is_outlier or False, outlier_reason=dummy.outlier_reason,
                     is_duplicate=dummy.is_duplicate or False, duplicate_of=dummy.duplicate_of,
                     is_short_term=is_short_term,
                 ).on_conflict_do_update(
                     index_elements=["source", "source_id"],
-                    set_={
-                        "price_lkr": price_lkr,
-                        "price_per_perch": price_per_perch,
-                        "is_outlier": dummy.is_outlier or False,
-                        "outlier_reason": dummy.outlier_reason,
-                        "raw_location": raw.raw_location,
-                        "district": district,
-                        "city": city,
-                        "is_short_term": is_short_term,
-                        "scraped_at": raw.scraped_at,
-                        "last_seen_at": datetime.utcnow(),
-                    }
+                    set_=conflict_set,
                 )
                 # Retry once on statement timeout before giving up
                 for attempt in range(2):

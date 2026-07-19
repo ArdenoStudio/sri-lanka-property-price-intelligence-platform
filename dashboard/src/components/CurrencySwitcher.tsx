@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Globe, Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCurrency } from '../hooks/useCurrency';
-import type { CurrencyCode } from '../contexts/CurrencyContext';
+import type { CurrencyCode } from '../lib/pricing';
 
 const CURRENCIES: { code: CurrencyCode; label: string }[] = [
   { code: 'LKR', label: 'LKR — Sri Lankan Rupee' },
@@ -20,26 +20,54 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(diff / 60)}h ago`;
 }
 
-export function CurrencySwitcher() {
+interface CurrencySwitcherProps {
+  variant?: 'header' | 'toolbar';
+}
+
+export function CurrencySwitcher({ variant = 'header' }: CurrencySwitcherProps) {
   const { currency, setCurrency, ratesUpdatedAt } = useCurrency();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const menuId = useId();
 
   useEffect(() => {
     if (!open) return;
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+
+    function handlePointerDown(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
     }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [open]);
+
+  const triggerClassName = variant === 'toolbar'
+    ? 'inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-[#a3a3a3] transition-colors hover:bg-white/[0.06] hover:text-white'
+    : 'inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-[#a3a3a3] transition-colors hover:bg-white/[0.06] hover:text-white';
 
   return (
     <div className="relative" ref={ref}>
       <button
+        type="button"
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 text-[13px] text-[#525252] hover:text-white transition-colors px-3 py-1 rounded-full hover:bg-white/[0.06] cursor-pointer bg-transparent border-none"
+        className={`${triggerClassName} cursor-pointer`}
         aria-label="Switch currency"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
       >
         <Globe className="w-3.5 h-3.5" />
         <span>{currency}</span>
@@ -54,11 +82,17 @@ export function CurrencySwitcher() {
             transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
             className="absolute right-0 top-full mt-2 w-64 z-50 max-sm:fixed max-sm:right-4 max-sm:bottom-[72px] max-sm:top-auto"
           >
-            <div className="bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.8)] overflow-hidden">
+            <div
+              id={menuId}
+              role="menu"
+              aria-label="Currency options"
+              className="bg-[#111111] border border-white/[0.1] rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.8)] overflow-hidden"
+            >
               <div className="py-1.5">
                 {CURRENCIES.map(({ code, label }) => (
                   <button
                     key={code}
+                    type="button"
                     onClick={() => { setCurrency(code); setOpen(false); }}
                     className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-white/[0.05] transition-colors cursor-pointer bg-transparent border-none"
                   >

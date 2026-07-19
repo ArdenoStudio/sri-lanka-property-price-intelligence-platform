@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Share2, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ListingDetail } from '../api';
+import { formatCurrencyAmount } from '../lib/pricing';
+import { getDealScoreMeta, isTypicalDealScore } from '../lib/dealScore';
 
 interface Props {
   listing: ListingDetail;
@@ -9,9 +11,7 @@ interface Props {
 
 function formatPrice(p: number | null | undefined): string {
   if (!p) return '';
-  if (p >= 1_000_000) return `Rs ${(p / 1_000_000).toFixed(1)}M`;
-  if (p >= 1_000) return `Rs ${(p / 1_000).toFixed(0)}K`;
-  return `Rs ${p}`;
+  return formatCurrencyAmount(p, 'LKR', { variant: 'hero' });
 }
 
 export function ShareButton({ listing }: Props) {
@@ -19,14 +19,15 @@ export function ShareButton({ listing }: Props) {
 
   const shareUrl = `${window.location.origin}/listing/${listing.id}`;
   const shareTitle = listing.title || `Property in ${listing.district}`;
+  const dealSummary = listing.deal_score != null && !isTypicalDealScore(listing.deal_score)
+    ? getDealScoreMeta(listing.deal_score).shortCopy.toLowerCase()
+    : '';
   const shareText = [
     shareTitle,
     listing.price_lkr ? `— ${formatPrice(listing.price_lkr)}` : '',
     listing.district ? `in ${listing.district}` : '',
-    listing.deal_score && listing.deal_score > 0
-      ? `· ${listing.deal_score.toFixed(0)}% below market`
-      : '',
-    '| PropertyLK',
+    dealSummary ? `· ${dealSummary}` : '',
+    '| Nilam',
   ].filter(Boolean).join(' ');
 
   const copyLink = async () => {

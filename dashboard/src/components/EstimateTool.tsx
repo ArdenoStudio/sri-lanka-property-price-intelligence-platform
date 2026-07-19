@@ -9,6 +9,9 @@ import { Footer } from './Footer';
 import { MobileNav } from './MobileNav';
 import { MinimalSelect } from './ui/MinimalSelect';
 import { useCurrency } from '../hooks/useCurrency';
+import { EMITeaser } from './EMITeaser';
+import { MortgageCalculator } from './MortgageCalculator';
+import { buildEstimateShareText, buildWhatsAppShareUrl } from '../lib/whatsappShare';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -198,7 +201,10 @@ export function EstimateTool() {
     <div className="min-h-screen bg-black">
       <Header />
 
-      <main className="max-w-3xl mx-auto px-6 lg:px-8 pt-28 pb-32">
+      <main
+        id="main-content"
+        className="max-w-3xl mx-auto px-6 pt-10 pb-32 md:pt-12 lg:px-8"
+      >
         {/* Back */}
         <button
           onClick={() => navigate(-1)}
@@ -216,8 +222,8 @@ export function EstimateTool() {
             </div>
             <p className="text-[10px] uppercase tracking-[0.25em] text-[#525252]">Property Intelligence</p>
           </div>
-          <h1 className="text-[clamp(1.75rem,4vw,2.75rem)] font-bold text-white tracking-tight leading-none">
-            Price Estimator
+          <h1 className="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold text-white tracking-tight leading-none">
+            Nilam Price Estimator
           </h1>
           <p className="text-[14px] text-[#525252] mt-3">
             Get an estimated {estimateLabel} based on ranked comparable listings from across Sri Lanka.
@@ -474,6 +480,57 @@ export function EstimateTool() {
                         )}
                       </div>
                     )}
+
+                    {listingType === 'sale' && result.estimated_median != null && (
+                      <div className="mt-6 border-t border-white/[0.06] pt-6">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-2">Financing</p>
+                        <p className="text-[13px] text-[#737373] leading-relaxed mb-4 font-assumptions">
+                          Keep pricing and affordability as separate steps: review the median estimate first, then test the monthly payment.
+                        </p>
+                        <EMITeaser
+                          priceLkr={result.estimated_median}
+                          listingType={listingType}
+                          variant="banner"
+                          label="Indicative monthly EMI at the median estimate"
+                        />
+                        <div className="mt-4">
+                          <MortgageCalculator
+                            listingPrice={result.estimated_median}
+                            listingType={listingType}
+                            variant="estimate"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Share + browse */}
+                    <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const text = buildEstimateShareText({
+                            medianLabel: formatConverted(result.estimated_median),
+                            lowLabel: formatConverted(result.estimated_low),
+                            highLabel: formatConverted(result.estimated_high),
+                            district,
+                            propertyType,
+                            confidence: result.confidence,
+                            url: window.location.href,
+                          });
+                          window.open(buildWhatsAppShareUrl(text), '_blank', 'noopener,noreferrer');
+                        }}
+                        className="flex-1 py-2.5 rounded-xl border border-[#25D366]/30 bg-[#25D366]/[0.08] text-[13px] text-[#25D366] hover:bg-[#25D366]/[0.14] transition-colors cursor-pointer font-medium"
+                      >
+                        Share on WhatsApp
+                      </button>
+                      <Link
+                        to="/report"
+                        className="flex-1 py-2.5 rounded-xl border border-white/[0.08] text-[13px] text-[#a3a3a3] hover:text-white hover:border-white/[0.16] transition-colors no-underline text-center font-medium flex items-center justify-center gap-2"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Open report
+                      </Link>
+                    </div>
 
                     {/* Browse button */}
                     <button

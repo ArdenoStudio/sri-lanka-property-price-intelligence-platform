@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import type { FilterState } from './hooks/useSavedSearches';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { getStats, getDistricts, getHeatmap, getListings, getPipelineStatus } from './api';
 import type { Stats, District, HeatmapPoint, Listing, PipelineStatusResponse } from './api';
 import { Header } from './components/Header';
@@ -11,12 +11,10 @@ import { ListingsGrid } from './components/ListingsGrid';
 import { About } from './components/About';
 import { Footer } from './components/Footer';
 import { ComparisonTray } from './components/ComparisonTray';
-import { PageLoader } from './components/PageLoader';
-import { NoiseOverlay } from './components/NoiseOverlay';
-import { ScrollProgressBar } from './components/ScrollProgressBar';
 import { RevealSection } from './components/RevealSection';
 import { MobileNav } from './components/MobileNav';
 import { Analytics } from '@vercel/analytics/react';
+import { scrollToAnchor } from './lib/siteNavigation';
 
 // ── Lazy-loaded heavy components ──────────────────────────────────────────────
 const MapSection = lazy(() =>
@@ -111,6 +109,7 @@ function readURLFilters() {
 
 // ── Dashboard (home route) ────────────────────────────────────────────────────
 function Dashboard() {
+  const location = useLocation();
   // Data state
   const [stats, setStats] = useState<Stats | null>(null);
   const [districts, setDistricts] = useState<District[]>([]);
@@ -118,7 +117,6 @@ function Dashboard() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [totalListings, setTotalListings] = useState(0);
   const [pipeline, setPipeline] = useState<PipelineStatusResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(false);
   const [listingsError, setListingsError] = useState<string | null>(null);
   const listingsRequestId = useRef(0);
@@ -179,10 +177,18 @@ function Dashboard() {
     if (sortBy && sortBy !== 'newest') p.set('sort', sortBy);
     if (selectedSource) p.set('source', selectedSource);
     const qs = p.toString();
-    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+    const nextUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`;
+    window.history.replaceState(null, '', nextUrl);
   }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource]);
 
+  useEffect(() => {
+    if (!location.hash) return;
+    scrollToAnchor(location.hash.slice(1));
+  }, [location.hash]);
+
   const PAGE_SIZE = 24;
+  const COMPARISON_MIN = 2;
+  const COMPARISON_MAX = 4;
 
   // Comparison state
   const [selectedForComparison, setSelectedForComparison] = useState<Listing[]>([]);
@@ -313,143 +319,178 @@ function Dashboard() {
     setIsSavedSearchesOpen(false);
   }, []);
 
+  const scrollToListings = useCallback(() => {
+    document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const clearListingFilters = useCallback(() => {
+    setSelectedDistrict('');
+    setSelectedType('');
+    setListingType('');
+    setSelectedSource('');
+    setMinPrice('');
+    setMaxPrice('');
+    setMinBeds(0);
+    setMinBaths(0);
+    setMinSizePerches('');
+    setMaxSizePerches('');
+    setMinSizeSqft('');
+    setMaxSizeSqft('');
+    scrollToListings();
+  }, [scrollToListings]);
+
   const toggleComparison = useCallback((listing: Listing) => {
     setSelectedForComparison(prev => {
       if (prev.some(item => item.id === listing.id)) {
         return prev.filter(item => item.id !== listing.id);
       }
-      return [...prev.slice(-2), listing];
+      if (prev.length >= COMPARISON_MAX) {
+        return prev;
+      }
+      return [...prev, listing];
     });
-  }, []);
+  }, [COMPARISON_MAX]);
 
   return (
-    <>
-      <PageLoader
-        minDuration={1800}
-        onComplete={() => setLoading(false)}
+    <div className="min-h-screen relative overflow-x-hidden">
+      <Header />
+
+      <main
+        id="main-content"
+        className="relative max-w-7xl mx-auto px-6 lg:px-8 pb-32 pt-10 md:pt-12"
+      >
+        <StatsBar stats={stats} />
+
+        <RevealSection className="mt-4">
+          <PipelineStatus status={pipeline} />
+        </RevealSection>
+
+        <RevealSection className="mt-8">
+          <div id="map">
+            <Suspense fallback={<MapSkeleton />}>
+              <MapSection
+                points={heatmap}
+                onDistrictSelect={(d) => setSelectedDistrict(d)}
+                onBrowseListings={scrollToListings}
+                selectedDistrict={selectedDistrict}
+              />
+            </Suspense>
+          </div>
+        </RevealSection>
+
+        <RevealSection className="pt-20">
+          <div id="trends">
+            <Suspense fallback={<TrendsSkeleton />}>
+              <DistrictTrends
+                district={selectedDistrict}
+                propertyType={selectedType}
+                onViewListings={scrollToListings}
+              />
+            </Suspense>
+          </div>
+        </RevealSection>
+
+        <RevealSection className="pt-20">
+          <div id="listings">
+            <Filters
+              districts={districts}
+              selectedDistrict={selectedDistrict}
+              onDistrictChange={setSelectedDistrict}
+              selectedType={selectedType}
+              onTypeChange={setSelectedType}
+              listingType={listingType}
+              onListingTypeChange={setListingType}
+              minPrice={minPrice}
+              onMinPriceChange={setMinPrice}
+              maxPrice={maxPrice}
+              onMaxPriceChange={setMaxPrice}
+              minBeds={minBeds}
+              onMinBedsChange={setMinBeds}
+              minBaths={minBaths}
+              onMinBathsChange={setMinBaths}
+              minSizePerches={minSizePerches}
+              maxSizePerches={maxSizePerches}
+              onMinSizePerchesChange={setMinSizePerches}
+              onMaxSizePerchesChange={setMaxSizePerches}
+              minSizeSqft={minSizeSqft}
+              maxSizeSqft={maxSizeSqft}
+              onMinSizeSqftChange={setMinSizeSqft}
+              onMaxSizeSqftChange={setMaxSizeSqft}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              selectedSource={selectedSource}
+              onSourceChange={setSelectedSource}
+              totalResults={totalListings}
+              onOpenSavedSearches={() => setIsSavedSearchesOpen(true)}
+            />
+
+            <ListingsGrid
+              listings={listings}
+              loading={listingsLoading}
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={totalListings}
+              onPageChange={setPage}
+              selectedForComparison={selectedForComparison.map(l => l.id)}
+              onToggleComparison={toggleComparison}
+              onClearFilters={clearListingFilters}
+              error={listingsError}
+            />
+          </div>
+        </RevealSection>
+
+        <RevealSection className="pt-20">
+          <div id="about">
+            <About stats={stats} />
+          </div>
+        </RevealSection>
+      </main>
+
+      <ComparisonTray
+        selected={selectedForComparison}
+        maxSlots={COMPARISON_MAX}
+        minCompare={COMPARISON_MIN}
+        onRemove={(id) => setSelectedForComparison(prev => prev.filter(l => l.id !== id))}
+        onClear={() => setSelectedForComparison([])}
+        onCompare={() => {
+          if (selectedForComparison.length >= COMPARISON_MIN) {
+            setIsCompareModalOpen(true);
+          }
+        }}
       />
 
-      {!loading && (
-        <div className="min-h-screen relative overflow-x-hidden">
-          <Header />
+      <Suspense fallback={<ModalSkeleton />}>
+        <ComparisonModal
+          isOpen={isCompareModalOpen}
+          onClose={() => setIsCompareModalOpen(false)}
+          listings={selectedForComparison}
+          minCompare={COMPARISON_MIN}
+        />
+      </Suspense>
 
-          <main className="relative max-w-7xl mx-auto px-6 lg:px-8 pb-32 pt-24">
-            <StatsBar stats={stats} />
+      <Suspense fallback={null}>
+        <SavedSearches
+          isOpen={isSavedSearchesOpen}
+          onClose={() => setIsSavedSearchesOpen(false)}
+          currentFilters={currentFilters}
+          currentResultCount={totalListings}
+          onApplySearch={applySearch}
+        />
+      </Suspense>
 
-            <RevealSection className="mt-4">
-              <PipelineStatus status={pipeline} />
-            </RevealSection>
-
-            <RevealSection className="mt-8">
-              <Suspense fallback={<MapSkeleton />}>
-                <MapSection
-                  points={heatmap}
-                  onDistrictSelect={(d) => setSelectedDistrict(d)}
-                  selectedDistrict={selectedDistrict}
-                />
-              </Suspense>
-            </RevealSection>
-
-            <RevealSection className="pt-20" delay={50}>
-              <div id="trends">
-                <Suspense fallback={<TrendsSkeleton />}>
-                  <DistrictTrends district={selectedDistrict} propertyType={selectedType} />
-                </Suspense>
-              </div>
-            </RevealSection>
-
-            <RevealSection className="pt-20">
-              <div id="listings">
-                <Filters
-                  districts={districts}
-                  selectedDistrict={selectedDistrict}
-                  onDistrictChange={setSelectedDistrict}
-                  selectedType={selectedType}
-                  onTypeChange={setSelectedType}
-                  listingType={listingType}
-                  onListingTypeChange={setListingType}
-                  minPrice={minPrice}
-                  onMinPriceChange={setMinPrice}
-                  maxPrice={maxPrice}
-                  onMaxPriceChange={setMaxPrice}
-                  minBeds={minBeds}
-                  onMinBedsChange={setMinBeds}
-                  minBaths={minBaths}
-                  onMinBathsChange={setMinBaths}
-                  minSizePerches={minSizePerches}
-                  maxSizePerches={maxSizePerches}
-                  onMinSizePerchesChange={setMinSizePerches}
-                  onMaxSizePerchesChange={setMaxSizePerches}
-                  minSizeSqft={minSizeSqft}
-                  maxSizeSqft={maxSizeSqft}
-                  onMinSizeSqftChange={setMinSizeSqft}
-                  onMaxSizeSqftChange={setMaxSizeSqft}
-                  sortBy={sortBy}
-                  onSortChange={setSortBy}
-                  selectedSource={selectedSource}
-                  onSourceChange={setSelectedSource}
-                  totalResults={totalListings}
-                  onOpenSavedSearches={() => setIsSavedSearchesOpen(true)}
-                />
-
-                <ListingsGrid
-                  listings={listings}
-                  loading={listingsLoading}
-                  page={page}
-                  pageSize={PAGE_SIZE}
-                  total={totalListings}
-                  onPageChange={setPage}
-                  selectedForComparison={selectedForComparison.map(l => l.id)}
-                  onToggleComparison={toggleComparison}
-                  error={listingsError}
-                />
-              </div>
-            </RevealSection>
-
-            <RevealSection className="pt-20">
-              <About stats={stats} />
-            </RevealSection>
-          </main>
-
-          <ComparisonTray
-            selected={selectedForComparison}
-            onRemove={(id) => setSelectedForComparison(prev => prev.filter(l => l.id !== id))}
-            onClear={() => setSelectedForComparison([])}
-            onCompare={() => setIsCompareModalOpen(true)}
-          />
-
-          <Suspense fallback={<ModalSkeleton />}>
-            <ComparisonModal
-              isOpen={isCompareModalOpen}
-              onClose={() => setIsCompareModalOpen(false)}
-              listings={selectedForComparison}
-            />
-          </Suspense>
-
-          <Suspense fallback={null}>
-            <SavedSearches
-              isOpen={isSavedSearchesOpen}
-              onClose={() => setIsSavedSearchesOpen(false)}
-              currentFilters={currentFilters}
-              onApplySearch={applySearch}
-            />
-          </Suspense>
-
-          <Suspense fallback={<ChatSkeleton />}>
-            <ChatWidget onFilters={(f) => {
-              if (f.district) setSelectedDistrict(f.district);
-              if (f.property_type) setSelectedType(f.property_type);
-              if (f.listing_type) setListingType(f.listing_type);
-              if (f.bedrooms) setMinBeds(f.bedrooms);
-              if (f.min_price) setMinPrice(f.min_price);
-              if (f.max_price) setMaxPrice(f.max_price);
-            }} />
-          </Suspense>
-          <MobileNav />
-          <Footer />
-        </div>
-      )}
-    </>
+      <Suspense fallback={<ChatSkeleton />}>
+        <ChatWidget onFilters={(f) => {
+          if (f.district) setSelectedDistrict(f.district);
+          if (f.property_type) setSelectedType(f.property_type);
+          if (f.listing_type) setListingType(f.listing_type);
+          if (f.bedrooms) setMinBeds(f.bedrooms);
+          if (f.min_price) setMinPrice(f.min_price);
+          if (f.max_price) setMaxPrice(f.max_price);
+        }} />
+      </Suspense>
+      <MobileNav />
+      <Footer />
+    </div>
   );
 }
 
@@ -457,8 +498,6 @@ function Dashboard() {
 function App() {
   return (
     <>
-      <NoiseOverlay />
-      <ScrollProgressBar />
       <Analytics />
       <Routes>
         <Route path="/" element={<Dashboard />} />

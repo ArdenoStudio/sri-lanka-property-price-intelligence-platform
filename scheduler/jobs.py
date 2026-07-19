@@ -5,6 +5,7 @@ from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from sqlalchemy import func
 from db.connection import SessionLocal, engine
 from db.models import ScrapeRun, Listing, PriceAggregate, JobRun
+from scraper.flags import use_ikman_serp_api, use_lpw_api
 from scraper.ikman import scrape_ikman_coverage
 from scraper.location_targets import build_ikman_coverage_targets
 from scraper.lpw import LPWScraper, scrape_lpw_districts
@@ -80,12 +81,24 @@ def scrape_ikman_job():
             subdistricts_per_district=int(os.getenv("COVERAGE_SUBDISTRICTS_PER_DISTRICT", "2")),
             subdistrict_pages=int(os.getenv("COVERAGE_SUBDISTRICT_PAGES", "2")),
         )
-        result = run_async(scrape_ikman_coverage(
-            db,
-            main_pages=int(os.getenv("IKMAN_COVERAGE_MAIN_PAGES", "50")),
-            targets=targets,
-            headless=True,
-        ))
+        if use_ikman_serp_api():
+            from scraper.ikman_api import scrape_ikman_api, bridge_ikman_identity
+            try:
+                bridge_ikman_identity(db, dry_run=False, limit=2000)
+            except Exception as bridge_err:
+                log.warning("ikman_identity_bridge_skipped", error=str(bridge_err))
+            found, new = run_async(scrape_ikman_api(
+                db,
+                max_pages=int(os.getenv("IKMAN_API_MAX_PAGES", "0")) or None,
+            ))
+            result = {"found": found, "new": new}
+        else:
+            result = run_async(scrape_ikman_coverage(
+                db,
+                main_pages=int(os.getenv("IKMAN_COVERAGE_MAIN_PAGES", "50")),
+                targets=targets,
+                headless=True,
+            ))
         run.listings_found = result.get("found", 0)
         run.listings_new = result.get("new", 0)
         run.status = "success"
@@ -105,15 +118,19 @@ def scrape_lpw_job():
     db.commit()
     
     try:
-        scraper = LPWScraper(db)
-        found, new = run_async(scraper.scrape())
-        if os.getenv("LPW_COVERAGE_PROBE", "1") != "0":
-            try:
-                probe_found, probe_new = run_async(scrape_lpw_districts(db, max_pages=1, use_all_districts=True))
-                found += probe_found
-                new += probe_new
-            except Exception as probe_error:
-                log.warning("lpw_coverage_probe_skipped", error=str(probe_error))
+        if use_lpw_api():
+            from scraper.lpw_api import scrape_lpw_api
+            found, new = run_async(scrape_lpw_api(db))
+        else:
+            scraper = LPWScraper(db)
+            found, new = run_async(scraper.scrape())
+            if os.getenv("LPW_COVERAGE_PROBE", "1") != "0":
+                try:
+                    probe_found, probe_new = run_async(scrape_lpw_districts(db, max_pages=1, use_all_districts=True))
+                    found += probe_found
+                    new += probe_new
+                except Exception as probe_error:
+                    log.warning("lpw_coverage_probe_skipped", error=str(probe_error))
         run.listings_found = found
         run.listings_new = new
         run.status = "success"

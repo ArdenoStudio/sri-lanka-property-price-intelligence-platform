@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from db.connection import SessionLocal
 from db.models import RawListing
+from scraper.privacy import redact_contact_channels, sanitize_ikman_raw_json
 
 
 def to_ms(value) -> int | None:
@@ -36,6 +37,10 @@ def to_ms(value) -> int | None:
 
 
 def raw_to_convex(row: RawListing) -> dict:
+    raw_json = row.raw_json
+    if row.source == "ikman":
+        raw_json = sanitize_ikman_raw_json(raw_json)
+
     payload = {
         "source": row.source,
         "sourceId": row.source_id,
@@ -47,8 +52,8 @@ def raw_to_convex(row: RawListing) -> dict:
         "rawSize": row.raw_size,
         "propertyType": row.property_type,
         "listingType": row.listing_type,
-        "description": row.description,
-        "rawJson": row.raw_json,
+        "description": redact_contact_channels(row.description),
+        "rawJson": raw_json,
     }
     return {key: value for key, value in payload.items() if value is not None}
 

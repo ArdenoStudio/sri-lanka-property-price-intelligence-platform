@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { PriceSnapshot } from '../api';
+import { formatCurrencyAmount } from '../lib/pricing';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -22,7 +23,10 @@ function parseRawPrice(s: string | null | undefined): number | null {
   let cleaned = s.replace(/[Rrs\s,]/gi, '').toUpperCase();
 
   let multiplier = 1;
-  if (cleaned.endsWith('M')) { multiplier = 1_000_000; cleaned = cleaned.slice(0, -1); }
+  if (cleaned.endsWith('BN')) { multiplier = 1_000_000_000; cleaned = cleaned.slice(0, -2); }
+  else if (cleaned.endsWith('MN')) { multiplier = 1_000_000; cleaned = cleaned.slice(0, -2); }
+  else if (cleaned.endsWith('M')) { multiplier = 1_000_000; cleaned = cleaned.slice(0, -1); }
+  else if (cleaned.endsWith('B')) { multiplier = 1_000_000_000; cleaned = cleaned.slice(0, -1); }
   else if (cleaned.endsWith('K')) { multiplier = 1_000; cleaned = cleaned.slice(0, -1); }
   // Handle "LKR" prefix after stripping R already
   cleaned = cleaned.replace(/^LK/, '').replace(/^[A-Z]+/, '');
@@ -33,9 +37,7 @@ function parseRawPrice(s: string | null | undefined): number | null {
 }
 
 function formatY(val: number): string {
-  if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}M`;
-  if (val >= 1_000) return `${(val / 1_000).toFixed(0)}K`;
-  return val.toString();
+  return formatCurrencyAmount(val, 'LKR', { variant: 'axis', showCurrency: false });
 }
 
 function formatDate(dateStr: string | null | undefined): string {
@@ -87,7 +89,7 @@ function CustomTooltip({ active, payload, label }: any) {
     <div className="bg-[#161616] border border-white/[0.1] rounded-xl px-3 py-2 shadow-xl">
       <p className="text-[10px] text-[#525252] mb-0.5">{label}</p>
       <p className="text-[13px] font-bold text-white num">
-        {val != null ? `Rs ${(val / 1_000_000).toFixed(2)}M` : '—'}
+        {val != null ? formatCurrencyAmount(val, 'LKR', { variant: 'table' }) : '—'}
       </p>
     </div>
   );

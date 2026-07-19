@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;300;400;600;700;900&display=swap');
+@import "@fontsource/cal-sans";
+@import "@fontsource-variable/inter";
 @import "tailwindcss";
 
 @theme {
@@ -39,8 +40,12 @@
   --shadow-soft:     0 4px 20px rgba(0, 0, 0, 0.45);
   --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.6);
 
-  /* Font — one family, weights do the work */
-  --font-geist: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Typography */
+  --font-display: 'Cal Sans', 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-report-title: var(--font-display);
+  --font-report-body: var(--font-body);
+  --font-geist: var(--font-body);
 }
 
 :root {
@@ -96,8 +101,8 @@
 }
 :focus:not(:focus-visible) { outline: none; }
 
-/* Anchor scroll offset — accounts for fixed pill nav */
-#trends, #listings { scroll-margin-top: 80px; }
+/* Anchor scroll offset — accounts for sticky header */
+#map, #trends, #listings, #about { scroll-margin-top: 104px; }
 
 /* Reduced motion — respect user preference */
 @media (prefers-reduced-motion: reduce) {
@@ -117,14 +122,38 @@ body {
   min-height: 100vh;
   background: #000000;
   color: #f5f5f5;
-  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.016em;
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4, h5, h6 { letter-spacing: -0.03em; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+}
+
+.font-detail-body {
+  font-family: var(--font-body);
+}
+
+.font-detail-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.05em;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+}
+
+.nilam-wordmark {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+}
+
+.font-body { font-family: var(--font-body); }
 
 /* ============================================================
    CARD SYSTEM — replaces .glass and .premium-card
@@ -208,51 +237,30 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -0.03em; }
 }
 .text-numeric { font-variant-numeric: tabular-nums lining-nums; } /* legacy alias */
 
-/* ============================================================
-   SCROLL REVEAL — IntersectionObserver adds .visible class
-   ============================================================ */
-.reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition:
-    opacity var(--motion-slow) var(--ease-spring),
-    transform var(--motion-slow) var(--ease-spring);
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
+.font-price-hero {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
 }
 
-/* ============================================================
-   NOISE OVERLAY — subtle analog grain texture
-   ============================================================ */
-.noise-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  pointer-events: none;
-  opacity: 0.028;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 128px;
-  mix-blend-mode: overlay;
+.font-numeric-table {
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
-
-/* ============================================================
-   SCROLL PROGRESS BAR — 2px fixed top line
-   ============================================================ */
-.scroll-progress-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 2px;
-  width: 100%;
-  background: linear-gradient(90deg, #14b8a6, #5eead4);
-  z-index: 9997;
-  transform-origin: left;
-  transform: scaleX(0);
-  will-change: transform;
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
 }
+
+.font-body { font-family: var(--font-body); }
+
+.font-emi {
+  font-family: var(--font-display);
+  letter-spacing: -0.05em;
+}
+
+.font-assumptions { font-family: var(--font-body); }
 
 /* ============================================================
    LIVE DOT — slow 3s pulse (premium, not frantic)

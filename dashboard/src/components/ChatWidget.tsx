@@ -1,295 +1,640 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { ChatResponse } from '../api';
 import { sendChatMessage } from '../api';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-const ACCENT      = "#1fb6aa";
-const ACCENT_RGB  = "31,182,170";
-const STORAGE_KEY  = "propertylk_chat_v1";
-const TOOLTIP_KEY  = "propertylk_chat_tooltip_seen";
+const ACCENT = '#14b8a6';
+const ACCENT_RGB = '20,184,166';
+const STORAGE_KEY = 'propertylk_chat_v1';
 const genId = () => Math.random().toString(36).slice(2, 10);
 
 type Message = { role: 'user' | 'assistant'; content: string; id: string };
+type PromptChip = { label: string; caption: string; value: string };
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
+const PROMPT_CHIPS: PromptChip[] = [
+  {
+    label: '3-bed value',
+    caption: 'Which districts offer the best value for 3-bedroom houses right now?',
+    value: 'Which districts offer the best value for 3-bedroom houses right now?',
+  },
+  {
+    label: 'Apartment yields',
+    caption: 'Where are 2-bedroom apartments showing the strongest rental yields?',
+    value: 'Where are 2-bedroom apartments showing the strongest rental yields?',
+  },
+  {
+    label: 'Colombo comps',
+    caption: 'Show comparable sale listings for a 2-bedroom apartment in Colombo 5.',
+    value: 'Show comparable sale listings for a 2-bedroom apartment in Colombo 5.',
+  },
+  {
+    label: 'Kandy land trend',
+    caption: 'How are land prices trending in Kandy, and what plot sizes are moving?',
+    value: 'How are land prices trending in Kandy, and what plot sizes are moving?',
+  },
+];
+
 const SendIcon = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-    <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M21 3L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M21 3L14 21L10 14L3 10L21 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const CloseIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-const Spinner = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-    style={{ animation: "awSpin .85s linear infinite", display: "block" }}>
-    <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,.16)" strokeWidth="2.5"/>
-    <path d="M12 3a9 9 0 0 1 9 9" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
 
 const PropertyIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <path d="M3 9.5L12 3L21 9.5V20C21 20.55 20.55 21 20 21H15V15H9V21H4C3.45 21 3 20.55 3 20V9.5Z"
-      stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M3 9.5L12 3L21 9.5V20C21 20.55 20.55 21 20 21H15V15H9V21H4C3.45 21 3 20.55 3 20V9.5Z"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+const Spinner = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+    style={{ animation: 'awSpin .85s linear infinite', display: 'block' }}
+  >
+    <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,.18)" strokeWidth="2.2" />
+    <path d="M12 3a9 9 0 0 1 9 9" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
+  </svg>
+);
+
 const STYLES = `
+  .aw {
+    --aw-bg: rgba(12,12,14,.96);
+    --aw-bg-soft: rgba(255,255,255,.03);
+    --aw-bg-softer: rgba(255,255,255,.02);
+    --aw-border: rgba(255,255,255,.08);
+    --aw-border-strong: rgba(255,255,255,.12);
+    --aw-text: rgba(255,255,255,.96);
+    --aw-text-soft: rgba(255,255,255,.72);
+    --aw-text-muted: rgba(255,255,255,.45);
+    --aw-header-font: "Cal Sans", "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --aw-body-font: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--aw-body-font);
+  }
+
   .aw * { box-sizing: border-box; }
   .aw button, .aw textarea { font-family: inherit; }
   .aw button { -webkit-tap-highlight-color: transparent; }
 
   @keyframes awPanelIn {
-    0%   { opacity: 0; transform: translateY(18px) scale(.965); }
-    100% { opacity: 1; transform: translateY(0)    scale(1); }
+    0% { opacity: 0; transform: translateY(14px) scale(.985); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
   }
+
   @keyframes awPanelOut {
-    0%   { opacity: 1; transform: translateY(0)    scale(1); }
-    100% { opacity: 0; transform: translateY(14px) scale(.975); }
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(10px) scale(.99); }
   }
+
   @keyframes awMsgIn {
-    0%   { opacity: 0; transform: translateY(8px); }
+    0% { opacity: 0; transform: translateY(8px); }
     100% { opacity: 1; transform: translateY(0); }
   }
+
   @keyframes awDot {
-    0%, 60%, 100% { transform: translateY(0);   opacity: .35; }
-    30%            { transform: translateY(-4px); opacity: 1; }
+    0%, 60%, 100% { transform: translateY(0); opacity: .35; }
+    30% { transform: translateY(-3px); opacity: 1; }
   }
+
   @keyframes awSpin { to { transform: rotate(360deg); } }
-  @keyframes awPulseRing {
-    0%   { transform: scale(1);    opacity: .42; }
-    100% { transform: scale(1.95); opacity: 0; }
-  }
-  @keyframes awGlow {
-    0%, 100% { box-shadow: 0 0 0   rgba(${ACCENT_RGB}, 0); }
-    50%      { box-shadow: 0 0 28px rgba(${ACCENT_RGB}, .18); }
-  }
-  @keyframes awFabFloat {
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(-2px); }
-  }
-  @keyframes awFabHalo {
-    0%, 100% { opacity: .38; transform: scale(1); }
-    50%      { opacity: .68; transform: scale(1.06); }
-  }
-  @keyframes awRotateSlow { to { transform: rotate(360deg); } }
-  @keyframes awTooltipIn {
-    0%   { opacity: 0; transform: translateY(6px) scale(.97); }
-    100% { opacity: 1; transform: translateY(0)   scale(1); }
-  }
-  @keyframes awTooltipOut {
-    0%   { opacity: 1; transform: translateY(0)   scale(1); }
-    100% { opacity: 0; transform: translateY(4px) scale(.97); }
-  }
-  .aw-tooltip-in  { animation: awTooltipIn  280ms cubic-bezier(.22,.68,0,1.08) both; }
-  .aw-tooltip-out { animation: awTooltipOut 200ms ease both; }
 
-  .aw-panel-in  { animation: awPanelIn  260ms cubic-bezier(.22,.68,0,1.08) both; }
-  .aw-panel-out { animation: awPanelOut 220ms ease both; }
-  .aw-msg       { animation: awMsgIn    220ms cubic-bezier(.22,.68,0,1.08) both; }
+  .aw-panel-in { animation: awPanelIn 220ms cubic-bezier(.22,1,.36,1) both; }
+  .aw-panel-out { animation: awPanelOut 180ms ease both; }
+  .aw-msg { animation: awMsgIn 220ms cubic-bezier(.22,1,.36,1) both; }
 
-  .aw-scroll::-webkit-scrollbar       { width: 5px; }
+  .aw-launcher,
+  .aw-chip,
+  .aw-ctrl,
+  .aw-send,
+  .aw-input-wrap {
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .aw-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9997;
+    background: rgba(0,0,0,.12);
+    backdrop-filter: blur(2px);
+  }
+
+  .aw-launcher-wrapper,
+  .aw-panel-wrapper {
+    position: fixed;
+    right: 24px;
+    z-index: 9998;
+  }
+
+  .aw-launcher-wrapper { bottom: 24px; width: min(304px, calc(100vw - 32px)); }
+  .aw-panel-wrapper {
+    bottom: 96px;
+    width: min(376px, calc(100vw - 32px));
+    height: min(560px, calc(100vh - 128px));
+  }
+
+  .aw-launcher {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border-radius: 18px;
+    border: 1px solid var(--aw-border);
+    background: var(--aw-bg);
+    color: var(--aw-text);
+    box-shadow: 0 10px 30px rgba(0,0,0,.32);
+    cursor: pointer;
+  }
+
+  .aw-launcher:hover {
+    transform: translateY(-1px);
+    border-color: var(--aw-border-strong);
+    background: rgba(16,16,18,.98);
+  }
+
+  .aw-launcher-copy { min-width: 0; text-align: left; }
+  .aw-launcher-title {
+    margin: 0;
+    font-family: var(--aw-header-font);
+    font-size: 16px;
+    line-height: 1;
+    color: var(--aw-text);
+    letter-spacing: -0.02em;
+  }
+
+  .aw-launcher-subtitle {
+    margin: 4px 0 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--aw-text-muted);
+  }
+
+  .aw-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    border-radius: 22px;
+    border: 1px solid var(--aw-border);
+    background: var(--aw-bg);
+    box-shadow: 0 20px 54px rgba(0,0,0,.48);
+  }
+
+  .aw-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 18px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+
+  .aw-header-copy p,
+  .aw-header-copy h2 { margin: 0; }
+
+  .aw-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(${ACCENT_RGB}, .86);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+
+  .aw-eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: ${ACCENT};
+    box-shadow: 0 0 0 4px rgba(${ACCENT_RGB}, .12);
+  }
+
+  .aw-heading {
+    margin-top: 10px !important;
+    font-family: var(--aw-header-font);
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--aw-text);
+  }
+
+  .aw-subheading {
+    margin-top: 8px !important;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--aw-text-muted);
+    max-width: 28ch;
+  }
+
+  .aw-ctrl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 12px;
+    border: 1px solid var(--aw-border);
+    background: var(--aw-bg-softer);
+    color: var(--aw-text-soft);
+    cursor: pointer;
+  }
+
+  .aw-ctrl:hover {
+    border-color: var(--aw-border-strong);
+    background: var(--aw-bg-soft);
+    color: var(--aw-text);
+  }
+
+  .aw-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .aw-scroll::-webkit-scrollbar { width: 6px; }
   .aw-scroll::-webkit-scrollbar-track { background: transparent; }
-  .aw-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 9999px; }
-  .aw-scroll::-webkit-scrollbar-thumb:hover { background: rgba(${ACCENT_RGB},.72); }
+  .aw-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.12);
+    border-radius: 999px;
+  }
 
-  .aw-fab, .aw-chip, .aw-ctrl, .aw-send { transition: all 180ms ease; }
+  .aw-intro {
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.06);
+    background: rgba(255,255,255,.025);
+  }
 
-  .aw-fab:hover  { transform: translateY(-2px) scale(1.01) !important; }
-  .aw-fab:active { transform: translateY(0)    scale(.985) !important; }
+  .aw-intro-title {
+    margin: 0;
+    font-family: var(--aw-header-font);
+    font-size: 18px;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: var(--aw-text);
+  }
+
+  .aw-intro-copy {
+    margin: 8px 0 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--aw-text-soft);
+  }
+
+  .aw-chip-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .aw-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid var(--aw-border);
+    background: rgba(255,255,255,.02);
+    color: var(--aw-text);
+    text-align: left;
+    cursor: pointer;
+  }
 
   .aw-chip:hover {
-    border-color: rgba(${ACCENT_RGB},.30) !important;
-    background:   rgba(${ACCENT_RGB},.10) !important;
-    color: #fff !important;
-  }
-  .aw-ctrl:hover {
-    background:   rgba(255,255,255,.06) !important;
-    color:        rgba(255,255,255,.95) !important;
-    border-color: rgba(255,255,255,.14) !important;
-  }
-  .aw-send:hover:not(:disabled)  { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(${ACCENT_RGB},.34) !important; }
-  .aw-send:active:not(:disabled) { transform: translateY(0) scale(.97); }
-
-  .aw-input-wrap { transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
-  .aw-input-wrap.focused {
-    border-color: rgba(${ACCENT_RGB},.50) !important;
-    background:   rgba(255,255,255,.02) !important;
+    transform: translateY(-1px);
+    border-color: rgba(${ACCENT_RGB}, .28);
+    background: rgba(${ACCENT_RGB}, .08);
   }
 
+  .aw-chip-label {
+    font-family: var(--aw-header-font);
+    font-size: 14px;
+    line-height: 1;
+    color: var(--aw-text);
+    letter-spacing: -0.02em;
+  }
+
+  .aw-chip-copy {
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--aw-text-muted);
+  }
+
+  .aw-message-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .aw-message-group.user { align-items: flex-end; }
+  .aw-message-group.assistant { align-items: flex-start; }
+
+  .aw-message-label {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--aw-text-muted);
+  }
+
+  .aw-message-label.user { color: rgba(${ACCENT_RGB}, .92); }
+
+  .aw-bubble {
+    max-width: 88%;
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--aw-text);
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+  }
+
+  .aw-bubble.user {
+    background: rgba(${ACCENT_RGB}, .12);
+    border-color: rgba(${ACCENT_RGB}, .18);
+  }
+
+  .aw-text { font-family: var(--aw-body-font); }
   .aw-text p { margin: 0 0 10px; }
   .aw-text p:last-child { margin-bottom: 0; }
   .aw-text ul { margin: 8px 0 0; padding-left: 18px; }
   .aw-text li { margin: 5px 0; }
 
-  .aw-panel-glow {
-    position: absolute; inset: 0; pointer-events: none;
-    background:
-      radial-gradient(circle at top right,  rgba(${ACCENT_RGB},.10), transparent 30%),
-      radial-gradient(circle at bottom left, rgba(${ACCENT_RGB},.06), transparent 26%);
+  .aw-loading {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.03);
   }
-  .aw-backdrop {
-    position: fixed; inset: 0; z-index: 9997;
-    background: rgba(0,0,0,.18); backdrop-filter: blur(4px);
+
+  .aw-loading-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: ${ACCENT};
+    display: block;
   }
-  .aw-fab-wrapper {
-    position: fixed; right: 24px; bottom: 24px; z-index: 9999;
-    transition: bottom .4s cubic-bezier(.16,1,.3,1);
-    animation: awFabFloat 2.8s ease-in-out infinite;
+
+  .aw-footer {
+    border-top: 1px solid rgba(255,255,255,.06);
+    padding: 14px 18px 18px;
   }
-  .aw-panel-wrapper {
-    position: fixed; right: 24px; bottom: 112px;
-    width: 388px; max-width: calc(100vw - 20px);
-    height: min(620px, calc(100vh - 112px)); z-index: 9998;
-    transition: bottom .4s cubic-bezier(.16,1,.3,1);
+
+  .aw-hint {
+    margin: 0 0 10px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--aw-text-muted);
   }
+
+  .aw-input-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 18px;
+    border: 1px solid var(--aw-border);
+    background: rgba(0,0,0,.24);
+  }
+
+  .aw-input-wrap.focused {
+    border-color: rgba(${ACCENT_RGB}, .34);
+    box-shadow: 0 0 0 1px rgba(${ACCENT_RGB}, .08);
+  }
+
+  .aw-textarea {
+    flex: 1;
+    resize: none;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--aw-text);
+    font-size: 13px;
+    line-height: 1.55;
+    padding: 8px 8px 8px 10px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .aw-textarea::placeholder { color: rgba(255,255,255,.36); }
+
+  .aw-send {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: white;
+  }
+
+  .aw-send:disabled {
+    cursor: default;
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.22);
+  }
+
+  .aw-send:not(:disabled) {
+    cursor: pointer;
+    background: ${ACCENT};
+    box-shadow: 0 8px 22px rgba(${ACCENT_RGB}, .22);
+  }
+
+  .aw-send:not(:disabled):hover { transform: translateY(-1px); }
+
+  .aw-meta {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .aw-disclaimer {
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.4;
+    color: rgba(255,255,255,.28);
+  }
+
+  .aw-reset {
+    border: 0;
+    background: transparent;
+    color: rgba(255,255,255,.46);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .aw-reset:hover { color: var(--aw-text); }
+
   @media (max-width: 768px) {
-    .aw-fab-wrapper   { right: 16px; bottom: 16px; }
-    .aw-panel-wrapper { right: 10px; left: 10px; top: 12px; bottom: 104px; width: auto; max-width: none; height: auto; }
+    .aw-launcher-wrapper,
+    .aw-panel-wrapper {
+      right: 12px;
+      left: 12px;
+      width: auto;
+    }
+
+    .aw-launcher-wrapper { bottom: 12px; }
+    .aw-panel-wrapper {
+      top: 12px;
+      bottom: 84px;
+      height: auto;
+    }
   }
-  @media (max-width: 639px) {
-    .aw-fab-wrapper   { display: none !important; }
-    .aw-panel-wrapper { display: none !important; }
-    .aw-backdrop      { display: none !important; }
+
+  @media (max-width: 560px) {
+    .aw-chip-grid { grid-template-columns: 1fr; }
+    .aw-bubble { max-width: 92%; }
   }
 `;
 
-// ─── Message formatter ────────────────────────────────────────────────────────
 function formatMessage(content: string) {
-  const lines = content.split('\n').filter(l => l.trim() !== '');
-  const elements: React.ReactNode[] = [];
+  const lines = content.split('\n').filter(line => line.trim() !== '');
+  const elements: ReactNode[] = [];
   let bullets: string[] = [];
 
   const flush = (key: string) => {
     if (!bullets.length) return;
-    elements.push(<ul key={key}>{bullets.map((b, i) => <li key={i}>{b}</li>)}</ul>);
+    elements.push(<ul key={key}>{bullets.map((bullet, index) => <li key={index}>{bullet}</li>)}</ul>);
     bullets = [];
   };
 
-  lines.forEach((line, idx) => {
-    const t = line.trim();
-    if (t.startsWith('- ') || t.startsWith('• ')) {
-      bullets.push(t.replace(/^(-|•)\s*/, ''));
-    } else {
-      flush(`b-${idx}`);
-      elements.push(<p key={`p-${idx}`}>{line}</p>);
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+      bullets.push(trimmed.replace(/^(-|•)\s*/, ''));
+      return;
     }
+
+    flush(`b-${index}`);
+    elements.push(<p key={`p-${index}`}>{line}</p>);
   });
+
   flush('b-final');
   return <div className="aw-text">{elements}</div>;
 }
 
-// ─── Quick actions ────────────────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  { label: 'Colombo prices',   value: 'What are current house prices in Colombo?' },
-  { label: 'Land in Kandy',    value: 'Show me land prices in Kandy' },
-  { label: 'Best value areas', value: 'Which districts offer the best value for money right now?' },
-  { label: 'Rent vs Buy',      value: 'Is it better to rent or buy property in Sri Lanka right now?' },
-];
-
-// ─── Main component ───────────────────────────────────────────────────────────
 export function ChatWidget({ onFilters }: { onFilters?: (filters: NonNullable<ChatResponse['filters']>) => void }) {
-  const [open,        setOpen]        = useState(false);
-  const [animOut,     setAnimOut]     = useState(false);
-  const [mounted,     setMounted]     = useState(false);
-  const [input,       setInput]       = useState('');
-  const [messages,    setMessages]    = useState<Message[]>([]);
-  const [loading,     setLoading]     = useState(false);
-  const [focused,     setFocused]     = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [tooltipOut,  setTooltipOut]  = useState(false);
+  const [open, setOpen] = useState(false);
+  const [animOut, setAnimOut] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [focused, setFocused] = useState(false);
 
-  const panelRef    = useRef<HTMLDivElement>(null);
-  const bottomRef   = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isInputEmpty = useMemo(() => input.trim().length === 0, [input]);
-
-  // ── Callbacks defined first so effects can reference them ─────────────────
-  const dismissTooltip = useCallback(() => {
-    setTooltipOut(true);
-    setTimeout(() => { setShowTooltip(false); setTooltipOut(false); }, 200);
-    try { localStorage.setItem(TOOLTIP_KEY, '1'); } catch { /* ignore */ }
-  }, []);
+  const launcherSubtitle = messages.length
+    ? `Resume ${messages.length} saved message${messages.length === 1 ? '' : 's'}`
+    : 'Ask about beds, comps, yields, and district pricing';
 
   const closePanel = useCallback(() => {
     setAnimOut(true);
-    setTimeout(() => { setOpen(false); setAnimOut(false); setLoading(false); }, 220);
+    window.setTimeout(() => {
+      setOpen(false);
+      setAnimOut(false);
+      setLoading(false);
+    }, 180);
   }, []);
 
-  // ── Effects ────────────────────────────────────────────────────────────────
-
-  // Persist messages on mount
   useEffect(() => {
     setMounted(true);
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setMessages(parsed.slice(-24));
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        setMessages(parsed.slice(-24));
       }
-    } catch { /* ignore */ }
-
-    // Show tooltip for new users after a short delay
-    const seen = localStorage.getItem(TOOLTIP_KEY);
-    if (!seen) {
-      const t = setTimeout(() => setShowTooltip(true), 2000);
-      return () => clearTimeout(t);
+    } catch {
+      // Ignore invalid local storage payloads.
     }
   }, []);
 
-  // Auto-dismiss tooltip after it appears
-  useEffect(() => {
-    if (!showTooltip) return;
-    const t = setTimeout(() => dismissTooltip(), 8000);
-    return () => clearTimeout(t);
-  }, [showTooltip, dismissTooltip]);
-
   useEffect(() => {
     if (!mounted) return;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-24))); }
-    catch { /* ignore */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-24)));
+    } catch {
+      // Ignore local storage write failures.
+    }
   }, [messages, mounted]);
 
-  // Scroll to bottom on new messages
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
-  // Focus textarea when opened
   useEffect(() => {
     if (!open) return;
-    const t = setTimeout(() => textareaRef.current?.focus(), 180);
-    return () => clearTimeout(t);
+    const timer = window.setTimeout(() => textareaRef.current?.focus(), 140);
+    return () => window.clearTimeout(timer);
   }, [open]);
 
-  // Escape to close
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && open) closePanel(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && open) {
+        closePanel();
+      }
+    };
 
-  // Click outside to close
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, closePanel]);
+
   useEffect(() => {
-    const onDown = (e: MouseEvent) => {
+    const onPointerDown = (event: MouseEvent) => {
       if (!open || !panelRef.current) return;
-      const fab = document.getElementById('propertylk-ai-fab');
-      if (panelRef.current.contains(e.target as Node)) return;
-      if (fab?.contains(e.target as Node)) return;
+      if (panelRef.current.contains(event.target as Node)) return;
       closePanel();
     };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [open]);
 
-  // Auto-resize textarea
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [open, closePanel]);
+
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -297,366 +642,238 @@ export function ChatWidget({ onFilters }: { onFilters?: (filters: NonNullable<Ch
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, [input]);
 
-  const toggle = useCallback(() => {
-    if (showTooltip) dismissTooltip();
-    if (open) closePanel(); else setOpen(true);
-  }, [open, closePanel, showTooltip, dismissTooltip]);
-
-  const clearChat = () => {
+  const clearChat = useCallback(() => {
     setLoading(false);
     setMessages([]);
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
-  };
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Ignore local storage write failures.
+    }
+  }, []);
 
-  const sendPrompt = async (value: string) => {
+  const sendPrompt = useCallback(async (value: string) => {
     const trimmed = value.trim();
     if (!trimmed || loading) return;
 
-    const userMsg: Message = { role: 'user', content: trimmed, id: genId() };
-    const next = [...messages, userMsg];
-    setMessages(next);
+    const userMessage: Message = { role: 'user', content: trimmed, id: genId() };
+    const nextMessages = [...messages, userMessage];
+
+    setMessages(nextMessages);
     setInput('');
     setLoading(true);
 
     try {
-      const history = messages.map(m => ({ role: m.role, content: m.content }));
-      const res = await sendChatMessage(trimmed, history);
-      setMessages([...next, { role: 'assistant', content: res.response, id: genId() }]);
-      
-      if (res.filters && onFilters) {
-        onFilters(res.filters);
+      const history = messages.map(message => ({ role: message.role, content: message.content }));
+      const response = await sendChatMessage(trimmed, history);
+
+      setMessages([
+        ...nextMessages,
+        { role: 'assistant', content: response.response, id: genId() },
+      ]);
+
+      if (response.filters && onFilters) {
+        onFilters(response.filters);
       }
     } catch {
-      setMessages([...next, {
-        role: 'assistant',
-        content: 'Connection issue. Please try again.',
-        id: genId(),
-      }]);
+      setMessages([
+        ...nextMessages,
+        {
+          role: 'assistant',
+          content: 'Connection issue. Please try again.',
+          id: genId(),
+        },
+      ]);
     } finally {
       setLoading(false);
     }
+  }, [loading, messages, onFilters]);
+
+  const onComposerKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = event => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      void sendPrompt(input);
+    }
   };
 
-  const onKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPrompt(input); }
-  };
-
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="aw">
       <style>{STYLES}</style>
 
       {open && <div className="aw-backdrop" />}
 
-      {/* ── Tooltip for new users ── */}
-      {showTooltip && !open && (
-        <div
-          className={tooltipOut ? 'aw-tooltip-out' : 'aw-tooltip-in'}
-          style={{
-            position: 'fixed', right: 100, bottom: 30, zIndex: 9998,
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 14px 10px 12px',
-            background: 'linear-gradient(135deg, rgba(20,20,28,.96), rgba(12,12,18,.98))',
-            border: `1px solid rgba(${ACCENT_RGB},.28)`,
-            borderRadius: '14px',
-            boxShadow: `0 8px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(${ACCENT_RGB},.08)`,
-            backdropFilter: 'blur(16px)',
-            maxWidth: 230,
-            cursor: 'default',
-          }}
-        >
-          {/* Arrow pointing right toward FAB */}
-          <span style={{
-            position: 'absolute', right: -7, top: '50%',
-            width: 12, height: 12,
-            background: 'linear-gradient(135deg, rgba(12,12,18,.98), rgba(12,12,18,.98))',
-            border: `1px solid rgba(${ACCENT_RGB},.28)`,
-            borderLeft: 'none', borderBottom: 'none',
-            transform: 'translateY(-50%) rotate(45deg)',
-          }} />
-
-          <span style={{
-            width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-            display: 'grid', placeItems: 'center',
-            background: `rgba(${ACCENT_RGB},.15)`, border: `1px solid rgba(${ACCENT_RGB},.25)`,
-            color: ACCENT,
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-                stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-            </svg>
-          </span>
-
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
-              Ask Property AI
-            </p>
-            <p style={{ margin: '3px 0 0', fontSize: '11px', color: 'rgba(255,255,255,.5)', lineHeight: 1.4 }}>
-              Get live prices for any district
-            </p>
-          </div>
-
+      {!open && (
+        <div className="aw-launcher-wrapper">
           <button
-            onClick={dismissTooltip}
-            style={{
-              background: 'none', border: 'none', padding: '2px', cursor: 'pointer',
-              color: 'rgba(255,255,255,.3)', flexShrink: 0, display: 'grid', placeItems: 'center',
-              borderRadius: 4, lineHeight: 1,
-            }}
-            aria-label="Dismiss"
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Open property Q&A"
+            className="aw-launcher"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
+            <span
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 14,
+                display: 'grid',
+                placeItems: 'center',
+                border: '1px solid rgba(255,255,255,.08)',
+                background: 'rgba(255,255,255,.03)',
+                color: ACCENT,
+                flexShrink: 0,
+              }}
+            >
+              <PropertyIcon />
+            </span>
+
+            <span className="aw-launcher-copy">
+              <p className="aw-launcher-title">Property Q&amp;A</p>
+              <p className="aw-launcher-subtitle">{launcherSubtitle}</p>
+            </span>
+
+            <span
+              aria-hidden="true"
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 11,
+                display: 'grid',
+                placeItems: 'center',
+                background: 'rgba(255,255,255,.03)',
+                border: '1px solid rgba(255,255,255,.06)',
+                color: 'rgba(255,255,255,.68)',
+                fontSize: 16,
+                lineHeight: 1,
+              }}
+            >
+              +
+            </span>
           </button>
         </div>
       )}
 
-      {/* ── FAB ── */}
-      <button
-        id="propertylk-ai-fab"
-        onClick={toggle}
-        aria-label={open ? 'Close property assistant' : 'Open property assistant'}
-        className="aw-fab aw-fab-wrapper"
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 48, height: 48, padding: 0,
-          background: '#111111',
-          color: '#fff', border: '1px solid rgba(255,255,255,.1)', borderRadius: '50%',
-          boxShadow: '0 8px 32px rgba(0,0,0,.5)',
-          cursor: 'pointer', position: 'fixed',
-        }}
-      >
-        <span style={{ color: ACCENT }}>
-          {open ? <CloseIcon /> : <PropertyIcon />}
-        </span>
-      </button>
-
-      {/* ── Panel ── */}
       {open && (
         <div
           ref={panelRef}
           role="dialog"
-          aria-label="Property AI assistant"
+          aria-label="Property Q&A assistant"
           aria-modal="true"
           className={`aw-panel-wrapper ${animOut ? 'aw-panel-out' : 'aw-panel-in'}`}
-          style={{
-            display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            borderRadius: '20px',
-            background: '#111111',
-            border: '1px solid rgba(255,255,255,.1)',
-            boxShadow: '0 20px 60px rgba(0,0,0,.6)',
-          }}
         >
-          {/* ── Header ── */}
-          <div style={{
-            position: 'relative', padding: '13px 13px 12px',
-            borderBottom: '1px solid rgba(255,255,255,.07)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'transparent',
-            zIndex: 1,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 11, display: 'grid', placeItems: 'center',
-                background: 'linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015))',
-                border: '1px solid rgba(255,255,255,.06)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,.03)',
-                color: ACCENT,
-              }}>
-                <PropertyIcon />
+          <div className="aw-panel">
+            <div className="aw-header">
+              <div className="aw-header-copy">
+                <p className="aw-eyebrow">Nilam property Q&amp;A</p>
+                <h2 className="aw-heading">Ask with context</h2>
+                <p className="aw-subheading">
+                  Quieter, data-led answers for districts, bedrooms, comparable listings, and yield checks.
+                </p>
               </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', lineHeight: 1.1 }}>
-                  Property AI
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                  <span style={{
-                    width: 6, height: 6, borderRadius: '50%', background: '#3ddc84',
-                    boxShadow: '0 0 8px rgba(61,220,132,.6)', flexShrink: 0,
-                  }} />
-                  <span style={{
-                    fontSize: '10px', fontWeight: 500, color: 'rgba(255,255,255,.42)',
-                    letterSpacing: '0.13em', textTransform: 'uppercase',
-                  }}>
-                    Online · Sri Lanka Property Expert
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                {messages.length > 0 && (
+                  <button type="button" onClick={clearChat} className="aw-ctrl">
+                    Reset
+                  </button>
+                )}
+                <button type="button" onClick={closePanel} aria-label="Close property Q&A" className="aw-ctrl">
+                  <CloseIcon />
+                </button>
+              </div>
+            </div>
+
+            <div className="aw-scroll">
+              {messages.length === 0 && (
+                <>
+                  <div className="aw-intro aw-msg">
+                    <p className="aw-intro-title">Start with a sharp question.</p>
+                    <p className="aw-intro-copy">
+                      Nilam is strongest when you include district, property type, and bedrooms. These prompts lean on
+                      richer API data instead of generic chat filler.
+                    </p>
+                  </div>
+
+                  <div className="aw-chip-grid">
+                    {PROMPT_CHIPS.map(chip => (
+                      <button
+                        key={chip.label}
+                        type="button"
+                        onClick={() => void sendPrompt(chip.value)}
+                        className="aw-chip aw-msg"
+                      >
+                        <span className="aw-chip-label">{chip.label}</span>
+                        <span className="aw-chip-copy">{chip.caption}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {messages.map(message => (
+                <div key={message.id} className={`aw-message-group aw-msg ${message.role}`}>
+                  <span className={`aw-message-label ${message.role}`}>
+                    {message.role === 'user' ? 'You' : 'Nilam AI'}
                   </span>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={clearChat} className="aw-ctrl" style={{
-                height: '31px', padding: '0 10px', borderRadius: '9px',
-                border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.02)',
-                color: 'rgba(255,255,255,.55)', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
-              }}>Clear</button>
-              <button onClick={closePanel} aria-label="Close" className="aw-ctrl" style={{
-                width: '31px', height: '31px', borderRadius: '9px',
-                border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.02)',
-                color: 'rgba(255,255,255,.55)', cursor: 'pointer', display: 'grid', placeItems: 'center',
-              }}><CloseIcon /></button>
-            </div>
-          </div>
-
-          {/* ── Messages ── */}
-          <div className="aw-scroll" style={{
-            position: 'relative', flex: 1, overflowY: 'auto',
-            padding: '18px 16px 12px', display: 'flex', flexDirection: 'column', gap: '12px', zIndex: 1,
-          }}>
-            {messages.length === 0 && (
-              <>
-                {/* Welcome card */}
-                <div className="aw-msg" style={{
-                  padding: '18px', borderRadius: '16px',
-                  background: 'rgba(255,255,255,.03)',
-                  border: '1px solid rgba(255,255,255,.07)',
-                }}>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#fff', lineHeight: 1.25 }}>
-                    Talk to <span style={{ color: ACCENT }}>Property AI</span>
-                  </div>
-                  <p style={{ margin: '10px 0 0', fontSize: '14px', lineHeight: 1.7, color: 'rgba(255,255,255,.79)' }}>
-                    Ask about prices, areas, trends, or anything Sri Lanka real estate — I'll pull live data from the database.
-                  </p>
-                  <div style={{
-                    marginTop: 13, display: 'inline-flex', alignItems: 'center', gap: 8,
-                    padding: '8px 10px', borderRadius: 999,
-                    background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.06)',
-                  }}>
-                    <span style={{
-                      width: 7, height: 7, borderRadius: '50%', background: '#3ddc84',
-                      boxShadow: '0 0 10px rgba(61,220,132,.55)',
-                    }} />
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,.5)', letterSpacing: '0.09em' }}>
-                      Live data · Updated daily
-                    </span>
+                  <div className={`aw-bubble ${message.role}`}>
+                    {message.role === 'assistant' ? formatMessage(message.content) : message.content}
                   </div>
                 </div>
+              ))}
 
-                {/* Quick action chips */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {QUICK_ACTIONS.map(a => (
-                    <button key={a.label} onClick={() => sendPrompt(a.value)} className="aw-chip" style={{
-                      padding: '9px 13px', borderRadius: 999,
-                      background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)',
-                      color: 'rgba(255,255,255,.64)', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                    }}>
-                      {a.label}
-                    </button>
-                  ))}
+              {loading && (
+                <div className="aw-message-group aw-msg assistant">
+                  <span className="aw-message-label">Nilam AI</span>
+                  <div className="aw-loading">
+                    {[0, 0.18, 0.36].map((delay, index) => (
+                      <span
+                        key={index}
+                        className="aw-loading-dot"
+                        style={{ animation: `awDot 1.3s ${delay}s infinite` }}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </>
-            )}
+              )}
 
-            {/* Message bubbles */}
-            {messages.map(msg => (
-              <div key={msg.id} className="aw-msg" style={{
-                display: 'flex', flexDirection: 'column',
-                alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                gap: 4,
-              }}>
-                <span style={{
-                  fontSize: '9px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase',
-                  color: msg.role === 'user' ? `rgba(${ACCENT_RGB},.72)` : 'rgba(255,255,255,.28)',
-                }}>
-                  {msg.role === 'user' ? 'You' : 'Property AI'}
-                </span>
-                <div style={{
-                  maxWidth: '88%', padding: '13px 15px', fontSize: '13.5px',
-                  lineHeight: 1.68, color: 'rgba(255,255,255,.92)',
-                  borderRadius: msg.role === 'user' ? '18px 18px 7px 18px' : '7px 18px 18px 18px',
-                  ...(msg.role === 'user' ? {
-                    background: `rgba(${ACCENT_RGB},.12)`,
-                    border: `1px solid rgba(${ACCENT_RGB},.2)`,
-                  } : {
-                    background: 'rgba(255,255,255,.03)',
-                    border: '1px solid rgba(255,255,255,.07)',
-                  }),
-                }}>
-                  {msg.role === 'assistant' ? formatMessage(msg.content) : msg.content}
-                </div>
-              </div>
-            ))}
-
-            {/* Loading dots */}
-            {loading && (
-              <div className="aw-msg" style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4,
-              }}>
-                <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,.28)' }}>
-                  Property AI
-                </span>
-                <div style={{
-                  padding: '14px 16px', borderRadius: '7px 18px 18px 18px',
-                  background: 'rgba(255,255,255,.03)',
-                  border: '1px solid rgba(255,255,255,.07)',
-                  display: 'flex', gap: 5, alignItems: 'center',
-                }}>
-                  {([0, 0.18, 0.36] as number[]).map((delay, i) => (
-                    <span key={i} style={{
-                      width: 6, height: 6, borderRadius: '50%', background: ACCENT,
-                      animation: `awDot 1.3s ${delay}s infinite`, display: 'block',
-                    }} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div ref={bottomRef} />
-          </div>
-
-          {/* ── Input ── */}
-          <div style={{ padding: '12px 14px 14px', background: 'transparent', borderTop: '1px solid rgba(255,255,255,.07)', zIndex: 1 }}>
-            <div
-              className={`aw-input-wrap ${focused ? 'focused' : ''}`}
-              style={{
-                display: 'flex', alignItems: 'flex-end', gap: 8, padding: '8px',
-                borderRadius: '16px', background: '#0a0a0a',
-                border: '1px solid rgba(255,255,255,.08)',
-              }}
-            >
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={onKeyDown}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                placeholder="Ask about properties in Sri Lanka…"
-                rows={1}
-                style={{
-                  flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                  resize: 'none', fontSize: '13.5px', lineHeight: 1.5, color: '#fff',
-                  padding: '8px 6px 8px 8px', maxHeight: '120px', overflowY: 'auto',
-                }}
-              />
-              <button
-                onClick={() => sendPrompt(input)}
-                disabled={isInputEmpty || loading}
-                className="aw-send"
-                style={{
-                  width: 42, height: 42, borderRadius: '14px', flexShrink: 0,
-                  display: 'grid', placeItems: 'center',
-                  cursor: isInputEmpty || loading ? 'default' : 'pointer',
-                  border: 'none',
-                  ...(isInputEmpty || loading ? {
-                    background: 'rgba(255,255,255,.05)',
-                    color: 'rgba(255,255,255,.22)',
-                  } : {
-                    background: ACCENT, color: '#fff',
-                    boxShadow: `0 8px 24px rgba(${ACCENT_RGB},.28)`,
-                  }),
-                }}
-              >
-                {loading ? <Spinner /> : <SendIcon />}
-              </button>
+              <div ref={bottomRef} />
             </div>
-            <p style={{
-              textAlign: 'center', fontSize: '10px', color: 'rgba(255,255,255,.22)',
-              margin: '8px 0 0', letterSpacing: '.04em',
-            }}>
-              Powered by live property data · AI may make mistakes
-            </p>
+
+            <div className="aw-footer">
+              <p className="aw-hint">Best results: district + property type + bedrooms.</p>
+
+              <div className={`aw-input-wrap ${focused ? 'focused' : ''}`}>
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={event => setInput(event.target.value)}
+                  onKeyDown={onComposerKeyDown}
+                  onFocus={() => setFocused(true)}
+                  onBlur={() => setFocused(false)}
+                  placeholder="Ask about pricing, comps, or yield..."
+                  rows={1}
+                  className="aw-textarea"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => void sendPrompt(input)}
+                  disabled={isInputEmpty || loading}
+                  className="aw-send"
+                  aria-label="Send message"
+                >
+                  {loading ? <Spinner /> : <SendIcon />}
+                </button>
+              </div>
+
+              <div className="aw-meta">
+                <p className="aw-disclaimer">Live property data helps, but AI can still make mistakes.</p>
+                {messages.length > 0 && (
+                  <button type="button" onClick={clearChat} className="aw-reset">
+                    Clear chat
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import insert
 from typing import List, Optional
 from db.connection import get_db, SessionLocal
 from db.models import Listing, RawListing, ScrapeRun, PriceAggregate, JobRun, ListingSnapshot
+from scraper.privacy import redact_contact_channels
 from api.estimate_logic import (
     MAX_DISPLAY_COMPS,
     MAX_ESTIMATE_COMPS,
@@ -180,22 +181,49 @@ def _status_for(now: datetime, last_success: Optional[datetime], last_running: O
             return "ok"
     return "delayed"
 
+
+def _public_description(value: Optional[str]) -> Optional[str]:
+    return redact_contact_channels(value)
+
+
+def _listing_counts_by_source(db: Session) -> tuple[dict[str, int], str]:
+    total_clean = db.query(func.count(Listing.id)).scalar() or 0
+    if total_clean > 0:
+        rows = db.query(Listing.source, func.count(Listing.id)).group_by(Listing.source).all()
+        return ({source: int(count) for source, count in rows if source}, "cleaned")
+
+    rows = db.query(RawListing.source, func.count(RawListing.id)).group_by(RawListing.source).all()
+    return ({source: int(count) for source, count in rows if source}, "raw")
+
+
 @app.get("/public/pipeline")
 def public_pipeline(db: Session = Depends(get_db)):
     now = datetime.now(timezone.utc)
     jobs = []
+    listing_counts, listing_count_source = _listing_counts_by_source(db)
 
     job_defs = [
-        {"name": "scrape_ikman", "type": "scrape", "source": "ikman", "expected_hours": 24},
-        {"name": "scrape_onlineproperty", "type": "scrape", "source": "onlineproperty", "expected_hours": 24},
-        {"name": "scrape_lamudi", "type": "scrape", "source": "lamudi", "expected_hours": 24},
-        {"name": "clean_listings", "type": "job", "expected_hours": 24},
-        {"name": "geocode_listings", "type": "job", "expected_hours": 24},
-        {"name": "compute_aggregates", "type": "job", "expected_hours": 168},
+        {
+            "name": "scrape_ikman",
+            "label": "ikman API",
+            "kind": "scrape",
+            "source": "ikman",
+            "expected_hours": 24,
+        },
+        {
+            "name": "scrape_lpw",
+            "label": "LPW API",
+            "kind": "scrape",
+            "source": "lpw",
+            "expected_hours": 24,
+        },
+        {"name": "clean_listings", "label": "Cleaner", "kind": "job", "expected_hours": 24},
+        {"name": "geocode_listings", "label": "Geocoder", "kind": "job", "expected_hours": 24},
+        {"name": "compute_aggregates", "label": "Aggregates", "kind": "job", "expected_hours": 168},
     ]
 
     for job in job_defs:
-        if job["type"] == "scrape":
+        if job["kind"] == "scrape":
             source = job["source"]
             last_success_run = (
                 db.query(ScrapeRun)
@@ -247,13 +275,25 @@ def public_pipeline(db: Session = Depends(get_db)):
         running_started = _to_utc(last_running.started_at) if last_running else None
 
         status = _status_for(now, last_success, running_started, job["expected_hours"])
-        jobs.append({
+        payload = {
             "name": job["name"],
+            "label": job["label"],
+            "kind": job["kind"],
             "status": status,
             "last_success": last_success.isoformat() if last_success else None,
             "last_run": last_started.isoformat() if last_started else None,
             "expected_hours": job["expected_hours"],
-        })
+        }
+        if job["kind"] == "scrape":
+            payload.update({
+                "source": job["source"],
+                "last_probe": last_started.isoformat() if last_started else None,
+                "listing_count": listing_counts.get(job["source"], 0),
+                "listing_count_source": listing_count_source,
+                "last_found_count": int(last_run.listings_found or 0) if last_run else 0,
+                "last_new_count": int(last_run.listings_new or 0) if last_run else 0,
+            })
+        jobs.append(payload)
 
     overall = "ok"
     if any(j["status"] == "delayed" for j in jobs):
@@ -1020,7 +1060,7 @@ def get_listing_detail(listing_id: int, db: Session = Depends(get_db)):
             "source": raw.source,
             "source_id": raw.source_id,
             "title": raw.title,
-            "description": raw.description,
+            "description": _public_description(raw.description),
             "price_lkr": None,
             "original_price_lkr": None,
             "price_drop_pct": None,
@@ -1053,7 +1093,7 @@ def get_listing_detail(listing_id: int, db: Session = Depends(get_db)):
         "source": l.source,
         "source_id": l.source_id,
         "title": raw_title or l.source_id,
-        "description": description,
+        "description": _public_description(description),
         "price_lkr": float(l.price_lkr) if l.price_lkr else None,
         "original_price_lkr": float(l.original_price_lkr) if l.original_price_lkr else None,
         "price_drop_pct": (

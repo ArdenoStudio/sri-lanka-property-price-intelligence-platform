@@ -98,10 +98,18 @@ export interface PriceHistory {
 
 export interface PipelineJobStatus {
   name: string;
+  label?: string;
+  kind?: 'scrape' | 'job';
+  source?: string;
   status: 'ok' | 'delayed' | 'running';
   last_success: string | null;
   last_run: string | null;
+  last_probe?: string | null;
   expected_hours: number;
+  listing_count?: number;
+  listing_count_source?: 'cleaned' | 'raw';
+  last_found_count?: number;
+  last_new_count?: number;
 }
 
 export interface PipelineStatusResponse {

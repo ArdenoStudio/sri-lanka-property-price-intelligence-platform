@@ -29,44 +29,25 @@ function cubicPath(from: Pos, to: Pos, curvature = 0.5): string {
   return `M ${from.x} ${from.y} C ${cx1} ${cy1} ${cx2} ${cy2} ${to.x} ${to.y + yOffset}`;
 }
 
-// ─── Single animated beam ──────────────────────────────────────────────────
-function Beam({
-  from, to, duration = 2.4, delay = 0, color = "rgba(129,140,248,0.9)"
-}: {
-  from: Pos | null; to: Pos | null;
-  duration?: number; delay?: number; color?: string;
+function Beam({ from, to, color = 'rgba(129,140,248,0.55)' }: {
+  from: Pos | null;
+  to: Pos | null;
+  color?: string;
 }) {
-  const pathRef = useRef<SVGPathElement>(null);
-  const [len, setLen] = useState(0);
-
-  useEffect(() => {
-    if (pathRef.current) setLen(pathRef.current.getTotalLength());
-  }, [from, to]);
-
   if (!from || !to) return null;
   const d = cubicPath(from, to);
-  const dashLen = Math.max(Math.min(len * 0.3, 100), 40);
 
   return (
     <g>
       <path d={d} stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
-      <path ref={pathRef} d={d} fill="none" stroke="none" strokeWidth="0" />
-      {len > 0 && (
-        <path
-          d={d} fill="none" stroke={color}
-          strokeWidth="2.5" strokeLinecap="round"
-          strokeDasharray={`${dashLen} ${len}`}
-          strokeDashoffset={len}
-          filter="url(#beam-glow)"
-        >
-          <animate
-            attributeName="stroke-dashoffset"
-            from={String(len)} to={String(-dashLen)}
-            dur={`${duration}s`} begin={`${delay}s`}
-            repeatCount="indefinite" calcMode="linear"
-          />
-        </path>
-      )}
+      <path
+        d={d}
+        fill="none"
+        stroke={color}
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        filter="url(#beam-glow)"
+      />
     </g>
   );
 }
@@ -86,12 +67,12 @@ const Node = forwardRef<HTMLDivElement, NodeProps>(
     <div className="flex flex-col items-center gap-1.5 sm:gap-2">
       <div
         ref={ref}
-        className={`z-10 flex items-center justify-center rounded-full border transition-all duration-300
+        className={`z-10 flex items-center justify-center rounded-full border
           ${tone === 'success'
             ? 'w-10 h-10 sm:w-12 sm:h-12 bg-[#0f0f1a] border-emerald-400/50 shadow-[0_0_24px_rgba(16,185,129,0.35)]'
             : accent
               ? 'w-11 h-11 sm:w-14 sm:h-14 bg-[#0f0f1a] border-accent/60 shadow-[0_0_24px_rgba(99,102,241,0.35)]'
-              : 'w-9 h-9 sm:w-11 sm:h-11 bg-bg-card border-border hover:border-border-hover'
+              : 'w-9 h-9 sm:w-11 sm:h-11 bg-bg-card border-border'
           } ${className}`}
       >
         {children}
@@ -198,15 +179,15 @@ export function DataFlowBeam() {
           </defs>
 
           {/* Sources → Scraper */}
-          <Beam from={p.ikman}           to={p.scraper} duration={2.0} delay={0}    color="rgba(129,140,248,0.9)" />
-          <Beam from={p.onlineProperty}  to={p.scraper} duration={2.0} delay={0.25} color="rgba(129,140,248,0.9)" />
-          <Beam from={p.houseLk}         to={p.scraper} duration={2.0} delay={0.5}  color="rgba(129,140,248,0.9)" />
+          <Beam from={p.ikman}          to={p.scraper} color="rgba(129,140,248,0.72)" />
+          <Beam from={p.onlineProperty} to={p.scraper} color="rgba(129,140,248,0.72)" />
+          <Beam from={p.houseLk}        to={p.scraper} color="rgba(129,140,248,0.72)" />
           {/* Scraper → Cleaner */}
-          <Beam from={p.scraper} to={p.cleaner} duration={2.0} delay={1.0}  color="rgba(167,139,250,0.9)" />
+          <Beam from={p.scraper} to={p.cleaner} color="rgba(167,139,250,0.72)" />
           {/* Cleaner → DB */}
-          <Beam from={p.cleaner} to={p.db}      duration={2.0} delay={2.0}  color="rgba(244,114,182,0.9)" />
+          <Beam from={p.cleaner} to={p.db} color="rgba(244,114,182,0.72)" />
           {/* DB → You */}
-          <Beam from={p.db}      to={p.you}     duration={2.0} delay={3.0}  color="rgba(52,211,153,0.9)"  />
+          <Beam from={p.db} to={p.you} color="rgba(52,211,153,0.72)" />
         </svg>
 
         {/* ── Sources ────────────────────────────────────────────────────
@@ -242,7 +223,7 @@ export function DataFlowBeam() {
       {/* footer badges */}
       <div className="relative flex flex-wrap gap-3 sm:gap-4 px-5 sm:px-6 pb-5 pt-1 border-t border-border/50">
         <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-success" />
           Updated daily · 2AM UTC
         </span>
         <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
