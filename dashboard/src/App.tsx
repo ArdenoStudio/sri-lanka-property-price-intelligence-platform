@@ -183,6 +183,8 @@ function Dashboard() {
   }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource]);
 
   const PAGE_SIZE = 24;
+  const COMPARISON_MIN = 2;
+  const COMPARISON_MAX = 4;
 
   // Comparison state
   const [selectedForComparison, setSelectedForComparison] = useState<Listing[]>([]);
@@ -318,9 +320,12 @@ function Dashboard() {
       if (prev.some(item => item.id === listing.id)) {
         return prev.filter(item => item.id !== listing.id);
       }
-      return [...prev.slice(-2), listing];
+      if (prev.length >= COMPARISON_MAX) {
+        return prev;
+      }
+      return [...prev, listing];
     });
-  }, []);
+  }, [COMPARISON_MAX]);
 
   return (
     <>
@@ -413,9 +418,15 @@ function Dashboard() {
 
           <ComparisonTray
             selected={selectedForComparison}
+            maxSlots={COMPARISON_MAX}
+            minCompare={COMPARISON_MIN}
             onRemove={(id) => setSelectedForComparison(prev => prev.filter(l => l.id !== id))}
             onClear={() => setSelectedForComparison([])}
-            onCompare={() => setIsCompareModalOpen(true)}
+            onCompare={() => {
+              if (selectedForComparison.length >= COMPARISON_MIN) {
+                setIsCompareModalOpen(true);
+              }
+            }}
           />
 
           <Suspense fallback={<ModalSkeleton />}>
@@ -423,6 +434,7 @@ function Dashboard() {
               isOpen={isCompareModalOpen}
               onClose={() => setIsCompareModalOpen(false)}
               listings={selectedForComparison}
+              minCompare={COMPARISON_MIN}
             />
           </Suspense>
 
