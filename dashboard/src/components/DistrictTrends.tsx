@@ -288,7 +288,7 @@ export function DistrictTrends({ district, propertyType, onViewListings }: Props
                     fontSize: '13px',
                     boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
                     padding: '12px 16px',
-                    fontFamily: 'Geist, sans-serif',
+                    fontFamily: 'Inter Variable, Inter, sans-serif',
                   }}
                   itemStyle={{ fontWeight: 600 }}
                   labelStyle={{ color: '#525252', marginBottom: '4px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}

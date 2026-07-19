@@ -92,7 +92,7 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
         <div className="noise-overlay" aria-hidden="true" />
         <p
           style={{
-            fontFamily: "'Geist', -apple-system, sans-serif",
+            fontFamily: "'Cal Sans', 'Inter Variable', sans-serif",
             fontSize: '20px',
             fontWeight: 600,
             color: '#f5f5f5',
@@ -138,7 +138,7 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
         />
         <p
           style={{
-            fontFamily: "'Geist', -apple-system, sans-serif",
+            fontFamily: "'Cal Sans', 'Inter Variable', sans-serif",
             fontSize: '24px',
             fontWeight: 600,
             color: '#f5f5f5',
@@ -193,7 +193,7 @@ export const PageLoader: React.FC<{ onComplete?: () => void; minDuration?: numbe
         />
         <p
           style={{
-            fontFamily: "'Geist', -apple-system, sans-serif",
+            fontFamily: "'Inter Variable', 'Inter', -apple-system, sans-serif",
             fontSize: '10px',
             color: '#2e2e2e',
             letterSpacing: '0.2em',

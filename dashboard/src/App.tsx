@@ -469,6 +469,7 @@ function Dashboard() {
               isOpen={isSavedSearchesOpen}
               onClose={() => setIsSavedSearchesOpen(false)}
               currentFilters={currentFilters}
+              currentResultCount={totalListings}
               onApplySearch={applySearch}
             />
           </Suspense>
