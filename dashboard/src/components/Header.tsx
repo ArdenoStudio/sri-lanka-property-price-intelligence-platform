@@ -99,110 +99,112 @@ export function Header() {
             </div>
           </Link>
 
-          <div className="hidden md:flex items-center gap-3">
-            <nav
-              aria-label="Primary"
-              className="flex items-center gap-1 rounded-full border border-white/[0.08] bg-[#111111]/85 p-1 shadow-[0_14px_40px_rgba(0,0,0,0.45)]"
-            >
-              {HEADER_PRIMARY_ITEMS.map((item) => {
-                const isActive = activeDestination === item.id;
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="hidden md:flex items-center gap-3">
+              <nav
+                aria-label="Primary"
+                className="flex items-center gap-1 rounded-full border border-white/[0.08] bg-[#111111]/85 p-1 shadow-[0_14px_40px_rgba(0,0,0,0.45)]"
+              >
+                {HEADER_PRIMARY_ITEMS.map((item) => {
+                  const isActive = activeDestination === item.id;
 
-                return (
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleDestination(item.id)}
+                      className={`rounded-full px-4 py-2 text-[13px] transition-colors ${
+                        isActive
+                          ? 'bg-white text-black'
+                          : 'text-[#a3a3a3] hover:bg-white/[0.06] hover:text-white'
+                      }`}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+
+                <div className="relative" ref={menuRef}>
                   <button
-                    key={item.id}
                     type="button"
-                    onClick={() => handleDestination(item.id)}
-                    className={`rounded-full px-4 py-2 text-[13px] transition-colors ${
-                      isActive
+                    onClick={() => setMenuContext(menuOpen ? null : routeKey)}
+                    className={`flex items-center gap-1 rounded-full px-4 py-2 text-[13px] transition-colors ${
+                      sectionMenuActive || menuOpen
                         ? 'bg-white text-black'
                         : 'text-[#a3a3a3] hover:bg-white/[0.06] hover:text-white'
                     }`}
-                    aria-current={isActive ? 'page' : undefined}
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    aria-controls="header-about-report-menu"
                   >
-                    {item.label}
+                    About / Report
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform ${menuOpen ? 'rotate-180' : ''}`}
+                    />
                   </button>
-                );
-              })}
 
-              <div className="relative" ref={menuRef}>
-                <button
-                  type="button"
-                  onClick={() => setMenuContext(menuOpen ? null : routeKey)}
-                  className={`flex items-center gap-1 rounded-full px-4 py-2 text-[13px] transition-colors ${
-                    sectionMenuActive || menuOpen
-                      ? 'bg-white text-black'
-                      : 'text-[#a3a3a3] hover:bg-white/[0.06] hover:text-white'
-                  }`}
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                  aria-controls="header-about-report-menu"
-                >
-                  About / Report
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform ${menuOpen ? 'rotate-180' : ''}`}
-                  />
-                </button>
+                  {menuOpen && (
+                    <div
+                      id="header-about-report-menu"
+                      role="menu"
+                      aria-label="About and report destinations"
+                      className="absolute right-0 top-full mt-3 w-72 overflow-hidden rounded-3xl border border-white/[0.08] bg-[#111111] p-2 shadow-[0_24px_80px_rgba(0,0,0,0.75)]"
+                    >
+                      {HEADER_OVERFLOW_ITEMS.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = activeDestination === item.id;
 
-                {menuOpen && (
-                  <div
-                    id="header-about-report-menu"
-                    role="menu"
-                    aria-label="About and report destinations"
-                    className="absolute right-0 top-full mt-3 w-72 overflow-hidden rounded-3xl border border-white/[0.08] bg-[#111111] p-2 shadow-[0_24px_80px_rgba(0,0,0,0.75)]"
-                  >
-                    {HEADER_OVERFLOW_ITEMS.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = activeDestination === item.id;
-
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setMenuContext(null);
-                            handleDestination(item.id);
-                          }}
-                          className={`flex w-full items-start gap-3 rounded-2xl px-4 py-3 text-left transition-colors ${
-                            isActive
-                              ? 'bg-white text-black'
-                              : 'text-[#d4d4d4] hover:bg-white/[0.05]'
-                          }`}
-                        >
-                          <span
-                            className={`mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl border ${
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMenuContext(null);
+                              handleDestination(item.id);
+                            }}
+                            className={`flex w-full items-start gap-3 rounded-2xl px-4 py-3 text-left transition-colors ${
                               isActive
-                                ? 'border-black/10 bg-black/5'
-                                : 'border-white/[0.08] bg-white/[0.03]'
+                                ? 'bg-white text-black'
+                                : 'text-[#d4d4d4] hover:bg-white/[0.05]'
                             }`}
                           >
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block text-[13px] font-medium">{item.label}</span>
                             <span
-                              className={`mt-1 block text-[11px] leading-relaxed ${
-                                isActive ? 'text-black/65' : 'text-[#737373]'
+                              className={`mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl border ${
+                                isActive
+                                  ? 'border-black/10 bg-black/5'
+                                  : 'border-white/[0.08] bg-white/[0.03]'
                               }`}
                             >
-                              {item.description}
+                              <Icon className="h-4 w-4" />
                             </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </nav>
+                            <span className="min-w-0">
+                              <span className="block text-[13px] font-medium">{item.label}</span>
+                              <span
+                                className={`mt-1 block text-[11px] leading-relaxed ${
+                                  isActive ? 'text-black/65' : 'text-[#737373]'
+                                }`}
+                              >
+                                {item.description}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </nav>
+            </div>
 
-            <CurrencySwitcher />
-          </div>
+            <div className="md:hidden">
+              <span className="inline-flex rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-[#a3a3a3]">
+                {mobileContextLabel}
+              </span>
+            </div>
 
-          <div className="md:hidden">
-            <span className="inline-flex rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-[#a3a3a3]">
-              {mobileContextLabel}
-            </span>
+            <CurrencySwitcher variant="header" />
           </div>
         </div>
       </header>

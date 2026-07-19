@@ -3,6 +3,7 @@ import { Bell, BellOff, Bookmark, Check, Sparkles, Trash2, X } from 'lucide-reac
 import { AnimatePresence, motion } from 'framer-motion';
 import { getFilterFingerprint, useSavedSearches } from '../hooks/useSavedSearches';
 import type { FilterState } from '../hooks/useSavedSearches';
+import { formatCurrencyAmount } from '../lib/pricing';
 
 interface Props {
   isOpen: boolean;
@@ -28,9 +29,7 @@ function formatDate(iso: string): string {
 }
 
 function formatPrice(value: number): string {
-  if (value >= 1_000_000) return `Rs ${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`;
-  if (value >= 1_000) return `Rs ${(value / 1_000).toFixed(0)}K`;
-  return `Rs ${value}`;
+  return formatCurrencyAmount(value, 'LKR', { variant: 'table' });
 }
 
 function formatBudget(filters: FilterState): string | null {
