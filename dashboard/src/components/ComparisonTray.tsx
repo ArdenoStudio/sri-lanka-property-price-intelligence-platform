@@ -1,9 +1,10 @@
 import '@fontsource/cal-sans';
 import '@fontsource-variable/inter';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, MapPin, Table, Trash2, X } from 'lucide-react';
 import type { Listing } from '../api';
 import { formatCurrencyAmount } from '../lib/pricing';
+import { surface, tx } from '../lib/motion';
 import { DealScorePill } from './DealScore';
 
 interface Props {
@@ -37,17 +38,19 @@ export function ComparisonTray({
   onClear,
   onCompare,
 }: Props) {
+  const reduce = useReducedMotion();
   const remainingToCompare = Math.max(minCompare - selected.length, 0);
   const remainingSlots = Math.max(maxSlots - selected.length, 0);
+  const s = surface(reduce);
 
   return (
     <AnimatePresence>
       {selected.length > 0 && (
         <motion.div
-          initial={{ y: 40, opacity: 0, scale: 0.98 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: 40, opacity: 0, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
-          transition={{ type: 'spring', stiffness: 260, damping: 26, mass: 0.7 }}
+          initial={s.initial === false ? false : { y: 16, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 16, opacity: 0, transition: tx(0.16, reduce) }}
+          transition={s.transition}
           className="fixed bottom-0 max-sm:bottom-[72px] left-0 right-0 z-40 px-3 pb-3 sm:px-4 sm:pb-4 pointer-events-none"
         >
           <div className="pointer-events-auto max-w-6xl mx-auto rounded-[28px] border border-white/[0.08] bg-[#0b0b0b]/95 shadow-2xl backdrop-blur-xl">

@@ -11,7 +11,7 @@ import { MinimalSelect } from './ui/MinimalSelect';
 import { useCurrency } from '../hooks/useCurrency';
 import { EMITeaser } from './EMITeaser';
 import { MortgageCalculator } from './MortgageCalculator';
-import { tx } from '../lib/motion';
+import { enter } from '../lib/motion';
 import { buildEstimateShareText, buildWhatsAppShareUrl } from '../lib/whatsappShare';
 
 // ---------------------------------------------------------------------------
@@ -121,6 +121,7 @@ function PriceRangeBar({
 
 export function EstimateTool() {
   const navigate = useNavigate();
+  const reduce = useReducedMotion();
   const { formatConverted } = useCurrency();
   const [districts, setDistricts] = useState<District[]>([]);
 
@@ -342,12 +343,7 @@ export function EstimateTool() {
 
         <AnimatePresence>
           {hasSubmitted && !loading && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <motion.div {...enter(reduce)} exit={{ opacity: 0, y: 8 }}>
               {error ? (
                 <div className="bg-[#0a0a0a] border border-white/[0.1] rounded-xl p-8 text-center mb-8 flex flex-col items-center gap-3">
                   <AlertCircle className="w-6 h-6 text-[#a3a3a3]" />

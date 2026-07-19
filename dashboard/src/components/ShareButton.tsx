@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Share2, Copy, Check } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { feedback } from '../lib/motion';
 import type { ListingDetail } from '../api';
 import { formatCurrencyAmount } from '../lib/pricing';
 import { getDealScoreMeta, isTypicalDealScore } from '../lib/dealScore';
@@ -16,6 +17,7 @@ function formatPrice(p: number | null | undefined): string {
 
 export function ShareButton({ listing }: Props) {
   const [copied, setCopied] = useState(false);
+  const fb = feedback(useReducedMotion());
 
   const shareUrl = `${window.location.origin}/listing/${listing.id}`;
   const shareTitle = listing.title || `Property in ${listing.district}`;
@@ -84,26 +86,12 @@ export function ShareButton({ listing }: Props) {
       >
         <AnimatePresence mode="wait" initial={false}>
           {copied ? (
-            <motion.span
-              key="check"
-              initial={{ scale: 0.7, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.7, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="flex items-center gap-1.5 text-emerald-400"
-            >
+            <motion.span key="check" {...fb} className="flex items-center gap-1.5 text-emerald-400">
               <Check className="w-3.5 h-3.5" />
               Copied!
             </motion.span>
           ) : (
-            <motion.span
-              key="copy"
-              initial={{ scale: 0.7, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.7, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="flex items-center gap-1.5"
-            >
+            <motion.span key="copy" {...fb} className="flex items-center gap-1.5">
               <Copy className="w-3.5 h-3.5" />
               Copy link
             </motion.span>

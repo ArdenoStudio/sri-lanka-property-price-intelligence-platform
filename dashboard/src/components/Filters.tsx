@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Bookmark, ChevronDown } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { District } from '../api';
 import { formatCurrencyAmount } from '../lib/pricing';
+import { tx } from '../lib/motion';
 import { MinimalSelect } from './ui/MinimalSelect';
 import type { SelectOption } from './ui/MinimalSelect';
 import { useCurrency } from '../hooks/useCurrency';
@@ -415,6 +416,7 @@ export function Filters({
   minSizeSqft, maxSizeSqft, onMinSizeSqftChange, onMaxSizeSqftChange,
   sortBy, onSortChange, selectedSource, onSourceChange, totalResults, onOpenSavedSearches,
 }: Props) {
+  const reduce = useReducedMotion();
   const hasFilters = !!(
     selectedDistrict || selectedType || listingType || selectedSource ||
     minPrice !== '' || maxPrice !== '' ||
@@ -449,7 +451,7 @@ export function Filters({
               {selectedType === opt.value && (
                 <motion.span layoutId="active-type-pill"
                   className="absolute inset-0 bg-white rounded-full"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
+                  transition={tx(0.2, reduce)} />
               )}
               <span className="relative z-10">{opt.label}</span>
             </button>
@@ -468,7 +470,7 @@ export function Filters({
               {listingType === opt.value && (
                 <motion.span layoutId="active-listing-pill"
                   className="absolute inset-0 bg-white rounded-full"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
+                  transition={tx(0.2, reduce)} />
               )}
               <span className="relative z-10">{opt.label}</span>
             </button>

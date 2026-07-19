@@ -70,13 +70,14 @@
   --radius-xl:   28px;
   --radius-pill: 9999px;
 
-  /* Motion — Apple's spring feel */
+  /* Motion — property.lk ease-out only (no bounce); see src/lib/motion.ts */
   --motion-instant: 80ms;
   --motion-fast:    160ms;
   --motion-normal:  280ms;
   --motion-slow:    480ms;
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
   --ease-apple:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: var(--ease-out); /* legacy alias — do not use spring physics */
 }
 
 /* ============================================================
