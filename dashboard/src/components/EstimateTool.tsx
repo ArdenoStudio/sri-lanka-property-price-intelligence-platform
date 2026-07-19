@@ -198,7 +198,10 @@ export function EstimateTool() {
     <div className="min-h-screen bg-black">
       <Header />
 
-      <main className="max-w-3xl mx-auto px-6 lg:px-8 pt-28 pb-32">
+      <main
+        id="main-content"
+        className="max-w-3xl mx-auto px-6 pt-10 pb-32 md:pt-12 lg:px-8"
+      >
         {/* Back */}
         <button
           onClick={() => navigate(-1)}
