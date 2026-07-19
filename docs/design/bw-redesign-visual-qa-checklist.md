@@ -1,5 +1,4 @@
 # property.lk B&W redesign — visual QA acceptance
-
 Pass on **desktop (≥1024)** and **mobile (≤390)** before merge. Fail any unchecked item.
 
 ## Surfaces
