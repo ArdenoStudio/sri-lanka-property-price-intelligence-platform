@@ -6,6 +6,10 @@
 
 Inspired by [cse-api-docs](https://github.com/Cookie-Cat21/cse-api-docs): verify what the browser already calls, store truncated samples, and state ethics up front.
 
+## Master plan
+
+For the full product plan of record (UI rework with Cal Sans / Inter, API cutover sequencing, feature flags, and Sri Lanka growth backlog), see **[../MASTER_PLAN.md](../MASTER_PLAN.md)**.
+
 ## Deep audit
 
 For how these APIs map onto our `RawListing` → deal score / estimate pipeline, migration risks (especially ikman ids), and a phased cutover plan, see **[AUDIT.md](AUDIT.md)**.
