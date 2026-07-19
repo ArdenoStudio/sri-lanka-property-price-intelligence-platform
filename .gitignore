@@ -27,3 +27,4 @@ dashboard/.vercel/
 *_auth_state.json
 *_page_dump.html
 source.zip
+.tmp-watermelon-registry/
