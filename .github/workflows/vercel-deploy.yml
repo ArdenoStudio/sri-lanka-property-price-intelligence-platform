@@ -1,0 +1,29 @@
+name: Deploy Dashboard (Vercel)
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'dashboard/**'
+      - 'vercel.json'
+      - '.github/workflows/vercel-deploy.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Vercel (production)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./dashboard
+        continue-on-error: true
