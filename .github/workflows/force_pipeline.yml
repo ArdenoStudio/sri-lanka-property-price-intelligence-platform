@@ -1,0 +1,111 @@
+name: Force Source Ops Pipeline
+
+# Fires on master when any scripts/trigger-* file changes.
+# Runs scrape → clean → geocode → aggregate sequentially via GitHub Actions only.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/trigger-daily-scrape'
+      - 'scripts/trigger-clean'
+      - 'scripts/trigger-geocode'
+      - 'scripts/trigger-aggregate'
+      - 'scripts/trigger-pipeline'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  scrape:
+    name: Scrape sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Install Playwright system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+            libdrm2 libgbm1 libgtk-3-0 libnspr4 libnss3 libxcomposite1 \
+            libxdamage1 libxfixes3 libxkbcommon0 libxrandr2 xvfb
+      - run: python -m playwright install chromium
+      - name: Run all scrapers
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NOMINATIM_USER_AGENT: ${{ secrets.NOMINATIM_USER_AGENT }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SCRAPER_MAX_RETRIES: 3
+          SCRAPER_BACKOFF_BASE_SECONDS: 5
+          SCRAPER_BACKOFF_MAX_SECONDS: 60
+          SCRAPER_STOP_AFTER_BLOCKS: 5
+          ONLINEPROPERTY_READ_TIMEOUT: 90
+          ONLINEPROPERTY_CONNECT_TIMEOUT: 15
+          LOG_LEVEL: INFO
+        run: >-
+          python3 run_all_scrapers.py --coverage --skip-processing
+          --ikman-pages 75 --lpw-pages 25 --lamudi-pages 35
+          --onlineproperty-pages 50
+          --subdistricts-per-district 3 --subdistrict-pages 3
+
+  clean:
+    name: Clean listings
+    needs: scrape
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Run cleaner
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOG_LEVEL: INFO
+        run: python run_clean.py
+
+  geocode:
+    name: Geocode listings
+    needs: clean
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Run geocoder
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NOMINATIM_USER_AGENT: ${{ secrets.NOMINATIM_USER_AGENT }}
+          LOG_LEVEL: INFO
+        run: python run_geocode.py
+
+  aggregate:
+    name: Aggregate prices
+    needs: geocode
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Run aggregates
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOG_LEVEL: INFO
+        run: python run_aggregate.py
