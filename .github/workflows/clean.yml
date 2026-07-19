@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '30 21 * * *'   # 3:00 AM Sri Lanka time (UTC+5:30), ~90 min after scraper starts
   workflow_dispatch:          # Manual trigger from GitHub UI
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/trigger-clean'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 22 * * *'    # 3:30 AM Sri Lanka time (UTC+5:30), after cleaner finishes
   workflow_dispatch:          # Manual trigger from GitHub UI
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/trigger-geocode'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
