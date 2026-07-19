@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '30 22 * * *'   # 4:00 AM Sri Lanka time (UTC+5:30), after geocoder finishes
   workflow_dispatch:          # Manual trigger from GitHub UI
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/trigger-aggregate'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
