@@ -15,8 +15,5 @@ One horizontal **ops strip** (scroll on mobile). No cards, aside, summary tiles,
 
 Drop: SLA copy, dual absolute clocks, downstream jobs, `listing_count_source` captions.
 
-## Layout & chrome
-Hairline top/bottom rules, paper ground. Left: small “Source Ops” mark (not a hero). Right: overall + “Refreshed {generated_at}”. Body = source rows. Skeleton = same strip, ink pulse bars.
-
-## Out of scope
-Cleaner / geocoder / aggregates UI; admin Watermelon density stays off the marketing surface.
+## Layout
+Hairline top/bottom rules, paper ground. Left: small “Source Ops” mark (not a hero). Right: overall + “Refreshed {generated_at}”. Body = source rows. Skeleton = same strip, ink pulse bars. Out of scope: cleaner/geocoder/aggregates UI; Watermelon density stays admin-only.
