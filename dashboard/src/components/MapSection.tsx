@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { useEffect } from 'react';
 import type { HeatmapPoint } from '../api';
+import { formatCurrencyAmount } from '../lib/pricing';
 import { EmptyStatePanel } from './ui/EmptyStatePanel';
 
 // Sri Lanka tight bounds
@@ -19,9 +20,7 @@ function MapController() {
 
 function formatPrice(price: number | null): string {
   if (!price) return 'N/A';
-  if (price >= 1_000_000) return `Rs ${(price / 1_000_000).toFixed(1)}M`;
-  if (price >= 1_000) return `Rs ${(price / 1_000).toFixed(0)}K`;
-  return `Rs ${price.toFixed(0)}`;
+  return formatCurrencyAmount(price, 'LKR', { variant: 'table' });
 }
 
 // Color = avg price — muted palette that reads well on dark map tiles

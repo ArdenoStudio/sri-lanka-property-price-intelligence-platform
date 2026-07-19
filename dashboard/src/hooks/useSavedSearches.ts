@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { formatCurrencyAmount } from '../lib/pricing';
 
 const STORAGE_KEY = 'propertylk_saved_searches';
 const STORAGE_VERSION = 2;
@@ -35,9 +36,7 @@ interface PersistedSavedSearches {
 }
 
 function formatPrice(p: number): string {
-  if (p >= 1_000_000) return `Rs ${(p / 1_000_000).toFixed(0)}M`;
-  if (p >= 1_000) return `Rs ${(p / 1_000).toFixed(0)}K`;
-  return `Rs ${p}`;
+  return formatCurrencyAmount(p, 'LKR', { variant: 'table' });
 }
 
 function generateName(f: FilterState): string {

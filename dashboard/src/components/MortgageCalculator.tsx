@@ -1,125 +1,247 @@
-import { useState, useMemo } from 'react';
-import { Calculator, ChevronDown, ChevronUp } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import { Calculator } from 'lucide-react';
 import {
+  FEATURED_BANK_RATE,
   SL_BANK_RATES,
   TENURE_OPTIONS,
   DOWN_PAYMENT_PRESETS,
-  calculateEMI,
+  NILAM_DEFAULT_DOWN_PAYMENT_PCT,
+  NILAM_DEFAULT_TENURE_YEARS,
+  getBankRate,
+  getMortgageSnapshot,
   RATES_LAST_UPDATED,
 } from '../data/bankRates';
 import { useCurrency } from '../hooks/useCurrency';
-import { MinimalSelect } from './ui/MinimalSelect';
 
 interface Props {
   listingPrice: number | null;
   listingType: string | null;
+  variant?: 'detail' | 'estimate';
 }
 
-export function MortgageCalculator({ listingPrice, listingType }: Props) {
-  if (!listingPrice || listingType === 'rent') return null;
+const SECTION_LABELS = {
+  detail: 'Financing',
+  estimate: 'Estimate financing',
+} as const;
 
+const SECTION_TITLES = {
+  detail: 'What monthly financing could look like',
+  estimate: 'What financing could look like at the median estimate',
+} as const;
+
+const SECTION_DESCRIPTIONS = {
+  detail: 'Nilam uses indicative Sri Lankan bank rates so you can compare payment scenarios before speaking to a lender.',
+  estimate: 'Use the estimated asking value as your base and compare how the monthly payment changes by bank, tenure, and down payment.',
+} as const;
+
+function StatTile({
+  label,
+  value,
+  tone = 'default',
+}: {
+  label: string;
+  value: string;
+  tone?: 'default' | 'accent' | 'warning';
+}) {
+  const valueClass =
+    tone === 'accent'
+      ? 'text-[#5eead4]'
+      : tone === 'warning'
+        ? 'text-amber-300'
+        : 'text-white';
+
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-[#0d0d0d] px-4 py-4">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-[#525252] font-assumptions">{label}</p>
+      <p className={`mt-2 text-[1rem] sm:text-[1.1rem] leading-tight num font-assumptions font-semibold ${valueClass}`}>{value}</p>
+    </div>
+  );
+}
+
+export function MortgageCalculator({
+  listingPrice,
+  listingType,
+  variant = 'detail',
+}: Props) {
   const { formatConverted } = useCurrency();
+  const safeListingPrice = listingPrice ?? 0;
 
-  const [downPct, setDownPct] = useState(20);
-  const [selectedBank, setSelectedBank] = useState(SL_BANK_RATES[0].shortName);
-  const [customRate, setCustomRate] = useState(SL_BANK_RATES[0].defaultRate);
-  const [tenure, setTenure] = useState(20);
-  const [expanded, setExpanded] = useState(false);
+  const [downPct, setDownPct] = useState(NILAM_DEFAULT_DOWN_PAYMENT_PCT);
+  const [selectedBank, setSelectedBank] = useState(FEATURED_BANK_RATE.shortName);
+  const [customRate, setCustomRate] = useState(FEATURED_BANK_RATE.defaultRate);
+  const [tenure, setTenure] = useState(NILAM_DEFAULT_TENURE_YEARS);
 
-  const bank = SL_BANK_RATES.find(b => b.shortName === selectedBank) || SL_BANK_RATES[0];
+  const bank = getBankRate(selectedBank);
 
-  const { principal, emi, totalPayment, totalInterest } = useMemo(() => {
-    const principal = listingPrice * (1 - downPct / 100);
-    const emi = calculateEMI(principal, customRate, tenure);
-    const totalPayment = emi * tenure * 12;
-    const totalInterest = totalPayment - principal;
-    return { principal, emi, totalPayment, totalInterest };
-  }, [listingPrice, downPct, customRate, tenure]);
+  const { principal, downPayment, emi, totalPayment, totalInterest } = useMemo(() => {
+    return getMortgageSnapshot(safeListingPrice, {
+      downPaymentPct: downPct,
+      annualRatePct: customRate,
+      tenureYears: tenure,
+    });
+  }, [safeListingPrice, downPct, customRate, tenure]);
 
-  const bankOptions = SL_BANK_RATES.map(b => ({ value: b.shortName, label: b.shortName }));
+  if (!listingPrice || listingType !== 'sale') return null;
 
   function handleBankChange(shortName: string) {
     setSelectedBank(shortName);
-    const b = SL_BANK_RATES.find(r => r.shortName === shortName);
-    if (b) setCustomRate(b.defaultRate);
+    const nextBank = getBankRate(shortName);
+    setCustomRate(nextBank.defaultRate);
   }
 
   return (
-    <div className="bg-[#111111] border border-white/[0.06] rounded-2xl p-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-8 h-8 rounded-xl bg-[#14b8a6]/[0.1] border border-[#14b8a6]/20 flex items-center justify-center shrink-0">
-          <Calculator className="w-4 h-4 text-[#14b8a6]" />
+    <div className="bg-[#111111] border border-white/[0.08] rounded-[28px] overflow-hidden">
+      <div className="p-6 sm:p-7 border-b border-white/[0.06]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-2xl bg-[#14b8a6]/[0.1] border border-[#14b8a6]/20 flex items-center justify-center shrink-0">
+                <Calculator className="w-4 h-4 text-[#14b8a6]" />
+              </div>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-[#525252] font-assumptions">
+                {SECTION_LABELS[variant]}
+              </p>
+            </div>
+            <h3 className="text-[clamp(1.4rem,2.8vw,2rem)] font-semibold text-white tracking-tight">
+              {SECTION_TITLES[variant]}
+            </h3>
+            <p className="text-[14px] text-[#737373] mt-3 leading-relaxed font-assumptions">
+              {SECTION_DESCRIPTIONS[variant]}
+            </p>
+          </div>
+          <div className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2 self-start">
+            <p className="text-[11px] text-[#737373] font-assumptions">Rates updated {RATES_LAST_UPDATED}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252]">Mortgage Calculator</p>
-          <p className="text-[10px] text-[#404040]">Rates as of {RATES_LAST_UPDATED}</p>
+        <div className="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] gap-6 mt-8">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#525252] font-assumptions">Estimated monthly EMI</p>
+            <p className="mt-3 text-[clamp(2.75rem,6vw,4.75rem)] text-white leading-[0.92] num font-emi">
+              ~{formatConverted(emi)}
+              <span className="ml-2 text-[0.28em] text-[#737373] align-middle font-assumptions">/ month</span>
+            </p>
+            <p className="text-[14px] text-[#a3a3a3] mt-4 leading-relaxed font-assumptions">
+              Based on a loan of {formatConverted(principal)} with {bank.bank} at {customRate.toFixed(1)}% over {tenure} years.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <StatTile label="Property price" value={formatConverted(safeListingPrice)} />
+            <StatTile label="Down payment" value={formatConverted(downPayment)} />
+            <StatTile label="Total interest" value={formatConverted(totalInterest)} tone="warning" />
+            <StatTile label="Total repaid" value={formatConverted(totalPayment)} tone="accent" />
+          </div>
         </div>
       </div>
 
-      {/* EMI hero */}
-      <div className="mb-5">
-        <p className="text-[2.2rem] font-bold text-[#14b8a6] tracking-tight leading-none num">
-          ~{formatConverted(emi)}<span className="text-[1rem] text-[#525252] font-normal">/mo</span>
-        </p>
-        <p className="text-[12px] text-[#525252] mt-1">
-          Over {tenure}yr at {customRate.toFixed(1)}% p.a. · {bank.bank}
-        </p>
-      </div>
+      <div className="p-6 sm:p-7 border-b border-white/[0.06]">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#525252] font-assumptions">Section 01</p>
+            <h4 className="text-[1.1rem] font-semibold text-white mt-2">Choose a bank rate</h4>
+          </div>
+          <p className="text-[12px] text-[#737373] font-assumptions">
+            One indicative rate per bank keeps the comparison fast, while the rate range shows where adjustments can move.
+          </p>
+        </div>
 
-      {/* Collapsible parameters */}
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className="flex items-center gap-1.5 text-[12px] text-[#737373] hover:text-white transition-colors cursor-pointer bg-transparent border-none p-0 mb-3"
-      >
-        {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        {expanded ? 'Hide parameters' : 'Adjust parameters'}
-      </button>
-
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
-          >
-            <div className="space-y-5 pb-2">
-              {/* Down payment */}
-              <div>
-                <label className="block text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-2">
-                  Down Payment — Loan: {formatConverted(principal)}
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {DOWN_PAYMENT_PRESETS.map(p => (
-                    <button
-                      key={p}
-                      onClick={() => setDownPct(p)}
-                      className={`px-3 py-1 rounded-full text-[12px] font-medium cursor-pointer border transition-colors ${
-                        downPct === p
-                          ? 'bg-[#14b8a6] text-black border-[#14b8a6]'
-                          : 'bg-transparent text-[#525252] border-white/[0.08] hover:text-white hover:border-white/[0.14]'
-                      }`}
-                    >
-                      {p}%
-                    </button>
-                  ))}
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-5">
+          {SL_BANK_RATES.map(option => {
+            const isSelected = selectedBank === option.shortName;
+            return (
+              <button
+                key={option.shortName}
+                onClick={() => handleBankChange(option.shortName)}
+                className={`rounded-2xl border p-4 text-left transition-colors cursor-pointer ${
+                  isSelected
+                    ? 'border-[#14b8a6]/50 bg-[#14b8a6]/[0.08]'
+                    : 'border-white/[0.08] bg-[#0d0d0d] hover:border-white/[0.16]'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[13px] text-white font-semibold">{option.shortName}</p>
+                    <p className="text-[11px] text-[#737373] mt-1 leading-relaxed font-assumptions">{option.bank}</p>
+                  </div>
+                  <span className={`text-[11px] rounded-full px-2.5 py-1 border font-assumptions ${
+                    isSelected
+                      ? 'border-[#14b8a6]/40 bg-[#14b8a6]/[0.12] text-[#5eead4]'
+                      : 'border-white/[0.08] bg-white/[0.04] text-[#a3a3a3]'
+                  }`}>
+                    {option.defaultRate.toFixed(1)}%
+                  </span>
                 </div>
-              </div>
+                <p className="text-[11px] text-[#525252] mt-4 font-assumptions">
+                  Range {option.minRate.toFixed(1)}% – {option.maxRate.toFixed(1)}%
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-              {/* Bank */}
-              <div>
-                <label className="block text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-2">Bank</label>
-                <MinimalSelect options={bankOptions} value={selectedBank} onChange={handleBankChange} />
-              </div>
+      <div className="p-6 sm:p-7 border-b border-white/[0.06]">
+        <div className="grid lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)] gap-6">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#525252] font-assumptions">Section 02</p>
+            <h4 className="text-[1.1rem] font-semibold text-white mt-2">Set your loan assumptions</h4>
 
-              {/* Rate */}
-              <div>
-                <label className="block text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-2">
-                  Interest Rate — {bank.shortName} range: {bank.minRate}–{bank.maxRate}% p.a.
-                </label>
+            <div className="mt-5">
+              <p className="text-[11px] uppercase tracking-[0.15em] text-[#525252] mb-3 font-assumptions">
+                Down payment
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {DOWN_PAYMENT_PRESETS.map(preset => (
+                  <button
+                    key={preset}
+                    onClick={() => setDownPct(preset)}
+                    className={`px-4 py-2 rounded-full text-[13px] cursor-pointer border transition-colors ${
+                      downPct === preset
+                        ? 'bg-[#14b8a6] text-black border-[#14b8a6]'
+                        : 'bg-transparent text-[#737373] border-white/[0.08] hover:text-white hover:border-white/[0.16]'
+                    }`}
+                  >
+                    {preset}%
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <p className="text-[11px] uppercase tracking-[0.15em] text-[#525252] mb-3 font-assumptions">
+                Loan tenure
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {TENURE_OPTIONS.map(option => (
+                  <button
+                    key={option}
+                    onClick={() => setTenure(option)}
+                    className={`px-4 py-2 rounded-full text-[13px] cursor-pointer border transition-colors ${
+                      tenure === option
+                        ? 'bg-[#14b8a6] text-black border-[#14b8a6]'
+                        : 'bg-transparent text-[#737373] border-white/[0.08] hover:text-white hover:border-white/[0.16]'
+                    }`}
+                  >
+                    {option} years
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-white/[0.08] bg-[#0d0d0d] p-5">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-[#525252] font-assumptions">
+              Rate adjustment
+            </p>
+            <p className="text-[13px] text-[#a3a3a3] mt-2 leading-relaxed font-assumptions">
+              Fine-tune the selected bank inside its indicative band to reflect promos, relationship pricing, or a stricter quote.
+            </p>
+
+            <div className="mt-5">
+              <label className="block text-[11px] uppercase tracking-[0.15em] text-[#525252] mb-2 font-assumptions">
+                {bank.shortName} range: {bank.minRate.toFixed(1)}% – {bank.maxRate.toFixed(1)}%
+              </label>
+              <div className="flex items-center gap-3">
                 <input
                   type="number"
                   min={bank.minRate}
@@ -127,50 +249,50 @@ export function MortgageCalculator({ listingPrice, listingType }: Props) {
                   step={0.1}
                   value={customRate}
                   onChange={e => setCustomRate(Number(e.target.value))}
-                  className="w-32 bg-[#161616] border border-white/[0.08] rounded-xl px-3 py-2 text-white text-[14px] focus:outline-none focus:border-[#14b8a6]/40 transition-colors num"
+                  className="w-32 bg-[#161616] border border-white/[0.08] rounded-xl px-3 py-2 text-white text-[15px] focus:outline-none focus:border-[#14b8a6]/40 transition-colors num font-assumptions"
                 />
-                <span className="text-[12px] text-[#525252] ml-2">% p.a.</span>
-              </div>
-
-              {/* Tenure */}
-              <div>
-                <label className="block text-[10px] uppercase tracking-[0.15em] text-[#525252] mb-2">Loan Tenure</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {TENURE_OPTIONS.map(t => (
-                    <button
-                      key={t}
-                      onClick={() => setTenure(t)}
-                      className={`px-3 py-1 rounded-full text-[12px] font-medium cursor-pointer border transition-colors ${
-                        tenure === t
-                          ? 'bg-[#14b8a6] text-black border-[#14b8a6]'
-                          : 'bg-transparent text-[#525252] border-white/[0.08] hover:text-white hover:border-white/[0.14]'
-                      }`}
-                    >
-                      {t}yr
-                    </button>
-                  ))}
-                </div>
+                <span className="text-[13px] text-[#737373] font-assumptions">% per annum</span>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Summary row */}
-      <div className="flex items-center gap-6 pt-4 border-t border-white/[0.06] mt-2">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.12em] text-[#525252]">Total Payment</p>
-          <p className="text-[13px] font-bold text-white num">{formatConverted(totalPayment)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.12em] text-[#525252]">Total Interest</p>
-          <p className="text-[13px] font-bold text-amber-400 num">{formatConverted(totalInterest)}</p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <StatTile label="Selected bank" value={bank.shortName} />
+              <StatTile label="Loan amount" value={formatConverted(principal)} />
+            </div>
+          </div>
         </div>
       </div>
 
-      <p className="text-[10px] text-[#404040] mt-3">
-        Estimates only. Contact your bank for actual loan approval and terms.
-      </p>
+      <div className="p-6 sm:p-7">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[#525252] font-assumptions">Section 03</p>
+        <h4 className="text-[1.1rem] font-semibold text-white mt-2">Assumptions to carry forward</h4>
+
+        <div className="grid sm:grid-cols-3 gap-3 mt-5">
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+            <p className="text-[11px] text-[#a3a3a3] font-assumptions">Indicative rate source</p>
+            <p className="text-[13px] text-white mt-2 leading-relaxed font-assumptions">
+              Manual Nilam bank-rate table, last refreshed {RATES_LAST_UPDATED}.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+            <p className="text-[11px] text-[#a3a3a3] font-assumptions">What is included</p>
+            <p className="text-[13px] text-white mt-2 leading-relaxed font-assumptions">
+              Principal and interest only for a standard monthly amortized loan.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+            <p className="text-[11px] text-[#a3a3a3] font-assumptions">What is not included</p>
+            <p className="text-[13px] text-white mt-2 leading-relaxed font-assumptions">
+              Legal fees, valuation costs, insurance, taxes, and final approval conditions.
+            </p>
+          </div>
+        </div>
+
+        <p className="text-[12px] text-[#737373] mt-5 leading-relaxed font-assumptions">
+          These figures are directional only. Actual bank offers can shift with salary routing, promotional windows,
+          collateral profile, and credit review.
+        </p>
+      </div>
     </div>
   );
 }

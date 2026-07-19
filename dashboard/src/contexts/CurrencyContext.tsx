@@ -1,15 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { getExchangeRates } from '../api';
-
-export type CurrencyCode = 'LKR' | 'USD' | 'AUD' | 'GBP' | 'CAD';
-
-const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
-  LKR: 'Rs',
-  USD: '$',
-  AUD: 'A$',
-  GBP: '£',
-  CAD: 'C$',
-};
+import {
+  CURRENCY_SYMBOLS,
+  formatFromLkr,
+  type CurrencyCode,
+  type FormatPriceOptions,
+} from '../lib/pricing';
 
 const FALLBACK_RATES: Record<CurrencyCode, number> = {
   LKR: 1.0,
@@ -26,7 +22,7 @@ interface CurrencyContextValue {
   ratesUpdatedAt: string | null;
   isLoading: boolean;
   convertFromLKR: (lkr: number | null | undefined) => number | null;
-  formatConverted: (lkr: number | null | undefined, opts?: { compact?: boolean }) => string;
+  formatConverted: (lkr: number | null | undefined, opts?: FormatPriceOptions) => string;
   symbol: string;
 }
 
@@ -38,21 +34,8 @@ const CurrencyContext = createContext<CurrencyContextValue>({
   isLoading: false,
   convertFromLKR: () => null,
   formatConverted: () => '—',
-  symbol: 'Rs',
+  symbol: 'Rs ',
 });
-
-function formatLKR(n: number): string {
-  if (n >= 1_000_000) return `Rs ${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `Rs ${(n / 1_000).toFixed(0)}K`;
-  return `Rs ${n.toFixed(0)}`;
-}
-
-function formatForeign(n: number, code: CurrencyCode): string {
-  const sym = CURRENCY_SYMBOLS[code];
-  if (n >= 1_000_000) return `${sym}${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `${sym}${(n / 1_000).toFixed(1)}K`;
-  return `${sym}${n.toFixed(0)}`;
-}
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>(() => {
@@ -90,12 +73,10 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     return lkr * rates[currency];
   }, [rates, currency]);
 
-  const formatConverted = useCallback((lkr: number | null | undefined): string => {
-    if (lkr == null) return '—';
-    if (currency === 'LKR') return formatLKR(lkr);
-    const converted = lkr * rates[currency];
-    return formatForeign(converted, currency);
-  }, [rates, currency]);
+  const formatConverted = useCallback((
+    lkr: number | null | undefined,
+    opts?: FormatPriceOptions
+  ): string => formatFromLkr(lkr, currency, rates, opts), [rates, currency]);
 
   const symbol = CURRENCY_SYMBOLS[currency];
 

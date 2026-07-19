@@ -11,6 +11,7 @@ import {
 import { TrendingUp } from 'lucide-react';
 import { getPrices, type PriceHistory } from '../api';
 import { motion } from 'framer-motion';
+import { formatCurrencyAmount } from '../lib/pricing';
 import { EmptyStatePanel } from './ui/EmptyStatePanel';
 
 interface Props {
@@ -83,9 +84,7 @@ export function DistrictTrends({ district, propertyType, onViewListings }: Props
   }
 
   const formatCurrency = (val: number) => {
-    if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}M`;
-    if (val >= 1_000) return `${(val / 1_000).toFixed(0)}K`;
-    return val.toString();
+    return formatCurrencyAmount(val, 'LKR', { variant: 'axis', showCurrency: false });
   };
 
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

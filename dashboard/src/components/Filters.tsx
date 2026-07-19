@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Bookmark, ChevronDown } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { District } from '../api';
+import { formatCurrencyAmount } from '../lib/pricing';
 import { MinimalSelect } from './ui/MinimalSelect';
 import type { SelectOption } from './ui/MinimalSelect';
 import { useCurrency } from '../hooks/useCurrency';
@@ -26,9 +27,7 @@ function priceToSlider(p: number): number {
   return Math.round(((Math.log(p) - LOG_MIN) / (LOG_MAX - LOG_MIN)) * SLIDER_MAX);
 }
 function fmtPriceLabel(p: number): string {
-  if (p >= 1_000_000) return `Rs ${p / 1_000_000 % 1 === 0 ? (p / 1_000_000).toFixed(0) : (p / 1_000_000).toFixed(1)}M`;
-  if (p >= 1_000) return `Rs ${(p / 1_000).toFixed(0)}K`;
-  return `Rs ${p}`;
+  return formatCurrencyAmount(p, 'LKR', { variant: 'table' });
 }
 
 function PriceRangeSlider({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChange }: {

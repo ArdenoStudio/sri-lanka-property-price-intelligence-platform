@@ -2,9 +2,12 @@ import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../api';
+import { resolveListingPrice } from '../lib/pricing';
+import { getDealScoreBand } from '../lib/dealScore';
 import { PriceHistoryChart } from './PriceHistoryChart';
 import { useCurrency } from '../hooks/useCurrency';
 import { EMITeaser } from './EMITeaser';
+import { DealScorePill } from './DealScore';
 import { EmptyStatePanel } from './ui/EmptyStatePanel';
 
 function PlusCheckIcon({ checked }: { checked: boolean }) {
@@ -66,7 +69,7 @@ export function ListingsGrid({
 }: Props) {
   const totalPages = Math.ceil(total / pageSize);
   const topRef = useRef<HTMLDivElement>(null);
-  const { formatConverted } = useCurrency();
+  const { currency, rates } = useCurrency();
 
   function handlePageChange(p: number) {
     onPageChange(p);
@@ -115,15 +118,19 @@ export function ListingsGrid({
       )}
       <div className="listings-grid">
         {listings.map((listing, idx) => {
-          const priceText = listing.price_lkr
-            ? formatConverted(listing.price_lkr)
-            : listing.price_per_perch
-              ? formatConverted(listing.price_per_perch)
-              : listing.raw_price || 'Price N/A';
-          const priceSuffix = (!listing.price_lkr && listing.price_per_perch) ? '/ perch' : '';
+          const priceDisplay = resolveListingPrice({
+            priceLkr: listing.price_lkr,
+            pricePerPerch: listing.price_per_perch,
+            rawPrice: listing.raw_price,
+            currency,
+            rates,
+            formatOptions: { variant: 'hero' },
+            emptyText: 'Price N/A',
+          });
           const isCompared = selectedForComparison.includes(listing.id);
           const hasPriceDrop = listing.price_drop_pct != null && listing.price_drop_pct > 0
             && listing.original_price_lkr != null && listing.price_lkr != null;
+          const dealBand = listing.deal_score != null ? getDealScoreBand(listing.deal_score) : null;
 
           const detailParts = [
             listing.size_perches && `${listing.size_perches} perch`,
@@ -138,8 +145,11 @@ export function ListingsGrid({
               className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in"
               style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
             >
-              {/* Left accent line — teal on hover */}
-              <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-transparent group-hover:bg-[#14b8a6]/50 transition-colors duration-300" />
+              <div
+                className="absolute left-0 top-0 bottom-0 w-[2px] transition-colors duration-300"
+                style={{ backgroundColor: dealBand?.tone.accent ?? 'transparent' }}
+                aria-hidden="true"
+              />
 
               {/* Hover indicator */}
               <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#14b8a6] text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-medium">
@@ -184,11 +194,11 @@ export function ListingsGrid({
 
                 {/* PRICE — HERO */}
                 <div className="mb-2">
-                  <p className="text-[1.75rem] font-bold text-white tracking-tight leading-none num">
-                    {priceText}
+                  <p className="text-[1.75rem] font-bold text-white tracking-tight leading-none num font-price-hero">
+                    {priceDisplay.text}
                   </p>
-                  {priceSuffix && (
-                    <p className="text-[11px] text-[#737373] mt-1">{priceSuffix}</p>
+                  {priceDisplay.suffix && (
+                    <p className="text-[11px] text-[#737373] mt-1">{priceDisplay.suffix}</p>
                   )}
                 </div>
 
@@ -206,14 +216,12 @@ export function ListingsGrid({
                   </p>
                 )}
 
-                {/* Signal badges — only below market + price drop */}
-                {((listing.deal_score !== null && listing.deal_score >= 5) ||
+                {/* Deal signals */}
+                {(listing.deal_score !== null ||
                   (listing.price_drop_pct !== null && listing.price_drop_pct > 0)) && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    {listing.deal_score !== null && listing.deal_score >= 5 && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 num">
-                        {listing.deal_score.toFixed(0)}% below market
-                      </span>
+                    {listing.deal_score !== null && (
+                      <DealScorePill score={listing.deal_score} />
                     )}
                     {listing.price_drop_pct !== null && listing.price_drop_pct > 0 && (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-950/60 text-amber-400 num">

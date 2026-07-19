@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Stats } from '../api';
+import { formatCurrencyAmount } from '../lib/pricing';
 
 // ---- Formatters ----
 function formatPrice(price: number | null): string {
-  if (!price) return '—';
-  if (price >= 1_000_000) return `Rs ${(price / 1_000_000).toFixed(1)}M`;
-  if (price >= 1_000) return `Rs ${(price / 1_000).toFixed(0)}K`;
-  return `Rs ${price.toFixed(0)}`;
+  return formatCurrencyAmount(price, 'LKR', { variant: 'hero' });
 }
 
 function formatDate(iso: string | null): string {
@@ -112,7 +110,7 @@ export function StatsBar({ stats }: Props) {
                 </div>
               ) : (
                 <>
-                  <p className="text-[clamp(2.5rem,5vw,4rem)] font-bold text-white tracking-[-0.04em] leading-none num">
+                  <p className="text-[clamp(2.5rem,5vw,4rem)] font-bold text-white tracking-[-0.04em] leading-none num font-price-hero">
                     {formatPrice(avgRaw || null)}
                   </p>
                   {changePct !== null && (

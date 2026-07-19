@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Globe, Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCurrency } from '../hooks/useCurrency';
-import type { CurrencyCode } from '../contexts/CurrencyContext';
+import type { CurrencyCode } from '../lib/pricing';
 
 const CURRENCIES: { code: CurrencyCode; label: string }[] = [
   { code: 'LKR', label: 'LKR — Sri Lankan Rupee' },

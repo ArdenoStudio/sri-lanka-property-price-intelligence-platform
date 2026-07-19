@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Calculator, ChevronLeft, TrendingUp, AlertCircle, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +9,8 @@ import { Footer } from './Footer';
 import { MobileNav } from './MobileNav';
 import { MinimalSelect } from './ui/MinimalSelect';
 import { useCurrency } from '../hooks/useCurrency';
-import { EmptyStatePanel } from './ui/EmptyStatePanel';
+import { EMITeaser } from './EMITeaser';
+import { MortgageCalculator } from './MortgageCalculator';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -131,7 +132,6 @@ function PriceRangeBar({
 export function EstimateTool() {
   const navigate = useNavigate();
   const { formatConverted } = useCurrency();
-  const formRef = useRef<HTMLDivElement>(null);
   const [districts, setDistricts] = useState<District[]>([]);
 
   // Form state
@@ -170,20 +170,6 @@ export function EstimateTool() {
   const resultLabel = listingType === 'rent' ? 'Estimated Monthly Rent' : 'Estimated Asking Value';
 
   const canSubmit = !!propertyType && !!listingType && hasEstimateAnchor;
-
-  const broadenEstimateScope = () => {
-    if (district) setDistrict('');
-    if (bedrooms != null) setBedrooms(null);
-    if (usesPerches && usesSqft && hasPositivePerchSize && hasPositiveSqftSize) {
-      setSizeSqft('');
-    }
-    setResult(null);
-    setHasSubmitted(false);
-    setError(false);
-    requestAnimationFrame(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  };
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -244,7 +230,7 @@ export function EstimateTool() {
         </div>
 
         {/* Form */}
-        <div ref={formRef} className="bg-[#111111] border border-white/[0.08] rounded-2xl p-6 mb-8">
+        <div className="bg-[#111111] border border-white/[0.08] rounded-2xl p-6 mb-8">
           <div className="space-y-6">
             {/* District */}
             <div>
@@ -406,14 +392,10 @@ export function EstimateTool() {
                   <p className="text-[14px] text-[#a3a3a3]">Something went wrong. Please try again.</p>
                 </div>
               ) : !result || result.comparable_count === 0 ? (
-                <EmptyStatePanel
-                  eyebrow="Estimate"
-                  title="Estimate needs a broader comp set"
-                  body="There are not enough comparable listings in this slice to support a reliable estimate yet. Expand the scope and run it again."
-                  ctaLabel="Broaden estimate scope"
-                  onCta={broadenEstimateScope}
-                  className="mb-8"
-                />
+                <div className="bg-[#111111] border border-white/[0.08] rounded-2xl p-8 text-center mb-8">
+                  <p className="text-[#525252] text-[14px]">No comparable listings found for this combination.</p>
+                  <p className="text-[11px] text-[#404040] mt-2">Try broadening your criteria or selecting a different district.</p>
+                </div>
               ) : (
                 <>
                   {/* Price range card */}
@@ -495,6 +477,28 @@ export function EstimateTool() {
                             <p className="text-[1rem] font-bold text-[#14b8a6] num">{formatConverted(result.median_price_per_sqft)}</p>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {listingType === 'sale' && result.estimated_median != null && (
+                      <div className="mt-6 border-t border-white/[0.06] pt-6">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-2">Financing</p>
+                        <p className="text-[13px] text-[#737373] leading-relaxed mb-4 font-assumptions">
+                          Keep pricing and affordability as separate steps: review the median estimate first, then test the monthly payment.
+                        </p>
+                        <EMITeaser
+                          priceLkr={result.estimated_median}
+                          listingType={listingType}
+                          variant="banner"
+                          label="Indicative monthly EMI at the median estimate"
+                        />
+                        <div className="mt-4">
+                          <MortgageCalculator
+                            listingPrice={result.estimated_median}
+                            listingType={listingType}
+                            variant="estimate"
+                          />
+                        </div>
                       </div>
                     )}
 
