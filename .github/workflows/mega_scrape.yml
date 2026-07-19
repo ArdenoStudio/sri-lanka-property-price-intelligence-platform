@@ -2,6 +2,11 @@ name: Mega Scrape (Manual)
 
 on:
   workflow_dispatch:
+    inputs:
+      pages:
+        description: 'Max pages per source (ikman/lpw/lamudi/onlineproperty)'
+        required: false
+        default: '100'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -47,7 +52,11 @@ jobs:
           ONLINEPROPERTY_READ_TIMEOUT: 90
           ONLINEPROPERTY_CONNECT_TIMEOUT: 15
           LOG_LEVEL: INFO
-        run: python3 run_all_scrapers.py --mega
+        run: >-
+          python3 run_all_scrapers.py --coverage --skip-processing
+          --ikman-pages ${{ inputs.pages }} --lpw-pages ${{ inputs.pages }}
+          --lamudi-pages ${{ inputs.pages }} --onlineproperty-pages ${{ inputs.pages }}
+          --subdistricts-per-district 3 --subdistrict-pages 3
 
       - name: Upload logs on failure
         if: failure()
