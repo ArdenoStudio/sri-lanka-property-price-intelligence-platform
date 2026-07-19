@@ -11,13 +11,15 @@ import {
 import { TrendingUp } from 'lucide-react';
 import { getPrices, type PriceHistory } from '../api';
 import { motion } from 'framer-motion';
+import { EmptyStatePanel } from './ui/EmptyStatePanel';
 
 interface Props {
   district: string;
   propertyType: string;
+  onViewListings: () => void;
 }
 
-export function DistrictTrends({ district, propertyType }: Props) {
+export function DistrictTrends({ district, propertyType, onViewListings }: Props) {
   const [data, setData] = useState<PriceHistory[]>([]);
   const [loading, setLoading] = useState(false);
   const [calculatingForecast, setCalculatingForecast] = useState(false);
@@ -211,9 +213,14 @@ export function DistrictTrends({ district, propertyType }: Props) {
             </div>
           </div>
         ) : data.length === 0 ? (
-          <div className="h-full w-full flex flex-col items-center justify-center text-text-muted italic text-sm">
-            Insufficient data for this district yet.
-          </div>
+          <EmptyStatePanel
+            eyebrow="Price Trends"
+            title={`No ${district} trendline yet`}
+            body={`We do not have enough monthly observations in ${district} to publish a stable district trendline yet. Review live listings while coverage builds.`}
+            ctaLabel={`View ${district} listings`}
+            onCta={onViewListings}
+            className="h-full"
+          />
         ) : (
           <>
             {reveal && (

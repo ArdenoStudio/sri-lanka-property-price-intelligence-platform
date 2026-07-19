@@ -5,6 +5,7 @@ import type { Listing } from '../api';
 import { PriceHistoryChart } from './PriceHistoryChart';
 import { useCurrency } from '../hooks/useCurrency';
 import { EMITeaser } from './EMITeaser';
+import { EmptyStatePanel } from './ui/EmptyStatePanel';
 
 function PlusCheckIcon({ checked }: { checked: boolean }) {
   return (
@@ -47,6 +48,7 @@ interface Props {
   onPageChange: (p: number) => void;
   selectedForComparison: number[];
   onToggleComparison: (listing: Listing) => void;
+  onClearFilters: () => void;
   error?: string | null;
 }
 
@@ -59,6 +61,7 @@ export function ListingsGrid({
   onPageChange,
   selectedForComparison,
   onToggleComparison,
+  onClearFilters,
   error,
 }: Props) {
   const totalPages = Math.ceil(total / pageSize);
@@ -92,11 +95,14 @@ export function ListingsGrid({
 
   if (listings.length === 0) {
     return (
-      <div className="card p-16 text-center">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-[#2e2e2e] mb-4">Results</p>
-        <p className="text-[#737373] text-[15px]">No listings match your filters</p>
-        <p className="text-[11px] text-[#2e2e2e] mt-2">Try broadening your search</p>
-      </div>
+      <EmptyStatePanel
+        eyebrow="Results"
+        title="No listings for this filter set"
+        body="The market has inventory, but not inside the constraints you set. Widen one or two filters to bring active listings back into view."
+        ctaLabel="Clear filters"
+        onCta={onClearFilters}
+        className="p-16"
+      />
     );
   }
 

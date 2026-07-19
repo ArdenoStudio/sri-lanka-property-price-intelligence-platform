@@ -315,6 +315,26 @@ function Dashboard() {
     setIsSavedSearchesOpen(false);
   }, []);
 
+  const scrollToListings = useCallback(() => {
+    document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const clearListingFilters = useCallback(() => {
+    setSelectedDistrict('');
+    setSelectedType('');
+    setListingType('');
+    setSelectedSource('');
+    setMinPrice('');
+    setMaxPrice('');
+    setMinBeds(0);
+    setMinBaths(0);
+    setMinSizePerches('');
+    setMaxSizePerches('');
+    setMinSizeSqft('');
+    setMaxSizeSqft('');
+    scrollToListings();
+  }, [scrollToListings]);
+
   const toggleComparison = useCallback((listing: Listing) => {
     setSelectedForComparison(prev => {
       if (prev.some(item => item.id === listing.id)) {
@@ -350,6 +370,7 @@ function Dashboard() {
                 <MapSection
                   points={heatmap}
                   onDistrictSelect={(d) => setSelectedDistrict(d)}
+                  onBrowseListings={scrollToListings}
                   selectedDistrict={selectedDistrict}
                 />
               </Suspense>
@@ -358,7 +379,11 @@ function Dashboard() {
             <RevealSection className="pt-20" delay={50}>
               <div id="trends">
                 <Suspense fallback={<TrendsSkeleton />}>
-                  <DistrictTrends district={selectedDistrict} propertyType={selectedType} />
+                  <DistrictTrends
+                    district={selectedDistrict}
+                    propertyType={selectedType}
+                    onViewListings={scrollToListings}
+                  />
                 </Suspense>
               </div>
             </RevealSection>
@@ -406,6 +431,7 @@ function Dashboard() {
                   onPageChange={setPage}
                   selectedForComparison={selectedForComparison.map(l => l.id)}
                   onToggleComparison={toggleComparison}
+                  onClearFilters={clearListingFilters}
                   error={listingsError}
                 />
               </div>
