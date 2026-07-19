@@ -1,3 +1,5 @@
+@import "@fontsource/cal-sans";
+@import "@fontsource-variable/inter";
 @import "tailwindcss";
 
 @theme {
@@ -41,6 +43,8 @@
   /* Typography */
   --font-display: 'Cal Sans', 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-body: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-report-title: var(--font-display);
+  --font-report-body: var(--font-body);
   --font-geist: var(--font-body);
 }
 
@@ -97,8 +101,8 @@
 }
 :focus:not(:focus-visible) { outline: none; }
 
-/* Anchor scroll offset — accounts for fixed pill nav */
-#trends, #listings { scroll-margin-top: 80px; }
+/* Anchor scroll offset — accounts for sticky header */
+#map, #trends, #listings, #about { scroll-margin-top: 104px; }
 
 /* Reduced motion — respect user preference */
 @media (prefers-reduced-motion: reduce) {
@@ -130,7 +134,21 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.04em;
 }
 
+.font-detail-body {
+  font-family: var(--font-body);
+}
+
+.font-detail-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.05em;
+}
+
 .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+}
+
+.nilam-wordmark {
   font-family: var(--font-display);
   letter-spacing: -0.04em;
 }
@@ -218,6 +236,31 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.02em;
 }
 .text-numeric { font-variant-numeric: tabular-nums lining-nums; } /* legacy alias */
+
+.font-price-hero {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+}
+
+.font-numeric-table {
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+}
+
+.font-body { font-family: var(--font-body); }
+
+.font-emi {
+  font-family: var(--font-display);
+  letter-spacing: -0.05em;
+}
+
+.font-assumptions { font-family: var(--font-body); }
 
 /* ============================================================
    SCROLL REVEAL — IntersectionObserver adds .visible class

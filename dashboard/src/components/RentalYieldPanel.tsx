@@ -84,8 +84,8 @@ export function RentalYieldPanel({ district, propertyType, listingType, bedrooms
 
   useEffect(() => {
     if (!shouldRender || !district || !propertyType) return;
-    const activeDistrict = district;
-    const activePropertyType = propertyType;
+    const safeDistrict: string = district;
+    const safePropertyType: string = propertyType;
 
     let cancelled = false;
 
@@ -94,8 +94,8 @@ export function RentalYieldPanel({ district, propertyType, listingType, bedrooms
 
       try {
         const result = await getRentalYield({
-          district: activeDistrict,
-          property_type: activePropertyType,
+          district: safeDistrict,
+          property_type: safePropertyType,
           bedrooms,
           deal_score: dealScore,
         });

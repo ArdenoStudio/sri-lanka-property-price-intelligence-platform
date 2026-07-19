@@ -7,6 +7,7 @@ export interface InteractiveMenuItem {
   label: string;
   icon: IconComponentType;
   action?: () => void;
+  isActive?: boolean;
 }
 
 export interface InteractiveMenuProps {
@@ -29,19 +30,28 @@ const InteractiveMenu: React.FC<InteractiveMenuProps> = ({ items, accentColor })
     return items;
   }, [items]);
 
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    if (activeIndex >= finalItems.length) setActiveIndex(0);
-  }, [finalItems, activeIndex]);
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+  const controlledActiveIndex = useMemo(
+    () => finalItems.findIndex((item) => item.isActive),
+    [finalItems]
+  );
+  const selectedIndex = useMemo(
+    () => (selectedLabel ? finalItems.findIndex((item) => item.label === selectedLabel) : -1),
+    [finalItems, selectedLabel]
+  );
+  const resolvedActiveIndex = controlledActiveIndex >= 0
+    ? controlledActiveIndex
+    : selectedIndex >= 0
+      ? selectedIndex
+      : 0;
 
   const textRefs = useRef<(HTMLElement | null)[]>([]);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     const setLineWidth = () => {
-      const activeItemElement = itemRefs.current[activeIndex];
-      const activeTextElement = textRefs.current[activeIndex];
+      const activeItemElement = itemRefs.current[resolvedActiveIndex];
+      const activeTextElement = textRefs.current[resolvedActiveIndex];
       if (activeItemElement && activeTextElement) {
         const textWidth = activeTextElement.offsetWidth;
         activeItemElement.style.setProperty('--lineWidth', `${textWidth}px`);
@@ -50,10 +60,10 @@ const InteractiveMenu: React.FC<InteractiveMenuProps> = ({ items, accentColor })
     setLineWidth();
     window.addEventListener('resize', setLineWidth);
     return () => window.removeEventListener('resize', setLineWidth);
-  }, [activeIndex, finalItems]);
+  }, [finalItems, resolvedActiveIndex]);
 
   const handleItemClick = useCallback((index: number) => {
-    setActiveIndex(index);
+    setSelectedLabel(finalItems[index]?.label ?? null);
     finalItems[index]?.action?.();
   }, [finalItems]);
 
@@ -70,12 +80,13 @@ const InteractiveMenu: React.FC<InteractiveMenuProps> = ({ items, accentColor })
       style={navStyle}
     >
       {finalItems.map((item, index) => {
-        const isActive = index === activeIndex;
+        const isActive = index === resolvedActiveIndex;
         const IconComponent = item.icon;
 
         return (
           <button
             key={item.label}
+            type="button"
             className={`mobile-menu__item ${isActive ? 'active' : ''}`}
             onClick={() => handleItemClick(index)}
             ref={(el) => { itemRefs.current[index] = el; }}

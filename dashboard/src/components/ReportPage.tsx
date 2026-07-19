@@ -16,18 +16,14 @@ import {
 } from 'recharts';
 import { getEstimate } from '../api';
 import type { EstimateResult, SimilarListing } from '../api';
+import { formatCurrencyAmount } from '../lib/pricing';
 
 function formatLKR(n: number | null | undefined): string {
-  if (n == null) return '—';
-  if (n >= 1_000_000) return `LKR ${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `LKR ${(n / 1_000).toFixed(0)}K`;
-  return `LKR ${n.toLocaleString()}`;
+  return formatCurrencyAmount(n, 'LKR', { variant: 'hero', lkrLabel: 'code' });
 }
 
 function formatAxisPrice(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(0)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return `${n}`;
+  return formatCurrencyAmount(n, 'LKR', { variant: 'axis', showCurrency: false });
 }
 
 const REPORT_TITLE_FONT = '"Cal Sans", "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
@@ -659,19 +655,19 @@ export function ReportPage() {
                       className={`report-table-row border-t border-[#efe4d6] ${index % 2 === 0 ? 'bg-white' : 'bg-[#fcfaf6]'}`}
                     >
                       <td className="px-4 py-3 text-[13px] text-[#3f3a35]">{getLocationLabel(listing)}</td>
-                      <td className="px-4 py-3 text-right text-[13px] font-semibold text-[#1d2430] num">{formatLKR(listing.price_lkr)}</td>
-                      <td className="px-4 py-3 text-right text-[12px] text-[#6a6057] num">
+                      <td className="px-4 py-3 text-right text-[13px] font-semibold text-[#1d2430] num font-numeric-table">{formatLKR(listing.price_lkr)}</td>
+                      <td className="px-4 py-3 text-right text-[12px] text-[#6a6057] num font-numeric-table">
                         {listing.size_perches != null
                           ? `${listing.size_perches}p`
                           : listing.size_sqft != null
                             ? `${listing.size_sqft} sqft`
                             : '—'}
                       </td>
-                      <td className="px-4 py-3 text-right text-[12px] text-[#6a6057] num">{listing.bedrooms ?? '—'}</td>
-                      <td className="px-4 py-3 text-right text-[12px] text-[#6a6057] num">
+                      <td className="px-4 py-3 text-right text-[12px] text-[#6a6057] num font-numeric-table">{listing.bedrooms ?? '—'}</td>
+                      <td className="px-4 py-3 text-right text-[12px] text-[#6a6057] num font-numeric-table">
                         {listing.days_on_market != null ? `${listing.days_on_market}d` : '—'}
                       </td>
-                      <td className="px-4 py-3 text-right text-[12px] text-[#6a6057] num">
+                      <td className="px-4 py-3 text-right text-[12px] text-[#6a6057] num font-numeric-table">
                         {listing.similarity_score != null ? `${listing.similarity_score.toFixed(0)}%` : '—'}
                       </td>
                     </tr>

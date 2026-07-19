@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import type { FilterState } from './hooks/useSavedSearches';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { getStats, getDistricts, getHeatmap, getListings, getPipelineStatus } from './api';
 import type { Stats, District, HeatmapPoint, Listing, PipelineStatusResponse } from './api';
 import { Header } from './components/Header';
@@ -17,6 +17,7 @@ import { ScrollProgressBar } from './components/ScrollProgressBar';
 import { RevealSection } from './components/RevealSection';
 import { MobileNav } from './components/MobileNav';
 import { Analytics } from '@vercel/analytics/react';
+import { scrollToAnchor } from './lib/siteNavigation';
 
 // ── Lazy-loaded heavy components ──────────────────────────────────────────────
 const MapSection = lazy(() =>
@@ -111,6 +112,7 @@ function readURLFilters() {
 
 // ── Dashboard (home route) ────────────────────────────────────────────────────
 function Dashboard() {
+  const location = useLocation();
   // Data state
   const [stats, setStats] = useState<Stats | null>(null);
   const [districts, setDistricts] = useState<District[]>([]);
@@ -179,8 +181,14 @@ function Dashboard() {
     if (sortBy && sortBy !== 'newest') p.set('sort', sortBy);
     if (selectedSource) p.set('source', selectedSource);
     const qs = p.toString();
-    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+    const nextUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`;
+    window.history.replaceState(null, '', nextUrl);
   }, [selectedDistrict, selectedType, listingType, minPrice, maxPrice, minBeds, minBaths, minSizePerches, maxSizePerches, minSizeSqft, maxSizeSqft, sortBy, selectedSource]);
+
+  useEffect(() => {
+    if (!location.hash) return;
+    scrollToAnchor(location.hash.slice(1));
+  }, [location.hash]);
 
   const PAGE_SIZE = 24;
   const COMPARISON_MIN = 2;
@@ -358,7 +366,10 @@ function Dashboard() {
         <div className="min-h-screen relative overflow-x-hidden">
           <Header />
 
-          <main className="relative max-w-7xl mx-auto px-6 lg:px-8 pb-32 pt-24">
+          <main
+            id="main-content"
+            className="relative max-w-7xl mx-auto px-6 lg:px-8 pb-32 pt-10 md:pt-12"
+          >
             <StatsBar stats={stats} />
 
             <RevealSection className="mt-4">
@@ -366,14 +377,16 @@ function Dashboard() {
             </RevealSection>
 
             <RevealSection className="mt-8">
-              <Suspense fallback={<MapSkeleton />}>
-                <MapSection
-                  points={heatmap}
-                  onDistrictSelect={(d) => setSelectedDistrict(d)}
-                  onBrowseListings={scrollToListings}
-                  selectedDistrict={selectedDistrict}
-                />
-              </Suspense>
+              <div id="map">
+                <Suspense fallback={<MapSkeleton />}>
+                  <MapSection
+                    points={heatmap}
+                    onDistrictSelect={(d) => setSelectedDistrict(d)}
+                    onBrowseListings={scrollToListings}
+                    selectedDistrict={selectedDistrict}
+                  />
+                </Suspense>
+              </div>
             </RevealSection>
 
             <RevealSection className="pt-20" delay={50}>
@@ -438,7 +451,9 @@ function Dashboard() {
             </RevealSection>
 
             <RevealSection className="pt-20">
-              <About stats={stats} />
+              <div id="about">
+                <About stats={stats} />
+              </div>
             </RevealSection>
           </main>
 
