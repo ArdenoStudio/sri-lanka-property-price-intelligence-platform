@@ -225,6 +225,11 @@ class LamudiScraper:
                     listing_type=item.get("listing_type", ""),
                     url=item.get("url", ""),
                 )
+                beds_baths = {
+                    "bedrooms": item.get("bedrooms"),
+                    "bathrooms": item.get("bathrooms"),
+                    "ingest": "house_lk_cards",
+                }
                 snap_stmt = insert(ListingSnapshot).values(
                     source=self.SOURCE,
                     source_id=item["source_id"],
@@ -236,7 +241,7 @@ class LamudiScraper:
                     raw_size=item.get("raw_size"),
                     property_type=item["property_type"],
                     listing_type=item["listing_type"],
-                    raw_json={},
+                    raw_json=beds_baths,
                     fingerprint=fingerprint,
                 ).on_conflict_do_nothing(
                     index_elements=["source", "source_id", "fingerprint"]
@@ -254,7 +259,7 @@ class LamudiScraper:
                     raw_size=item.get("raw_size"),
                     property_type=item["property_type"],
                     listing_type=item["listing_type"],
-                    raw_json={},
+                    raw_json=beds_baths,
                     is_processed=False,
                 ).on_conflict_do_update(
                     index_elements=["source", "source_id"],
@@ -263,6 +268,8 @@ class LamudiScraper:
                         "raw_price": item.get("raw_price"),
                         "raw_location": item.get("raw_location"),
                         "raw_size": item.get("raw_size"),
+                        "raw_json": beds_baths,
+                        "is_processed": False,
                     }
                 )
                 exists = self.db.query(RawListing.id).filter_by(

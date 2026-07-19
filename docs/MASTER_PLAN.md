@@ -216,13 +216,29 @@ Prioritized from the unbiased wave; only these enter near-term backlog:
 
 ---
 
-## 7. Immediate next engineering commits
+## 7. Implementation status (2026-07-19)
 
-1. **Phase 0 flags + baseline metrics hooks.**  
-2. **Phase 1A:** `scraper/lpw_api.py` + mapping tests + shadow mode.  
-3. **UI DS cleanup:** single Fontsource import path; deal-score tokens on cards; finish motion removals.  
-4. **WhatsApp share MVP** for estimate/deal-score pages (PDPA-safe OG).  
-5. Update this plan when cutover soak numbers land.
+| Item | Status |
+|---|---|
+| Phase 0 flags (`scraper/flags.py`, `.env.example`) | **Done** |
+| Fill-rate metrics (`scraper/metrics.py`, `run_scraper.py metrics`) | **Done** |
+| LPW API scraper (`scraper/lpw_api.py`) behind `USE_LPW_API` | **Done** |
+| Cleaner prefers `raw_json` beds/baths + LPW lat/lng short-circuit | **Done** |
+| ikman SERP API (`scraper/ikman_api.py`) behind `USE_IKMAN_SERP_API` | **Done** |
+| ikman identity bridge (`bridge-ikman` / scheduler) | **Done** |
+| ikman detail API path in enricher (`USE_IKMAN_DETAIL_API`) | **Done** |
+| house.lk beds/baths → `raw_json` | **Done** |
+| Mapping tests (`tests/test_lpw_api_mapping.py`, `test_ikman_api_mapping.py`) | **Done** |
+| UI: Nilam rebrand, DealScoreCard on detail, WhatsApp estimate share | **Done** |
+| Production cutover (flags=1 in prod + soak) | **Pending ops** |
+
+Enable in env when ready:
+
+```bash
+USE_LPW_API=1
+USE_IKMAN_SERP_API=1
+USE_IKMAN_DETAIL_API=1
+```
 
 ---
 

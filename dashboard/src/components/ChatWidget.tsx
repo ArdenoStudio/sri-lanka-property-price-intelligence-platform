@@ -82,8 +82,8 @@ const STYLES = `
     --aw-text: rgba(255,255,255,.96);
     --aw-text-soft: rgba(255,255,255,.72);
     --aw-text-muted: rgba(255,255,255,.45);
-    --aw-header-font: "Cal Sans", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    --aw-body-font: "Inter Variable", "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --aw-header-font: "Cal Sans", "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --aw-body-font: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-family: var(--aw-body-font);
   }
 

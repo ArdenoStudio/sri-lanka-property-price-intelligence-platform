@@ -185,3 +185,40 @@ def test_outlier_price_per_perch_too_high(cleaner):
     cleaner.detect_outliers(listing)
     assert listing.is_outlier is True
     assert "Price per perch too high" in listing.outlier_reason
+
+# ---------------------------------------------------------------------------
+# raw_json structured fields (API ingest)
+# ---------------------------------------------------------------------------
+
+class _Raw:
+    def __init__(self, **kw):
+        self.title = kw.get("title")
+        self.raw_size = kw.get("raw_size")
+        self.raw_json = kw.get("raw_json")
+
+
+def test_bedrooms_from_raw_json_prefers_rooms(cleaner):
+    raw = _Raw(title="Apartment", raw_json={"rooms": 3, "bedrooms": None})
+    assert cleaner.bedrooms_from_raw(raw) == 3
+
+
+def test_bedrooms_from_raw_falls_back_to_title(cleaner):
+    raw = _Raw(title="4 Bedroom House", raw_json={})
+    assert cleaner.bedrooms_from_raw(raw) == 4
+
+
+def test_bathrooms_from_raw(cleaner):
+    raw = _Raw(raw_json={"bathrooms": "2"})
+    assert cleaner.bathrooms_from_raw(raw) == 2
+
+
+def test_coords_from_raw_lpw(cleaner):
+    raw = _Raw(raw_json={"lat": "6.908863", "lon": "79.931358"})
+    lat, lng = cleaner.coords_from_raw(raw)
+    assert abs(lat - 6.908863) < 1e-6
+    assert abs(lng - 79.931358) < 1e-6
+
+
+def test_coords_from_raw_rejects_zero(cleaner):
+    raw = _Raw(raw_json={"lat": 0, "lon": 0})
+    assert cleaner.coords_from_raw(raw) == (None, None)

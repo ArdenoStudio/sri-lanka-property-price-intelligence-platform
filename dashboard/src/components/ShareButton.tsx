@@ -27,7 +27,7 @@ export function ShareButton({ listing }: Props) {
     listing.price_lkr ? `— ${formatPrice(listing.price_lkr)}` : '',
     listing.district ? `in ${listing.district}` : '',
     dealSummary ? `· ${dealSummary}` : '',
-    '| PropertyLK',
+    '| Nilam',
   ].filter(Boolean).join(' ');
 
   const copyLink = async () => {

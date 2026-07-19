@@ -24,6 +24,7 @@ import { RentalYieldPanel } from './RentalYieldPanel';
 import { EMITeaser } from './EMITeaser';
 import { useCurrency } from '../hooks/useCurrency';
 import { getDealScoreMeta, isTypicalDealScore } from '../lib/dealScore';
+import { DealScoreCard } from './DealScore';
 
 const TYPE_COLORS: Record<string, string> = {
   land: 'bg-amber-500/[0.12] text-amber-400 border-amber-500/20',
@@ -176,8 +177,8 @@ export function ListingDetail() {
         setDetail(d);
         setSimilar(s);
         setDaysSinceLastSeen(d.last_seen_at ? Math.floor((Date.now() - new Date(d.last_seen_at).getTime()) / 86400000) : null);
-        document.title = `${d.title || 'Listing'} — PropertyLK`;
-        document.querySelector('meta[property="og:title"]')?.setAttribute('content', d.title || 'Property — PropertyLK');
+        document.title = `${d.title || 'Listing'} — Nilam`;
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', d.title || 'Property — Nilam');
         document.querySelector('meta[property="og:url"]')?.setAttribute('content', window.location.href);
         if (d.price_lkr) {
           const dealSummary = d.deal_score != null && !isTypicalDealScore(d.deal_score)
@@ -197,7 +198,7 @@ export function ListingDetail() {
 
     return () => {
       cancelled = true;
-      document.title = 'PropertyLK — Sri Lanka Property Price Intelligence';
+      document.title = 'Nilam — Sri Lanka Property Price Intelligence';
     };
   }, [formatConverted, invalidId, numId]);
 
@@ -319,19 +320,17 @@ export function ListingDetail() {
           </div>
 
           <div className="bg-[#111111] border border-white/[0.08] rounded-2xl p-6">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[#525252]">Deal signal</p>
-            <p className="mt-3 text-[2.25rem] text-white num font-emi">
-              {detail.deal_score != null ? `${detail.deal_score > 0 ? '+' : ''}${detail.deal_score.toFixed(0)}` : '—'}
-            </p>
-            <p className="mt-2 text-[13px] text-[#737373] font-assumptions">
-              {detail.deal_score != null
-                ? detail.deal_score >= 20
-                  ? 'Priced strongly below comparable market levels.'
-                  : detail.deal_score >= 0
-                    ? 'Close to comparable market pricing.'
-                    : 'Priced above comparable market levels.'
-                : 'Deal scoring is still being computed for this listing.'}
-            </p>
+            {detail.deal_score != null ? (
+              <DealScoreCard score={detail.deal_score} surface="dark" />
+            ) : (
+              <>
+                <p className="text-[11px] uppercase tracking-[0.18em] text-[#525252]">Deal score</p>
+                <p className="mt-3 text-[2.25rem] text-white num">—</p>
+                <p className="mt-2 text-[13px] text-[#737373] font-body">
+                  Deal scoring is still being computed for this listing.
+                </p>
+              </>
+            )}
           </div>
         </div>
 

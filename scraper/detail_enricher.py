@@ -327,28 +327,139 @@ class DetailEnricher:
         self.delay_min = float(os.getenv("ENRICHER_DELAY_MIN", "1.5"))
         self.delay_max = float(os.getenv("ENRICHER_DELAY_MAX", "3.5"))
 
+    def _missing_fields_filter(self):
+        return or_(
+            and_(Listing.size_perches.is_(None), Listing.size_sqft.is_(None)),
+            and_(
+                Listing.bedrooms.is_(None),
+                Listing.property_type.in_(["house", "apartment"]),
+            ),
+        )
+
+    async def _enrich_ikman_via_api(self, rows: list) -> dict:
+        """rows: list of (listing_id, source_id, url)."""
+        from scraper.ikman_api import fetch_ikman_detail_attrs
+
+        stats = {"visited": 0, "enriched": 0, "errors": 0}
+        results: dict[int, dict] = {}
+        visited_ids: set[int] = set()
+        delay = float(os.getenv("IKMAN_API_DELAY_SECONDS", "0.4"))
+
+        for listing_id, source_id, url in rows:
+            ad_id = source_id
+            if not ad_id or not re.fullmatch(r"[0-9a-f]{24}", str(ad_id)):
+                # Try slug path still works if API accepts hex only — skip non-hex
+                stats["errors"] += 1
+                visited_ids.add(listing_id)
+                continue
+            try:
+                attrs = await fetch_ikman_detail_attrs(str(ad_id))
+                visited_ids.add(listing_id)
+                stats["visited"] += 1
+                if attrs:
+                    results[listing_id] = {
+                        "size_perches": attrs.get("size_perches"),
+                        "size_sqft": attrs.get("size_sqft"),
+                        "bedrooms": attrs.get("bedrooms"),
+                        "bathrooms": attrs.get("bathrooms"),
+                        "raw_location": attrs.get("raw_location"),
+                        "description": attrs.get("description"),
+                    }
+            except Exception as e:
+                visited_ids.add(listing_id)
+                stats["errors"] += 1
+                log.debug("ikman_detail_api_error", ad_id=ad_id, error=str(e))
+            await asyncio.sleep(delay)
+
+        self._write_enrichment_results(results, visited_ids, stats)
+        return stats
+
+    def _write_enrichment_results(
+        self, results: dict[int, dict], visited_ids: set[int], stats: dict
+    ) -> None:
+        from scraper.cleaner import DataCleaner
+
+        cleaner = DataCleaner(self.db)
+        now = datetime.utcnow()
+        for listing_id in visited_ids:
+            try:
+                listing = self.db.get(Listing, listing_id)
+                if listing is None:
+                    continue
+                listing.enrichment_attempted_at = now
+                attrs = results.get(listing_id, {})
+                changed = False
+                if attrs.get("size_perches") and listing.size_perches is None:
+                    listing.size_perches = attrs["size_perches"]
+                    changed = True
+                if attrs.get("size_sqft") and listing.size_sqft is None:
+                    listing.size_sqft = attrs["size_sqft"]
+                    changed = True
+                if attrs.get("bedrooms") and listing.bedrooms is None:
+                    listing.bedrooms = attrs["bedrooms"]
+                    changed = True
+                if attrs.get("bathrooms") and listing.bathrooms is None:
+                    listing.bathrooms = attrs["bathrooms"]
+                    changed = True
+                if attrs.get("raw_location"):
+                    raw_location = str(attrs["raw_location"]).strip()
+                    if raw_location and raw_location != (listing.raw_location or ""):
+                        listing.raw_location = raw_location
+                        changed = True
+                    raw = self.db.get(RawListing, listing.raw_id) if listing.raw_id else None
+                    title = raw.title if raw else ""
+                    if raw and raw_location != (raw.raw_location or ""):
+                        raw.raw_location = raw_location
+                        if attrs.get("description") and not raw.description:
+                            raw.description = attrs["description"]
+                        self.db.add(raw)
+                    district, city, confidence = cleaner.parse_location(raw_location, title)
+                    if district and (listing.district != district or not listing.city):
+                        location = cleaner._get_or_create_location(district, city, confidence)
+                        listing.district = district
+                        if city:
+                            listing.city = city
+                        listing.geocode_confidence = confidence
+                        if location:
+                            listing.location_id = location.id
+                            listing.lat = location.lat
+                            listing.lng = location.lng
+                        changed = True
+                if (
+                    listing.size_perches
+                    and listing.price_per_perch
+                    and listing.price_lkr is None
+                ):
+                    listing.price_lkr = float(listing.price_per_perch) * float(listing.size_perches)
+                    if listing.original_price_lkr is None:
+                        listing.original_price_lkr = listing.price_lkr
+                    changed = True
+                if changed:
+                    stats["enriched"] += 1
+                self.db.add(listing)
+            except Exception as e:
+                stats["errors"] += 1
+                log.debug("enrich_write_error", listing_id=listing_id, error=str(e))
+        self.db.commit()
+
     async def enrich(self) -> dict:
         """
         Find listings missing size/bedrooms and visit their source URLs.
         Returns stats dict.
         """
+        from scraper.flags import use_ikman_detail_api
+
         # Phase 1: fetch IDs + URLs as plain tuples, then immediately close the
         # transaction so no connection is held during the slow Playwright phase.
         raw_rows = (
-            self.db.query(Listing.id, RawListing.url, RawListing.source)
+            self.db.query(Listing.id, RawListing.url, RawListing.source, Listing.source_id)
             .join(RawListing, Listing.raw_id == RawListing.id)
             .filter(
                 Listing.is_outlier == False,
                 Listing.enrichment_attempted_at.is_(None),
                 RawListing.url.isnot(None),
                 RawListing.source.in_(["ikman", "lpw", "lamudi"]),
-                or_(
-                    and_(Listing.size_perches.is_(None), Listing.size_sqft.is_(None)),
-                    and_(
-                        Listing.bedrooms.is_(None),
-                        Listing.property_type.in_(["house", "apartment"]),
-                    ),
-                ),
+                self._missing_fields_filter(),
             )
             .order_by(Listing.first_seen_at.desc())
             .limit(self.max_per_run)
@@ -360,7 +471,32 @@ class DetailEnricher:
             log.info("detail_enricher_nothing_to_do")
             return {"visited": 0, "enriched": 0}
 
-        stats = {"visited": 0, "enriched": 0, "errors": 0}
+        stats = {"visited": 0, "enriched": 0, "errors": 0, "ikman_api": 0}
+
+        if use_ikman_detail_api():
+            ikman_rows = [
+                (lid, source_id, url)
+                for lid, url, source, source_id in raw_rows
+                if source == "ikman"
+            ]
+            other_rows = [
+                (lid, url, source)
+                for lid, url, source, source_id in raw_rows
+                if source != "ikman"
+            ]
+            if ikman_rows:
+                api_stats = await self._enrich_ikman_via_api(ikman_rows)
+                stats["visited"] += api_stats["visited"]
+                stats["enriched"] += api_stats["enriched"]
+                stats["errors"] += api_stats["errors"]
+                stats["ikman_api"] = api_stats["visited"]
+            raw_rows = other_rows
+        else:
+            raw_rows = [(lid, url, source) for lid, url, source, _sid in raw_rows]
+
+        if not raw_rows:
+            log.info("detail_enricher_done", **stats)
+            return stats
 
         # Phase 2: visit pages concurrently, collect results in memory
         results: dict[int, dict] = {}

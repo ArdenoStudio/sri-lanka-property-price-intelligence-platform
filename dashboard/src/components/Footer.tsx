@@ -78,7 +78,7 @@ export function Footer() {
         <div className="py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
           {/* Left — wordmark */}
           <div>
-            <p className="text-[14px] font-semibold text-white tracking-tight">PropertyLK</p>
+            <p className="text-[14px] font-semibold text-white tracking-tight font-display">Nilam</p>
             <p className="text-[12px] mt-1" style={{ color: '#525252' }}>
               Sri Lanka Property Intelligence
             </p>
