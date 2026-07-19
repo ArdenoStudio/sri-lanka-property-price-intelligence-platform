@@ -1,12 +1,11 @@
 name: Deploy Dashboard (Vercel)
 
+# Optional production promote via CLI when secrets exist.
+# Required secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# Note: Vercel Git integration already builds on push; this is a fallback
+# when the production domain alias does not update (or free-tier limits hit).
+
 on:
-  push:
-    branches: [master]
-    paths:
-      - 'dashboard/**'
-      - 'vercel.json'
-      - '.github/workflows/vercel-deploy.yml'
   workflow_dispatch:
 
 env:
@@ -18,7 +17,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Require Vercel secrets
+        id: check
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::VERCEL_* secrets not configured — skip CLI deploy. Use Vercel dashboard → Deployments → Promote to Production on the latest Ready build, or add VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID."
+            exit 0
+          fi
+          echo "missing=false" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to Vercel (production)
+        if: steps.check.outputs.missing == 'false'
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -26,4 +40,3 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
           working-directory: ./dashboard
-        continue-on-error: true
