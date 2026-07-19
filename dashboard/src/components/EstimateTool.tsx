@@ -223,7 +223,7 @@ export function EstimateTool() {
             <p className="text-[10px] uppercase tracking-[0.25em] text-[#525252]">Property Intelligence</p>
           </div>
           <h1 className="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold text-white tracking-tight leading-none">
-            Nilam Price Estimator
+            property.lk Price Estimator
           </h1>
           <p className="text-[14px] text-[#525252] mt-3">
             Get an estimated {estimateLabel} based on ranked comparable listings from across Sri Lanka.

@@ -149,11 +149,11 @@ export function getReadableDelta(score: number): string {
 export function getDetailSentence(score: number): string {
   const rounded = Math.abs(Math.round(clampDealScore(score)));
   if (isTypicalDealScore(score)) {
-    return 'This asking price is close to the usual range for similar Nilam listings.';
+    return 'This asking price is close to the usual range for similar property.lk listings.';
   }
   return score > 0
-    ? `This asking price is about ${rounded}% below similar Nilam listings.`
-    : `This asking price is about ${rounded}% above similar Nilam listings.`;
+    ? `This asking price is about ${rounded}% below similar property.lk listings.`
+    : `This asking price is about ${rounded}% above similar property.lk listings.`;
 }
 
 export function getSurfaceTone(band: DealScoreBand, surface: DealScoreSurface) {

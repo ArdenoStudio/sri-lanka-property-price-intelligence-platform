@@ -148,6 +148,7 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.04em;
 }
 
+.brand-wordmark,
 .nilam-wordmark {
   font-family: var(--font-display);
   letter-spacing: -0.04em;

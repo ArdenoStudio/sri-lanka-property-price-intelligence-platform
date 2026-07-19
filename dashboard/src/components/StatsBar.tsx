@@ -76,9 +76,12 @@ export function StatsBar({ stats }: Props) {
         <p className="text-[11px] uppercase tracking-[0.22em] text-[#737373] mb-5">
           Sri Lanka · Property Intelligence
         </p>
-        <h1 className="text-[clamp(3rem,8vw,7rem)] font-bold tracking-[-0.04em] leading-[0.92] text-white">
+        <h1
+          className="text-[clamp(2.75rem,7vw,5.5rem)] leading-[1.05] text-white"
+          style={{ fontFamily: 'var(--font-body)', letterSpacing: '-0.02em', fontWeight: 400 }}
+        >
           Market<br />
-          <span className="text-[#737373]">Intelligence</span>
+          <span className="text-[#8a8a8a]">Intelligence</span>
         </h1>
         <p className="mt-7 text-[#a3a3a3] text-[15px] leading-relaxed text-center sm:whitespace-nowrap">
           Real-time property data across Sri Lanka. Updated daily from 5,000+ listings.

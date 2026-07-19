@@ -1,4 +1,4 @@
-# Nilam / Property.lk — Master Implementation Plan
+# property.lk — Master Implementation Plan
 
 **Date:** 2026-07-19  
 **Branch context:** UI rework (Cal Sans + Inter) + source-API cutover + product depth for Sri Lanka  
@@ -25,7 +25,7 @@ Become the **trusted Sri Lanka property intelligence layer** — better deal sig
 
 | Topic | Decision |
 |---|---|
-| **Brand** | Nilam (product); Property.lk as market shorthand — do not fork two brands in UI |
+| **Brand** | **property.lk** is the product name (UI wordmark, titles, share copy). Do not use Nilam in user-facing UI. |
 | **Fonts** | **Cal Sans = display only** (weight 400); **Inter Variable = body/UI**. Load once via Fontsource in `index.css` |
 | **Theme** | Keep **dark atmospheric shell** for the main app; avoid purple SaaS gradients and cream+terracotta pivots |
 | **Hero budget** | Brand-first Cal Sans mark, one headline, one support line, one CTA group, one full-bleed visual — **no stats strip in hero** |
@@ -54,7 +54,7 @@ USE_DISTRICT_PROFILES
 
 Steal **patterns**, not stock themes. Prefer layout/interaction ideas over installing whole libraries.
 
-| Source | Use for Nilam? | Steal | Skip |
+| Source | Use for property.lk? | Steal | Skip |
 |---|---|---|---|
 | **HyperUI** | Yes (patterns) | Footer, FAQ accordion, filter layouts, clean marketing sections | Daisy-style themed kits |
 | **DaisyUI** | No package | — | Component theme coupling fights our tokens |
@@ -229,7 +229,7 @@ Prioritized from the unbiased wave; only these enter near-term backlog:
 | ikman detail API path in enricher (`USE_IKMAN_DETAIL_API`) | **Done** |
 | house.lk beds/baths → `raw_json` | **Done** |
 | Mapping tests (`tests/test_lpw_api_mapping.py`, `test_ikman_api_mapping.py`) | **Done** |
-| UI: Nilam rebrand, DealScoreCard on detail, WhatsApp estimate share | **Done** |
+| UI: property.lk brand, DealScoreCard on detail, WhatsApp estimate share | **Done** |
 | Production cutover (flags=1 in prod + soak) | **Pending ops** |
 
 Enable in env when ready:

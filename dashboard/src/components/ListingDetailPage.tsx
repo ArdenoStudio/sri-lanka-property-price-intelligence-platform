@@ -177,8 +177,8 @@ export function ListingDetail() {
         setDetail(d);
         setSimilar(s);
         setDaysSinceLastSeen(d.last_seen_at ? Math.floor((Date.now() - new Date(d.last_seen_at).getTime()) / 86400000) : null);
-        document.title = `${d.title || 'Listing'} — Nilam`;
-        document.querySelector('meta[property="og:title"]')?.setAttribute('content', d.title || 'Property — Nilam');
+        document.title = `${d.title || 'Listing'} — property.lk`;
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', d.title || 'Property — property.lk');
         document.querySelector('meta[property="og:url"]')?.setAttribute('content', window.location.href);
         if (d.price_lkr) {
           const dealSummary = d.deal_score != null && !isTypicalDealScore(d.deal_score)
@@ -198,7 +198,7 @@ export function ListingDetail() {
 
     return () => {
       cancelled = true;
-      document.title = 'Nilam — Sri Lanka Property Price Intelligence';
+      document.title = 'property.lk — Sri Lanka Property Price Intelligence';
     };
   }, [formatConverted, invalidId, numId]);
 

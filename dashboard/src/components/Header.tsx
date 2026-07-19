@@ -87,11 +87,11 @@ export function Header() {
               }
             }}
             className="flex min-w-0 items-center no-underline"
-            aria-label="Nilam home"
+            aria-label="property.lk home"
           >
             <div className="min-w-0">
-              <span className="nilam-wordmark block text-[2rem] leading-none text-white sm:text-[2.25rem]">
-                Nilam
+              <span className="brand-wordmark block text-[1.65rem] leading-none text-white sm:text-[1.9rem]">
+                property.lk
               </span>
               <span className="mt-1 block text-[10px] uppercase tracking-[0.22em] text-[#737373] sm:text-[11px]">
                 Sri Lanka Property Intelligence

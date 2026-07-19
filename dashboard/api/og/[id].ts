@@ -20,14 +20,14 @@ function formatPrice(n: number): string {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query;
 
-  let title = 'Property Listing — PropertyLK';
-  let description = 'View this property on PropertyLK';
+  let title = 'Property Listing — property.lk';
+  let description = 'View this property on property.lk';
   let imageUrl = 'https://propertylk.vercel.app/og-image.png';
 
   try {
     const data = await fetch(`${API_BASE}/listings/${id}`).then(r => r.json());
     if (data?.title) {
-      title = escapeHtml(`${data.title} — PropertyLK`);
+      title = escapeHtml(`${data.title} — property.lk`);
     }
     const parts = [
       data?.property_type ? data.property_type.charAt(0).toUpperCase() + data.property_type.slice(1) : '',
@@ -65,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <meta http-equiv="refresh" content="0;url=${canonical}" />
 </head>
 <body>
-  <a href="${canonical}">View listing on PropertyLK</a>
+  <a href="${canonical}">View listing on property.lk</a>
 </body>
 </html>`);
 }
