@@ -129,42 +129,42 @@ Detail specs live under `docs/design/*-bw.md`.
 
 ## 6. Phased delivery
 
-### Phase 0 — Foundation *(in progress on this branch)*
+### Phase 0 — Foundation ✅
 - Design tokens: kill teal → ink
 - `motion.ts` system + spring kill-list
 - `HeroSection` full-bleed brand hero
 - Spec pack in `docs/design/`
-- Early EstimateTool / ReportPage B&W passes (continue in Phase 4)
+- Early EstimateTool / ReportPage B&W passes
 
-### Phase 1 — Shell
+### Phase 1 — Shell ✅
 - Header / Footer / MobileNav / Currency → ink invert active
-- Focus rings white; safe-area mobile nav
-- Home = Hero only (+ thin trust strip)
-- Demote StatsBar + Pipeline from first viewport
+- Focus rings white
+- Home = Hero + trust strip + How it works + CTAs
+- Pipeline demoted to thin strip
 
-### Phase 2 — Browse
-- FilterBar + ListingRow
+### Phase 2 — Browse ✅
+- FilterBar ink invert + ListingRow
 - Listing detail mono layout
-- Map grayscale tiles + mono markers
-- DistrictTrends / PriceHistory shared theme
+- Map Carto Dark Matter + grayscale markers
+- DistrictTrends / PriceHistory shared `chartTheme`
 - DealScore mono encoding
 
-### Phase 3 — Tools
-- Estimate / Mortgage / EMI alignment
-- Comparison tray/modal
-- SavedSearches flat list
-- Report print ink/paper finalize
-- Chat demoted (toolbar / filter-adjacent, no glow FAB)
+### Phase 3 — Tools ✅
+- Estimate / Mortgage / EMI / Compare / Saved / Report / Chat restyled B&W
+- Chat glow FAB removed
 
-### Phase 4 — Structure & polish
-- Split IA routes (`/browse`, `/map`, `/trends`, `/about`)
+### Phase 4 — Structure & polish ✅ (code) / ⏳ (production alias)
+- Routes: `/browse` `/map` `/trends` `/about`
 - FAQ + About rewrite
-- shadcn primitives init (careful merge)
-- A11y P0 + visual QA checklist (`docs/design/bw-redesign-visual-qa-checklist.md`)
-- Performance budgets (lazy routes, hero image ≤200KB, chart/map chunks)
-- Remove leftover cards/glows/teal via `rg '#14b8a6'`
+- Zero teal in `dashboard/src`
+- SPA rewrites fixed in `vercel.json`
 
-**Migration:** section-by-section behind `VITE_NEW_UI` / `?ui=new`; Vercel previews per PR — not one big-bang flip.
+**Live deploy note:** Code is on `master` and Vercel builds Ready previews.
+`propertylk.vercel.app` may lag if the Vercel free plan hits
+`api-deployments-free-per-day` (100/day) or Deployment Protection blocks
+aliases. Promote the latest Ready production deployment in the Vercel
+dashboard, or add `VERCEL_TOKEN` / `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID`
+and run **Deploy Dashboard (Vercel)**.
 
 ---
 
