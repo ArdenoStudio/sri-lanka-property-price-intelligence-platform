@@ -1,3 +1,2 @@
-# Touch this file and push to master to force-run the full Source Ops pipeline
-# (scrape → clean → geocode → aggregate) via GitHub Actions.
-# Last triggered: 2026-07-19T17:58:00Z
+Force Source Ops via GitHub Actions (no Fly)
+Triggered: 2026-07-19T18:00:22Z
