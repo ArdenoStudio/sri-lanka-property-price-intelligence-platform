@@ -10,6 +10,8 @@ Inspired by [cse-api-docs](https://github.com/Cookie-Cat21/cse-api-docs): verify
 
 For how these APIs map onto our `RawListing` → deal score / estimate pipeline, migration risks (especially ikman ids), and a phased cutover plan, see **[AUDIT.md](AUDIT.md)**.
 
+For the post-migration instrumentation plan — fill rates, CAPTCHA-vs-success tracking, deal-score coverage, and Nominatim reduction — see **[OBSERVABILITY.md](OBSERVABILITY.md)**.
+
 ## Why this exists
 
 Our scrapers today mostly parse HTML (Playwright for ikman/house.lk, httpx+BS4 for LPW/onlineproperty). Several sources already expose structured JSON that the site itself uses — hitting those is faster, richer, and less brittle than card DOM scraping.
