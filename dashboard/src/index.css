@@ -447,6 +447,120 @@ h1, h2, h3, h4, h5, h6 {
   animation: cssListingFadeIn 0.2s ease both;
 }
 
+/* ============================================================
+   LISTING DETAIL — atmosphere + hairline specs + similar rail
+   ============================================================ */
+.listing-detail-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.listing-detail-atmosphere {
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: min(72vh, 720px);
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 55% at 18% 0%, rgba(255, 255, 255, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 88% 12%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
+    linear-gradient(180deg, #0c0c0c 0%, #000000 72%);
+  mask-image: linear-gradient(180deg, #000 40%, transparent 100%);
+}
+
+.listing-specs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (min-width: 640px) {
+  .listing-specs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .listing-specs {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.listing-specs__item {
+  padding: 1.15rem 1rem 1.15rem 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.listing-specs__item:nth-child(2n) {
+  padding-left: 1rem;
+  border-right: none;
+}
+
+@media (min-width: 640px) {
+  .listing-specs__item {
+    padding: 1.25rem 1.25rem 1.25rem 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .listing-specs__item:nth-child(2n) {
+    padding-left: 0;
+  }
+
+  .listing-specs__item:nth-child(3n) {
+    border-right: none;
+  }
+
+  .listing-specs__item:not(:first-child) {
+    padding-left: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .listing-specs__item:nth-child(3n) {
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .listing-specs__item:last-child {
+    border-right: none;
+  }
+}
+
+.similar-rail {
+  display: flex;
+  gap: 1px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.similar-rail__card {
+  flex: 0 0 min(78vw, 280px);
+  background: #0a0a0a;
+  padding: 1.25rem 1.35rem 1.35rem;
+  transition: background-color 0.2s var(--ease-out);
+}
+
+.similar-rail__card:hover {
+  background: #111111;
+}
+
+@media (min-width: 640px) {
+  .similar-rail__card {
+    flex-basis: min(42%, 300px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .similar-rail__card {
+    flex-basis: min(32%, 300px);
+  }
+}
+
 @keyframes cssTrayItemIn {
   from { opacity: 0; transform: scale(0.8); }
   to   { opacity: 1; transform: scale(1); }
