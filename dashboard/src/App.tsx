@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import type { FilterState } from './hooks/useSavedSearches';
-import { Routes, Route, useLocation, useNavigate, Navigate, Link } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { getStats, getDistricts, getHeatmap, getListings, getPipelineStatus } from './api';
 import type { Stats, District, HeatmapPoint, Listing, PipelineStatusResponse } from './api';
 import { Header } from './components/Header';
@@ -10,7 +10,6 @@ import { PipelineStatus } from './components/PipelineStatus';
 import { Filters } from './components/Filters';
 import { ListingsGrid } from './components/ListingsGrid';
 import { About } from './components/About';
-import { HowItWorks } from './components/HowItWorks';
 import { FaqSection } from './components/FaqSection';
 import { Footer } from './components/Footer';
 import { ComparisonTray } from './components/ComparisonTray';
@@ -110,12 +109,9 @@ function readURLFilters() {
   };
 }
 
-type DashboardMode = 'home' | 'browse' | 'map' | 'trends' | 'about';
-
-// ── Dashboard (mode-routed shell) ─────────────────────────────────────────────
-function Dashboard({ mode }: { mode: DashboardMode }) {
+// ── Dashboard (home route) ────────────────────────────────────────────────────
+function Dashboard() {
   const location = useLocation();
-  const navigate = useNavigate();
   // Data state
   const [stats, setStats] = useState<Stats | null>(null);
   const [districts, setDistricts] = useState<District[]>([]);
@@ -189,16 +185,8 @@ function Dashboard({ mode }: { mode: DashboardMode }) {
 
   useEffect(() => {
     if (!location.hash) return;
-    const hash = location.hash;
-    // Legacy home hashes → dedicated routes
-    if (mode === 'home') {
-      if (hash === '#listings') { navigate('/browse', { replace: true }); return; }
-      if (hash === '#map') { navigate('/map', { replace: true }); return; }
-      if (hash === '#trends') { navigate('/trends', { replace: true }); return; }
-      if (hash === '#about') { navigate('/about', { replace: true }); return; }
-    }
-    scrollToAnchor(hash.slice(1));
-  }, [location.hash, mode, navigate]);
+    scrollToAnchor(location.hash.slice(1));
+  }, [location.hash]);
 
   const PAGE_SIZE = 24;
   const COMPARISON_MIN = 2;
@@ -333,9 +321,9 @@ function Dashboard({ mode }: { mode: DashboardMode }) {
     setIsSavedSearchesOpen(false);
   }, []);
 
-  const goBrowse = useCallback(() => {
-    navigate('/browse');
-  }, [navigate]);
+  const scrollToListings = useCallback(() => {
+    document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const clearListingFilters = useCallback(() => {
     setSelectedDistrict('');
@@ -350,8 +338,8 @@ function Dashboard({ mode }: { mode: DashboardMode }) {
     setMaxSizePerches('');
     setMinSizeSqft('');
     setMaxSizeSqft('');
-    if (mode !== 'browse') navigate('/browse');
-  }, [mode, navigate]);
+    scrollToListings();
+  }, [scrollToListings]);
 
   const toggleComparison = useCallback((listing: Listing) => {
     setSelectedForComparison(prev => {
@@ -365,48 +353,48 @@ function Dashboard({ mode }: { mode: DashboardMode }) {
     });
   }, [COMPARISON_MAX]);
 
-  const showBrowseChrome = mode === 'browse';
-
   return (
     <div className="min-h-screen relative overflow-x-hidden">
       <Header />
-      {mode === 'home' && <HeroSection />}
+      <HeroSection />
 
       <main
         id="main-content"
         className="relative max-w-7xl mx-auto px-6 lg:px-8 pb-32 pt-10 md:pt-12"
       >
-        {mode === 'home' && (
-          <>
-            <StatsBar stats={stats} />
-            <RevealSection className="mt-6">
-              <PipelineStatus status={pipeline} />
-            </RevealSection>
-            <RevealSection className="pt-16">
-              <HowItWorks />
-            </RevealSection>
-            <RevealSection className="pt-12">
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  to="/browse"
-                  className="rounded-xl bg-white px-5 py-2.5 text-[13px] font-medium text-black no-underline transition-colors hover:bg-[#e5e5e5]"
-                >
-                  Browse listings
-                </Link>
-                <Link
-                  to="/estimate"
-                  className="rounded-xl border border-white/20 px-5 py-2.5 text-[13px] font-medium text-white no-underline transition-colors hover:border-white/40 hover:bg-white/[0.06]"
-                >
-                  Get an estimate
-                </Link>
-              </div>
-            </RevealSection>
-          </>
-        )}
+        <StatsBar stats={stats} />
 
-        {mode === 'browse' && (
+        <RevealSection className="mt-4">
+          <PipelineStatus status={pipeline} />
+        </RevealSection>
+
+        <RevealSection className="mt-8">
+          <div id="map">
+            <Suspense fallback={<MapSkeleton />}>
+              <MapSection
+                points={heatmap}
+                onDistrictSelect={(d) => setSelectedDistrict(d)}
+                onBrowseListings={scrollToListings}
+                selectedDistrict={selectedDistrict}
+              />
+            </Suspense>
+          </div>
+        </RevealSection>
+
+        <RevealSection className="pt-20">
+          <div id="trends">
+            <Suspense fallback={<TrendsSkeleton />}>
+              <DistrictTrends
+                district={selectedDistrict}
+                propertyType={selectedType}
+                onViewListings={scrollToListings}
+              />
+            </Suspense>
+          </div>
+        </RevealSection>
+
+        <RevealSection className="pt-20">
           <div id="listings">
-            <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] text-white mb-6">Browse</h1>
             <Filters
               districts={districts}
               selectedDistrict={selectedDistrict}
@@ -452,99 +440,61 @@ function Dashboard({ mode }: { mode: DashboardMode }) {
               error={listingsError}
             />
           </div>
-        )}
+        </RevealSection>
 
-        {mode === 'map' && (
-          <div id="map">
-            <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] text-white mb-6">Map</h1>
-            <Suspense fallback={<MapSkeleton />}>
-              <MapSection
-                points={heatmap}
-                onDistrictSelect={(d) => {
-                  setSelectedDistrict(d);
-                  navigate(`/browse?district=${encodeURIComponent(d)}`);
-                }}
-                onBrowseListings={goBrowse}
-                selectedDistrict={selectedDistrict}
-              />
-            </Suspense>
+        <RevealSection className="pt-20">
+          <div id="about">
+            <About stats={stats} />
           </div>
-        )}
+        </RevealSection>
 
-        {mode === 'trends' && (
-          <div id="trends">
-            <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] text-white mb-6">Trends</h1>
-            <Suspense fallback={<TrendsSkeleton />}>
-              <DistrictTrends
-                district={selectedDistrict}
-                propertyType={selectedType}
-                onViewListings={goBrowse}
-              />
-            </Suspense>
-          </div>
-        )}
-
-        {mode === 'about' && (
-          <>
-            <div id="about">
-              <About stats={stats} />
-            </div>
-            <RevealSection className="mt-8">
-              <PipelineStatus status={pipeline} />
-            </RevealSection>
-            <RevealSection className="pt-16">
-              <FaqSection />
-            </RevealSection>
-          </>
-        )}
+        <RevealSection className="pt-20">
+          <FaqSection />
+        </RevealSection>
       </main>
 
-      {showBrowseChrome && (
-        <>
-          <ComparisonTray
-            selected={selectedForComparison}
-            maxSlots={COMPARISON_MAX}
-            minCompare={COMPARISON_MIN}
-            onRemove={(id) => setSelectedForComparison(prev => prev.filter(l => l.id !== id))}
-            onClear={() => setSelectedForComparison([])}
-            onCompare={() => {
-              if (selectedForComparison.length >= COMPARISON_MIN) {
-                setIsCompareModalOpen(true);
-              }
-            }}
-          />
+      <ComparisonTray
+        selected={selectedForComparison}
+        maxSlots={COMPARISON_MAX}
+        minCompare={COMPARISON_MIN}
+        onRemove={(id) => setSelectedForComparison(prev => prev.filter(l => l.id !== id))}
+        onClear={() => setSelectedForComparison([])}
+        onCompare={() => {
+          if (selectedForComparison.length >= COMPARISON_MIN) {
+            setIsCompareModalOpen(true);
+          }
+        }}
+      />
 
-          <Suspense fallback={<ModalSkeleton />}>
-            <ComparisonModal
-              isOpen={isCompareModalOpen}
-              onClose={() => setIsCompareModalOpen(false)}
-              listings={selectedForComparison}
-              minCompare={COMPARISON_MIN}
-            />
-          </Suspense>
+      <Suspense fallback={<ModalSkeleton />}>
+        <ComparisonModal
+          isOpen={isCompareModalOpen}
+          onClose={() => setIsCompareModalOpen(false)}
+          listings={selectedForComparison}
+          minCompare={COMPARISON_MIN}
+        />
+      </Suspense>
 
-          <Suspense fallback={null}>
-            <SavedSearches
-              isOpen={isSavedSearchesOpen}
-              onClose={() => setIsSavedSearchesOpen(false)}
-              currentFilters={currentFilters}
-              currentResultCount={totalListings}
-              onApplySearch={applySearch}
-            />
-          </Suspense>
+      <Suspense fallback={null}>
+        <SavedSearches
+          isOpen={isSavedSearchesOpen}
+          onClose={() => setIsSavedSearchesOpen(false)}
+          currentFilters={currentFilters}
+          currentResultCount={totalListings}
+          onApplySearch={applySearch}
+        />
+      </Suspense>
 
-          <Suspense fallback={<ChatSkeleton />}>
-            <ChatWidget onFilters={(f) => {
-              if (f.district) setSelectedDistrict(f.district);
-              if (f.property_type) setSelectedType(f.property_type);
-              if (f.listing_type) setListingType(f.listing_type);
-              if (f.bedrooms) setMinBeds(f.bedrooms);
-              if (f.min_price) setMinPrice(f.min_price);
-              if (f.max_price) setMaxPrice(f.max_price);
-            }} />
-          </Suspense>
-        </>
-      )}
+      <Suspense fallback={<ChatSkeleton />}>
+        <ChatWidget onFilters={(f) => {
+          if (f.district) setSelectedDistrict(f.district);
+          if (f.property_type) setSelectedType(f.property_type);
+          if (f.listing_type) setListingType(f.listing_type);
+          if (f.bedrooms) setMinBeds(f.bedrooms);
+          if (f.min_price) setMinPrice(f.min_price);
+          if (f.max_price) setMaxPrice(f.max_price);
+        }} />
+      </Suspense>
       <MobileNav />
       <Footer />
     </div>
@@ -552,22 +502,17 @@ function Dashboard({ mode }: { mode: DashboardMode }) {
 }
 
 // ── App shell with routing ────────────────────────────────────────────────────
-function HashRedirect({ to }: { to: string }) {
-  return <Navigate to={to} replace />;
-}
-
 function App() {
   return (
     <>
       <Analytics />
       <Routes>
-        <Route path="/" element={<Dashboard mode="home" />} />
-        <Route path="/browse" element={<Dashboard mode="browse" />} />
-        <Route path="/map" element={<Dashboard mode="map" />} />
-        <Route path="/trends" element={<Dashboard mode="trends" />} />
-        <Route path="/about" element={<Dashboard mode="about" />} />
-        {/* Legacy hash URLs */}
-        <Route path="/#listings" element={<HashRedirect to="/browse" />} />
+        <Route path="/" element={<Dashboard />} />
+        {/* Keep short-lived multi-page URLs working → home + section hash */}
+        <Route path="/browse" element={<Navigate to={{ pathname: '/', hash: 'listings' }} replace />} />
+        <Route path="/map" element={<Navigate to={{ pathname: '/', hash: 'map' }} replace />} />
+        <Route path="/trends" element={<Navigate to={{ pathname: '/', hash: 'trends' }} replace />} />
+        <Route path="/about" element={<Navigate to={{ pathname: '/', hash: 'about' }} replace />} />
         <Route
           path="/listing/:id"
           element={
