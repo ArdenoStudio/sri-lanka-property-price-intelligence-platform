@@ -906,7 +906,13 @@ def get_listings(
         total = query.count()
 
         if sort == "newest":
-            query = query.order_by(desc(Listing.last_seen_at))
+            # first_seen_at = when we discovered the listing.
+            # last_seen_at is bumped on every re-scrape, so sorting by it makes
+            # weeks-old ads (re-touched today) appear above truly new ones.
+            query = query.order_by(
+                desc(Listing.first_seen_at).nullslast(),
+                desc(Listing.id),
+            )
         elif sort == "price_asc":
             query = query.order_by(Listing.price_lkr.asc().nullslast())
         elif sort == "price_desc":
