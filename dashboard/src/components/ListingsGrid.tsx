@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../api';
 import { resolveListingPrice } from '../lib/pricing';
 import { getDealScoreBand } from '../lib/dealScore';
@@ -8,8 +8,8 @@ import { useCurrency } from '../hooks/useCurrency';
 import { DealScorePill } from './DealScore';
 import { EmptyStatePanel } from './ui/EmptyStatePanel';
 
-const MOBILE_FACT_LIMIT = 4;
-const DESKTOP_FACT_LIMIT = 6;
+const MOBILE_FACT_LIMIT = 3;
+const DESKTOP_FACT_LIMIT = 4;
 
 function PlusCheckIcon({ checked }: { checked: boolean }) {
   return (
@@ -75,24 +75,6 @@ function formatSizeLabel(listing: Listing): string | null {
   }
 
   return null;
-}
-
-function formatListingTypeLabel(listingType: string | null): string | null {
-  if (!listingType) return null;
-  return listingType === 'rent' ? 'For rent' : 'For sale';
-}
-
-function formatDaysLabel(days: number | null, fallback: string | null): string | null {
-  if (days === 0) return 'New today';
-  if (days != null) return `${days}d on market`;
-  const seen = formatDate(fallback);
-  return seen ? `Seen ${seen}` : null;
-}
-
-function getDaysTone(days: number | null): 'success' | 'warning' | 'muted' {
-  if (days == null || days < 7) return 'success';
-  if (days < 30) return 'warning';
-  return 'muted';
 }
 
 function MetaPill({
@@ -211,7 +193,6 @@ export function ListingsGrid({
           const pricePerPerchLabel = listing.price_per_perch != null
             ? `${formatConverted(listing.price_per_perch, { variant: 'table' })}/perch`
             : null;
-          const daysLabel = formatDaysLabel(listing.days_on_market, listing.first_seen_at);
           const footerMeta = [
             listing.days_on_market === 0
               ? 'New today'
@@ -258,65 +239,44 @@ export function ListingsGrid({
                   node: <MetaPill>{pricePerPerchLabel}</MetaPill>,
                 }
               : null,
-            daysLabel
-              ? {
-                  key: 'days',
-                  node: <MetaPill tone={getDaysTone(listing.days_on_market)}>{daysLabel}</MetaPill>,
-                }
-              : null,
-            formatListingTypeLabel(listing.listing_type)
-              ? {
-                  key: 'listing-type',
-                  node: <MetaPill tone="muted">{formatListingTypeLabel(listing.listing_type)!}</MetaPill>,
-                }
-              : null,
+            // days + listing type live in the footer — keep the face scannable
           ].filter(Boolean) as Array<{ key: string; node: ReactNode }>;
 
-          // Hybrid cards keep the headline stack fixed and cap dense fact fields by breakpoint.
+          // Price-first face: deal + a few facts only (HyperUI / DaisyUI density).
           const mobileFacts = orderedFacts.slice(0, MOBILE_FACT_LIMIT);
           const desktopFacts = orderedFacts.slice(0, DESKTOP_FACT_LIMIT);
 
           return (
             <article
               key={listing.id}
-              className="group relative bg-[#111111] hover:bg-[#161616] transition-colors duration-200 css-listing-fade-in"
+              className="group relative bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-elevated)] border border-transparent hover:border-white/[0.1] transition-[transform,background-color,border-color] duration-200 ease-[var(--ease-out)] hover:-translate-y-px css-listing-fade-in"
               style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
             >
               <div
-                className="absolute left-0 top-0 bottom-0 w-[2px] transition-colors duration-300"
-                style={{ backgroundColor: dealBand?.tone.accent ?? 'transparent' }}
+                className="absolute left-0 top-0 bottom-0 w-[2px] transition-opacity duration-300"
+                style={{
+                  backgroundColor: dealBand?.tone.accent ?? 'rgba(255,255,255,0.12)',
+                  opacity: dealBand ? 1 : 0.35,
+                }}
                 aria-hidden="true"
               />
 
-              {/* Hover indicator */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#f5f5f5] text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#f5f5f5] text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-medium tracking-wide">
                 →
               </div>
 
               <button
                 onClick={() => onToggleComparison(listing)}
-                className={`absolute right-6 top-6 z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-all text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border active:scale-90 ${
+                className={`absolute right-6 top-6 z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-all text-[10px] font-semibold w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border ${
                   isCompared
                     ? 'bg-[#f5f5f5] text-black border-[#f5f5f5] sm:opacity-100'
-                    : 'text-[#737373] border-white/[0.12] hover:text-white hover:border-white/25 bg-[#111111]'
+                    : 'text-[#737373] border-white/[0.12] hover:text-white hover:border-white/25 bg-[var(--color-bg-card)]'
                 }`}
                 aria-pressed={isCompared}
                 aria-label={`${isCompared ? 'Remove from' : 'Add to'} comparison`}
               >
                 <PlusCheckIcon checked={isCompared} />
               </button>
-
-              {listing.url && (
-                <a
-                  href={listing.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute right-6 bottom-6 z-10 text-[#525252] hover:text-[#737373] transition-colors"
-                  aria-label={`View on ${listing.source}`}
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
 
               <Link
                 to={`/listing/${listing.id}`}

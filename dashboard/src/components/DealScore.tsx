@@ -190,9 +190,12 @@ export function DealScoreLegend({
 export function DealScoreCard({
   score,
   surface = 'dark',
+  compact = false,
 }: {
   score: number | null | undefined;
   surface?: DealScoreSurface;
+  /** Hero sibling: score + meter + one sentence — legend behind disclosure */
+  compact?: boolean;
 }) {
   if (score == null) return null;
 
@@ -207,19 +210,34 @@ export function DealScoreCard({
         Deal score
       </p>
       <div className="flex items-end gap-3 flex-wrap mb-2">
-        <p className="text-[2.5rem] leading-none font-bold num" style={{ color: tone.fg }}>
+        <p
+          className={`leading-none font-bold num font-display ${compact ? 'text-[2.75rem]' : 'text-[2.5rem]'}`}
+          style={{ color: tone.fg }}
+        >
           {formatSignedScore(meta.score)}
           <span className="text-[1rem] align-top">%</span>
         </p>
-        <p className="text-[15px] font-semibold" style={{ color: tone.fg }}>
+        <p className="text-[15px] font-semibold pb-1" style={{ color: tone.fg }}>
           {meta.band.detailLabel}
         </p>
       </div>
-      <p className="text-[13px] leading-relaxed mb-4" style={{ color: copyColor }}>
+      <p className="text-[13px] leading-relaxed mb-4 font-body" style={{ color: copyColor }}>
         {meta.sentence}
       </p>
       <DealScoreMeter score={meta.score} surface={surface} />
-      <DealScoreLegend score={meta.score} surface={surface} />
+      {compact ? (
+        <details className="mt-5 group">
+          <summary className="cursor-pointer list-none text-[11px] uppercase tracking-[0.16em] text-[#737373] hover:text-[#a3a3a3] transition-colors [&::-webkit-details-marker]:hidden">
+            <span className="inline-flex items-center gap-1.5">
+              How to read it
+              <span className="text-[10px] opacity-60 group-open:rotate-90 transition-transform">›</span>
+            </span>
+          </summary>
+          <DealScoreLegend score={meta.score} surface={surface} />
+        </details>
+      ) : (
+        <DealScoreLegend score={meta.score} surface={surface} />
+      )}
     </div>
   );
 }
