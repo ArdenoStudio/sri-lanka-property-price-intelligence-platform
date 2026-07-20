@@ -23,28 +23,28 @@ function formatPrice(price: number | null): string {
   return formatCurrencyAmount(price, 'LKR', { variant: 'table' });
 }
 
-// Color = avg price — grayscale only (white → gray by ratio)
+// Color = avg price — high-contrast ink on dark basemap (Hot = bright white)
 function getColorByPrice(price: number | null, minPrice: number, maxPrice: number): string {
-  if (!price || maxPrice === minPrice) return '#a3a3a3';
+  if (!price || maxPrice === minPrice) return '#c4c4c4';
   const ratio = (price - minPrice) / (maxPrice - minPrice);
-  if (ratio > 0.72) return '#f5f5f5'; // Hot  — near white
-  if (ratio > 0.45) return '#d4d4d4'; // High — light gray
-  if (ratio > 0.22) return '#a3a3a3'; // Med  — mid gray
-  return '#737373';                   // Low  — darker gray
+  if (ratio > 0.72) return '#ffffff'; // Hot
+  if (ratio > 0.45) return '#e5e5e5'; // High
+  if (ratio > 0.22) return '#a3a3a3'; // Med
+  return '#6b6b6b';                   // Low — still readable on dark tiles
 }
 
 // Size = listing volume
 function getRadius(count: number, maxCount: number): number {
   const ratio = count / maxCount;
-  return Math.max(7, Math.min(27, ratio * 30 + 7));
+  return Math.max(8, Math.min(30, ratio * 32 + 8));
 }
 
 function getFillOpacity(count: number, maxCount: number): number {
   const ratio = count / maxCount;
-  if (ratio > 0.72) return 0.84;
-  if (ratio > 0.45) return 0.74;
-  if (ratio > 0.22) return 0.66;
-  return 0.58;
+  if (ratio > 0.72) return 0.9;
+  if (ratio > 0.45) return 0.82;
+  if (ratio > 0.22) return 0.74;
+  return 0.68;
 }
 
 interface Props {
@@ -62,26 +62,29 @@ export function MapSection({ points, onDistrictSelect, onBrowseListings, selecte
 
   return (
     <section className="mt-4 mb-8">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-[#525252] mb-1">Market Heatmap</p>
-          <p className="text-xs text-[#525252]">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-[#a3a3a3] mb-1">Market Heatmap</p>
+          <p className="text-xs text-[#d4d4d4]">
             Color = avg price &middot; Size = volume. Click a district to filter.
           </p>
         </div>
         {points.length > 0 && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {([
-              { label: 'Low',  color: '#737373' },
+              { label: 'Low',  color: '#6b6b6b' },
               { label: 'Med',  color: '#a3a3a3' },
-              { label: 'High', color: '#d4d4d4' },
-              { label: 'Hot',  color: '#f5f5f5' },
+              { label: 'High', color: '#e5e5e5' },
+              { label: 'Hot',  color: '#ffffff' },
             ] as { label: string; color: string }[]).map(({ label, color }) => (
               <span
                 key={label}
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold border border-white/[0.08] text-[#525252]"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border border-white/20 bg-white/[0.06] text-[#f5f5f5]"
               >
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/40"
+                  style={{ backgroundColor: color }}
+                />
                 {label}
               </span>
             ))}
@@ -126,21 +129,22 @@ export function MapSection({ points, onDistrictSelect, onBrowseListings, selecte
                   pathOptions={{
                     fillColor: color,
                     fillOpacity,
-                    color: isSelected ? '#ffffff' : color,
-                    weight: isSelected ? 3 : 1.5,
-                    opacity: 0.96,
+                    // White stroke keeps mid/low markers readable on dark tiles
+                    color: isSelected ? '#ffffff' : 'rgba(255,255,255,0.85)',
+                    weight: isSelected ? 3 : 1.75,
+                    opacity: 1,
                   }}
                   eventHandlers={{
                     mouseover: (e) => {
                       (e.target as any).setStyle({
-                        weight: isSelected ? 3 : 2.2,
-                        fillOpacity: Math.min(0.92, fillOpacity + 0.1),
+                        weight: isSelected ? 3.5 : 2.5,
+                        fillOpacity: Math.min(0.95, fillOpacity + 0.08),
                       });
                       (e.target as any).openPopup();
                     },
                     mouseout: (e) => {
                       (e.target as any).setStyle({
-                        weight: isSelected ? 3 : 1.5,
+                        weight: isSelected ? 3 : 1.75,
                         fillOpacity,
                       });
                       (e.target as any).closePopup();
@@ -148,7 +152,7 @@ export function MapSection({ points, onDistrictSelect, onBrowseListings, selecte
                     click: () => onDistrictSelect(pt.district),
                   }}
                 >
-                  <Tooltip permanent direction="top" offset={[0, -(radius + 4)]} className="map-district-label">
+                  <Tooltip permanent direction="top" offset={[0, -(radius + 6)]} className="map-district-label">
                     {pt.district}
                   </Tooltip>
                   <Popup>
