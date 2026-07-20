@@ -30,6 +30,8 @@ async def main() -> None:
     args = parser.parse_args()
 
     os.environ.setdefault("USE_IKMAN_DETAIL_API", "1")
+    # API-only path — do not pull LPW/Lamudi into this job (avoids Playwright in CI).
+    os.environ["ENRICHER_SOURCES"] = "ikman"
     os.environ["ENRICHER_MAX_PER_RUN"] = str(args.max_per_run)
 
     total = {"visited": 0, "enriched": 0, "errors": 0}
