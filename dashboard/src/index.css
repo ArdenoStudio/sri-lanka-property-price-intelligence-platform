@@ -284,8 +284,9 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
 .leaflet-top, .leaflet-bottom { z-index: 800 !important; }
+/* dark_all tiles already — do NOT invert (that washed the map to near-white) */
 .leaflet-tile-pane {
-  filter: brightness(0.68) contrast(1.1) grayscale(0.92) invert(1) hue-rotate(180deg);
+  filter: brightness(0.92) contrast(1.08) saturate(0);
 }
 .leaflet-control-zoom {
   border: none !important;
@@ -323,19 +324,21 @@ h1, h2, h3, h4, h5, h6 {
 }
 .leaflet-popup-tip { background: #161616 !important; }
 
-/* District name labels (permanent tooltips) */
+/* District name labels (permanent tooltips) — high contrast on dark basemap */
 .map-district-label {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: #aaaaaa !important;
-  font-size: 9px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.04em !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55) !important;
+  color: #f5f5f5 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
   white-space: nowrap !important;
   pointer-events: none !important;
-  padding: 0 !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7) !important;
+  padding: 2px 6px !important;
+  text-shadow: none !important;
 }
 .map-district-label::before { display: none !important; }
 
