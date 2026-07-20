@@ -493,6 +493,11 @@ class DetailEnricher:
 
         # Phase 1: fetch IDs + URLs as plain tuples, then immediately close the
         # transaction so no connection is held during the slow Playwright phase.
+        sources_env = os.getenv("ENRICHER_SOURCES", "ikman,lpw,lamudi")
+        sources = [s.strip() for s in sources_env.split(",") if s.strip()]
+        if not sources:
+            sources = ["ikman", "lpw", "lamudi"]
+
         raw_rows = (
             self.db.query(Listing.id, RawListing.url, RawListing.source, Listing.source_id)
             .join(RawListing, Listing.raw_id == RawListing.id)
@@ -500,7 +505,7 @@ class DetailEnricher:
                 Listing.is_outlier == False,
                 Listing.enrichment_attempted_at.is_(None),
                 RawListing.url.isnot(None),
-                RawListing.source.in_(["ikman", "lpw", "lamudi"]),
+                RawListing.source.in_(sources),
                 self._missing_fields_filter(),
             )
             .order_by(Listing.first_seen_at.desc())

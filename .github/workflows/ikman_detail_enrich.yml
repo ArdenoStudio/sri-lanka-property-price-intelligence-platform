@@ -45,6 +45,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           USE_IKMAN_DETAIL_API: "1"
+          ENRICHER_SOURCES: "ikman"
           ENRICHER_MAX_PER_RUN: ${{ github.event.inputs.max_per_run || '500' }}
           IKMAN_API_DELAY_SECONDS: "0.35"
           PYTHONUNBUFFERED: "1"
