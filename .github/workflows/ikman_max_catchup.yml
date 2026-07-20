@@ -1,0 +1,53 @@
+name: ikman Max SERP Catch-up
+
+# Location-sharded full catalog pull. Matrix by category so land (largest)
+# cannot starve other categories if a job times out.
+
+on:
+  workflow_dispatch:
+    inputs:
+      stop_after_dup_pages:
+        description: 'Stop after N all-duplicate pages (use 999 for cold start)'
+        required: true
+        default: '999'
+        type: string
+      max_pages:
+        description: 'Per-shard page cap (0 = uncapped until empty/soft-stop)'
+        required: true
+        default: '0'
+        type: string
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  serp:
+    name: SERP cat ${{ matrix.category }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        category: [415, 942, 937, 416, 938, 939, 940, 413, 943]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Sharded SERP catch-up
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          USE_IKMAN_SERP_API: "1"
+          IKMAN_API_LOCATION_SHARD: "1"
+          IKMAN_API_MAX_PAGES: ${{ github.event.inputs.max_pages }}
+          IKMAN_API_STOP_AFTER_DUP_PAGES: ${{ github.event.inputs.stop_after_dup_pages }}
+          IKMAN_API_DELAY_SECONDS: "0.35"
+          PYTHONUNBUFFERED: "1"
+          LOG_LEVEL: INFO
+        run: >-
+          python3 scripts/run_ikman_max_serp.py
+          --category ${{ matrix.category }}
+          --max-pages ${{ github.event.inputs.max_pages }}
+          --stop-after-dup-pages ${{ github.event.inputs.stop_after_dup_pages }}

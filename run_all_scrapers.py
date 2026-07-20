@@ -58,9 +58,28 @@ async def run_ikman(
     subdistrict_pages: int = 2,
 ):
     """Run ikman scraper with its own DB session."""
+    from scraper.flags import use_ikman_serp_api
+
     db = SessionLocal()
-    log.info("scraper_starting", source="ikman", max_pages=max_pages, coverage=coverage)
+    log.info(
+        "scraper_starting",
+        source="ikman",
+        max_pages=max_pages,
+        coverage=coverage,
+        use_serp_api=use_ikman_serp_api(),
+    )
     try:
+        if use_ikman_serp_api():
+            from scraper.ikman_api import scrape_ikman_api, bridge_ikman_identity
+
+            try:
+                bridge_ikman_identity(db, dry_run=False, limit=2000)
+            except Exception as bridge_err:
+                log.warning("ikman_identity_bridge_skipped", error=str(bridge_err))
+            found, new = await scrape_ikman_api(db, max_pages=max_pages or None)
+            log.info("scraper_complete", source="ikman", found=found, new=new, via="serp_api")
+            return {"source": "ikman", "found": found, "new": new, "success": True}
+
         if coverage:
             targets = build_ikman_coverage_targets(
                 _district_counts(db),
