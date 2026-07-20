@@ -25,26 +25,26 @@ function formatPrice(price: number | null): string {
 
 // Color = avg price — high-contrast ink on dark basemap (Hot = bright white)
 function getColorByPrice(price: number | null, minPrice: number, maxPrice: number): string {
-  if (!price || maxPrice === minPrice) return '#c4c4c4';
+  if (!price || maxPrice === minPrice) return '#d4d4d4';
   const ratio = (price - minPrice) / (maxPrice - minPrice);
   if (ratio > 0.72) return '#ffffff'; // Hot
-  if (ratio > 0.45) return '#e5e5e5'; // High
-  if (ratio > 0.22) return '#a3a3a3'; // Med
-  return '#6b6b6b';                   // Low — still readable on dark tiles
+  if (ratio > 0.45) return '#e8e8e8'; // High
+  if (ratio > 0.22) return '#c4c4c4'; // Med
+  return '#9a9a9a';                   // Low — lighter so markers don't vanish
 }
 
 // Size = listing volume
 function getRadius(count: number, maxCount: number): number {
   const ratio = count / maxCount;
-  return Math.max(8, Math.min(30, ratio * 32 + 8));
+  return Math.max(10, Math.min(32, ratio * 34 + 10));
 }
 
 function getFillOpacity(count: number, maxCount: number): number {
   const ratio = count / maxCount;
-  if (ratio > 0.72) return 0.9;
-  if (ratio > 0.45) return 0.82;
-  if (ratio > 0.22) return 0.74;
-  return 0.68;
+  if (ratio > 0.72) return 0.92;
+  if (ratio > 0.45) return 0.86;
+  if (ratio > 0.22) return 0.8;
+  return 0.78;
 }
 
 interface Props {
@@ -72,9 +72,9 @@ export function MapSection({ points, onDistrictSelect, onBrowseListings, selecte
         {points.length > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
             {([
-              { label: 'Low',  color: '#6b6b6b' },
-              { label: 'Med',  color: '#a3a3a3' },
-              { label: 'High', color: '#e5e5e5' },
+              { label: 'Low',  color: '#9a9a9a' },
+              { label: 'Med',  color: '#c4c4c4' },
+              { label: 'High', color: '#e8e8e8' },
               { label: 'Hot',  color: '#ffffff' },
             ] as { label: string; color: string }[]).map(({ label, color }) => (
               <span
