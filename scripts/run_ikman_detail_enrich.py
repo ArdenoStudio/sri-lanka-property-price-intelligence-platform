@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.connection import SessionLocal
 from db.models import Listing, RawListing
 from scraper.detail_enricher import DetailEnricher
-from sqlalchemy import and_, or_
+from sqlalchemy import or_
 
 
 def _clear_false_attempt_stamps(db) -> int:
