@@ -2,6 +2,8 @@ name: ikman Detail Enrich
 
 # Fills description / structured size / views via GET /v1/ads/{id}.
 # Run after SERP catch-up or nightly to drain the enrich backlog.
+#
+# Force-run: merge a change to scripts/trigger-ikman-detail.
 
 on:
   schedule:
@@ -18,12 +20,18 @@ on:
         required: true
         default: '500'
         type: string
+  pull_request:
+    types: [closed]
+    paths:
+      - 'scripts/trigger-ikman-detail'
+      - '.github/workflows/ikman_detail_enrich.yml'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   enrich:
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:

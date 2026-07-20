@@ -2,6 +2,9 @@ name: ikman Max SERP Catch-up
 
 # Location-sharded full catalog pull. Matrix by category so land (largest)
 # cannot starve other categories if a job times out.
+#
+# Force-run: merge a change to scripts/trigger-ikman-max (bot cannot
+# workflow_dispatch). Defaults: uncapped pages, stop_after_dup_pages=999.
 
 on:
   workflow_dispatch:
@@ -16,6 +19,11 @@ on:
         required: true
         default: '0'
         type: string
+  pull_request:
+    types: [closed]
+    paths:
+      - 'scripts/trigger-ikman-max'
+      - '.github/workflows/ikman_max_catchup.yml'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -23,6 +31,7 @@ env:
 jobs:
   serp:
     name: SERP cat ${{ matrix.category }}
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
@@ -41,13 +50,13 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           USE_IKMAN_SERP_API: "1"
           IKMAN_API_LOCATION_SHARD: "1"
-          IKMAN_API_MAX_PAGES: ${{ github.event.inputs.max_pages }}
-          IKMAN_API_STOP_AFTER_DUP_PAGES: ${{ github.event.inputs.stop_after_dup_pages }}
+          IKMAN_API_MAX_PAGES: ${{ github.event.inputs.max_pages || '0' }}
+          IKMAN_API_STOP_AFTER_DUP_PAGES: ${{ github.event.inputs.stop_after_dup_pages || '999' }}
           IKMAN_API_DELAY_SECONDS: "0.35"
           PYTHONUNBUFFERED: "1"
           LOG_LEVEL: INFO
         run: >-
           python3 scripts/run_ikman_max_serp.py
           --category ${{ matrix.category }}
-          --max-pages ${{ github.event.inputs.max_pages }}
-          --stop-after-dup-pages ${{ github.event.inputs.stop_after_dup_pages }}
+          --max-pages ${{ github.event.inputs.max_pages || '0' }}
+          --stop-after-dup-pages ${{ github.event.inputs.stop_after_dup_pages || '999' }}
