@@ -225,7 +225,8 @@ def map_ikman_ad_detail(payload: dict[str, Any]) -> dict[str, Any]:
 
     size_perches = size_sqft = None
     for key in ("size", "land_size", "house_size"):
-        val = props.get(key) or ""
+        # ikman formats with thousands separators: "1,816.0 sqft"
+        val = (props.get(key) or "").replace(",", "")
         m = re.search(r"([\d.]+)\s*perch", val, re.I)
         if m and size_perches is None:
             size_perches = float(m.group(1))

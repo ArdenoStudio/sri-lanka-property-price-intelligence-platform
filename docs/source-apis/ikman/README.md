@@ -120,3 +120,5 @@ Listing pages still embed `window.initialData` with `serp.ads.data.ads` (slightl
 ## Scraper impact
 
 Replacing Playwright list pagination with `/v1/serp` would remove most ikman CAPTCHA/block surface for **list ingest**. Detail enricher can use `/v1/ads/{id}` with the hex id already stored as `source_id` (confirm id format matches what we persist today — cards use the same hex ids).
+
+Enable in CI/ops with `USE_IKMAN_SERP_API=1` / `USE_IKMAN_DETAIL_API=1` (see [`LIVE_STATUS.md`](LIVE_STATUS.md) for live probe results, field coverage, and lookback limits).

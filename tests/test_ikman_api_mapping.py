@@ -47,3 +47,43 @@ def test_map_detail_sample():
     assert attrs["raw_json"]["ingest"] == "ikman_detail_api"
     sanitized = sanitize_ikman_raw_json(data)
     assert "phone_number" not in json.dumps(sanitized)
+
+
+def test_map_ikman_ad_detail_parses_comma_thousands_in_size():
+    """Live ikman sizes often look like '1,816.0 sqft' — must not become 816."""
+    payload = {
+        "ad": {
+            "id": "999",
+            "properties": [
+                {"label": "Size (square feet)", "key": "size", "value": "1,816.0 sqft"},
+                {"label": "Bedrooms", "key": "bedrooms", "value": "3"},
+                {"label": "Bathrooms", "key": "bathrooms", "value": "2"},
+            ],
+        }
+    }
+    mapped = map_ikman_ad_detail(payload)
+    assert mapped["size_sqft"] == 1816.0
+    assert mapped["bedrooms"] == 3
+    assert mapped["bathrooms"] == 2
+
+
+def test_map_serp_puts_bedrooms_in_raw_json():
+    result = {
+        "id": "6a460b164c8bc14f02780157",
+        "slug": "house-for-sale-in-hokandara-123",
+        "title": "House",
+        "type": "for_sale",
+        "url": "/en/ad/house-for-sale-in-hokandara-123",
+        "details": ["Bedrooms: 4", "Bathrooms: 3"],
+        "money": {"amount": "Rs 10,000,000"},
+        "location": {"name": "Colombo"},
+        "area": {"name": "Hokandara"},
+        "category": {"id": 415, "name": "Houses For Sale"},
+        "date": "2026-07-20T09:00:00+05:30",
+    }
+    mapped = map_ikman_serp_result(result)
+    assert mapped is not None
+    assert mapped["raw_json"]["bedrooms"] == 4
+    assert mapped["raw_json"]["bathrooms"] == 3
+    assert mapped["property_type"] == "house"
+    assert mapped["listing_type"] == "sale"
