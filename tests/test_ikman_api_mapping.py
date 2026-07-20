@@ -80,6 +80,10 @@ def test_map_serp_puts_bedrooms_in_raw_json():
         "area": {"name": "Hokandara"},
         "category": {"id": 415, "name": "Houses For Sale"},
         "date": "2026-07-20T09:00:00+05:30",
+        "images": {
+            "base_uri": "https://i.ikman-st.com",
+            "ids": ["aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"],
+        },
     }
     mapped = map_ikman_serp_result(result)
     assert mapped is not None
@@ -87,3 +91,7 @@ def test_map_serp_puts_bedrooms_in_raw_json():
     assert mapped["raw_json"]["bathrooms"] == 3
     assert mapped["property_type"] == "house"
     assert mapped["listing_type"] == "sale"
+    assert mapped["raw_json"]["image_urls"] == [
+        "https://i.ikman-st.com/house-for-sale-in-hokandara-123/"
+        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/640/480/fitted.jpg"
+    ]

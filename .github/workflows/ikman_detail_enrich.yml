@@ -1,0 +1,47 @@
+name: ikman Detail Enrich
+
+# Fills description / structured size / views via GET /v1/ads/{id}.
+# Run after SERP catch-up or nightly to drain the enrich backlog.
+
+on:
+  schedule:
+    - cron: '30 22 * * *'  # ~after daily scrape (20:00 UTC)
+  workflow_dispatch:
+    inputs:
+      batches:
+        description: 'Number of enrich batches'
+        required: true
+        default: '10'
+        type: string
+      max_per_run:
+        description: 'Listings per batch'
+        required: true
+        default: '500'
+        type: string
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Detail enrich batches
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          USE_IKMAN_DETAIL_API: "1"
+          ENRICHER_MAX_PER_RUN: ${{ github.event.inputs.max_per_run || '500' }}
+          IKMAN_API_DELAY_SECONDS: "0.35"
+          PYTHONUNBUFFERED: "1"
+          LOG_LEVEL: INFO
+        run: >-
+          python3 scripts/run_ikman_detail_enrich.py
+          --batches ${{ github.event.inputs.batches || '10' }}
+          --max-per-run ${{ github.event.inputs.max_per_run || '500' }}

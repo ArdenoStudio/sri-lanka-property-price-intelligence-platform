@@ -79,22 +79,22 @@ PR #59 / `cursor/ikman-api-enable-0458`:
 
 ## Phase 2 — Full SERP backfill (get all ~65k IDs in DB)
 
-**Why:** Daily caps (~75 pages/category) and stop-on-dupes cannot cold-load the catalog. Land alone is ~32k ads (~1.2k pages).
+**Why:** Daily caps (~75 pages/category) and stop-on-dupes cannot cold-load the catalog. Land alone is ~32k ads (~1.2k pages). Island-wide pagination **hard-fails ~page 450–500 (HTTP 500)** even with `next_page_token` — so we **must** shard by location (district → city when pages > soft limit).
 
-### 2a. Cold-start / catch-up job
+### 2a. Cold-start / catch-up job — IMPLEMENTED
 
-New workflow (or mega mode): `ikman_full_serp.yml` / `workflow_dispatch`
+Workflow: `.github/workflows/ikman_max_catchup.yml`  
+Script: `scripts/run_ikman_max_serp.py` (`IKMAN_API_LOCATION_SHARD=1`)
 
 | Setting | Value | Rationale |
 |---------|-------|-----------|
 | `USE_IKMAN_SERP_API` | `1` | JSON path only |
-| `IKMAN_API_MAX_PAGES` | `0` (uncapped) | walk until empty / API 500 |
+| `IKMAN_API_LOCATION_SHARD` | `1` | bypass page-500 wall via city/district shards |
+| `IKMAN_API_MAX_PAGES` | `0` (uncapped) | walk until empty / soft-stop |
 | `IKMAN_API_STOP_AFTER_DUP_PAGES` | `999` on cold start, `3` on daily | cold start must not early-exit |
-| `IKMAN_API_DELAY_SECONDS` | `0.35–0.5` | polite; ~2–3k pages total |
-| Categories | expand DEFAULT | see 2b |
-| Timeout | 6h+ or shard by category | Actions 240–360m may be tight |
-
-**Shard strategy (recommended):** one job matrix per category (`415`, `942`, …) so land does not starve houses if a run times out.
+| `IKMAN_API_DELAY_SECONDS` | `0.35–0.5` | polite |
+| Categories | matrix 415,942,937,416,938,939,940,413,943 | land cannot starve others |
+| Timeout | 360m per category job | Actions matrix |
 
 Rough volume:
 

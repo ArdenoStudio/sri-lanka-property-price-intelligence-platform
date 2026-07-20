@@ -29,7 +29,9 @@ USER_AGENT = (
     "sri-lanka-property-price-intelligence-platform)"
 )
 
-# Property categories (excluding short-term 936 by default)
+# Property categories (excluding short-term 936 by default).
+# Island-wide SERP dies ~page 400–500 (HTTP 500); location sharding is required
+# to reach the full ~65k catalog. See scrape_serp_sharded.
 DEFAULT_CATEGORIES = (
     415,  # houses sale
     942,  # land sale
@@ -38,6 +40,8 @@ DEFAULT_CATEGORIES = (
     938,  # apt rent
     939,  # commercial sale
     940,  # commercial rent
+    413,  # room & annex rentals
+    943,  # land rentals
 )
 
 CATEGORY_PROPERTY_TYPE = {
@@ -46,12 +50,18 @@ CATEGORY_PROPERTY_TYPE = {
     937: "apartment",
     938: "apartment",
     942: "land",
+    943: "land",
     939: "commercial",
     940: "commercial",
     409: "house",  # root — refined per result
     936: "house",  # short-term
     413: "house",  # rooms/annex
 }
+
+# Soft page cap before we prefer city shards over district/island walks.
+# Live probes: island/district walks hard-fail around page 450–500.
+IKMAN_PAGE_SOFT_LIMIT = int(os.getenv("IKMAN_API_PAGE_SOFT_LIMIT", "350"))
+IKMAN_IMAGE_URL_CAP = int(os.getenv("IKMAN_API_IMAGE_URL_CAP", "10"))
 
 BEDROOMS_RE = re.compile(r"(?i)bedrooms?\s*:\s*(\d+)")
 BATHROOMS_RE = re.compile(r"(?i)bathrooms?\s*:\s*(\d+)")
@@ -142,6 +152,27 @@ def build_raw_location(result: dict[str, Any]) -> Optional[str]:
     return ", ".join(parts) if parts else None
 
 
+def image_urls_from_serp(
+    result: dict[str, Any],
+    *,
+    slug: str | None = None,
+    cap: int = IKMAN_IMAGE_URL_CAP,
+) -> list[str]:
+    """Build CDN URLs from SERP/detail `images` {ids, base_uri} + ad slug."""
+    images = result.get("images")
+    if not isinstance(images, dict):
+        return []
+    base = (images.get("base_uri") or "").rstrip("/")
+    ids = images.get("ids") or []
+    slug = slug or result.get("slug") or slug_from_url(result.get("url"))
+    if not base or not slug or not ids:
+        return []
+    urls: list[str] = []
+    for image_id in ids[: max(0, cap)]:
+        urls.append(f"{base}/{slug}/{image_id}/640/480/fitted.jpg")
+    return urls
+
+
 def build_raw_price(result: dict[str, Any]) -> Optional[str]:
     money = result.get("money") or {}
     amount = money.get("amount")
@@ -178,6 +209,8 @@ def map_ikman_serp_result(
     parsed = parse_details(result.get("details"))
     is_short_term = category.get("id") == 936 or "/night" in (build_raw_price(result) or "").lower()
 
+    image_urls = image_urls_from_serp(result, slug=slug)
+    images = result.get("images") if isinstance(result.get("images"), dict) else {}
     raw_json = sanitize_ikman_raw_json(
         {
             "ingest": "ikman_serp_api",
@@ -191,11 +224,16 @@ def map_ikman_serp_result(
             "category_name": category.get("name"),
             "type": result.get("type"),
             "date": result.get("date"),
+            "deactivates": result.get("deactivates"),
             "last_bump_up_date": result.get("last_bump_up_date"),
+            "status": result.get("status"),
             "location": result.get("location"),
             "area": result.get("area"),
             "is_short_term": is_short_term,
             "contact_card": result.get("contact_card"),
+            "image_ids": (images.get("ids") or [])[:IKMAN_IMAGE_URL_CAP],
+            "image_base_uri": images.get("base_uri"),
+            "image_urls": image_urls,
         }
     )
 
@@ -379,10 +417,13 @@ class IkmanApiScraper:
         category: int,
         page: int = 1,
         next_page_token: str | None = None,
+        location: int | None = None,
     ) -> dict[str, Any]:
         params: dict[str, Any] = {"category": category, "page": page}
         if next_page_token:
             params["next_page_token"] = next_page_token
+        if location is not None:
+            params["location"] = location
         resp = await client.get(f"{API_BASE}/v1/serp", params=params)
         resp.raise_for_status()
         return resp.json()
@@ -391,6 +432,165 @@ class IkmanApiScraper:
         resp = await client.get(f"{API_BASE}/v1/ads/{ad_id}")
         resp.raise_for_status()
         return resp.json()
+
+    async def fetch_locations_tree(self, client: httpx.AsyncClient) -> dict[int, dict[str, Any]]:
+        resp = await client.get(f"{API_BASE}/v1/locations")
+        resp.raise_for_status()
+        payload = resp.json()
+        locs = payload.get("locations") if isinstance(payload, dict) else payload
+        out: dict[int, dict[str, Any]] = {}
+        for loc in locs or []:
+            if isinstance(loc, dict) and loc.get("id") is not None:
+                out[int(loc["id"])] = loc
+        return out
+
+    async def resolve_location_shards(
+        self,
+        client: httpx.AsyncClient,
+        *,
+        category: int,
+        locations_by_id: dict[int, dict[str, Any]],
+    ) -> list[tuple[int | None, str]]:
+        """Return (location_id|None, label) shards small enough to paginate safely.
+
+        Island-wide and large districts hit HTTP 500 past ~page 400–500. Prefer
+        district shards; expand to cities when pagination.pages exceeds soft limit.
+        """
+        data = await self.fetch_serp_page(client, category=category, page=1)
+        serp_locs = (data.get("serp") or {}).get("locations") or []
+        shards: list[tuple[int | None, str]] = []
+
+        for entry in serp_locs:
+            if not isinstance(entry, dict) or entry.get("id") is None:
+                continue
+            loc_id = int(entry["id"])
+            name = str(entry.get("name") or loc_id)
+            count = int(entry.get("count") or 0)
+            # Probe pages for this district
+            try:
+                probe = await self.fetch_serp_page(
+                    client, category=category, page=1, location=loc_id
+                )
+                pages = int((probe.get("pagination") or {}).get("pages") or 0)
+            except Exception as e:
+                log.warning("ikman_location_probe_failed", location=loc_id, error=str(e))
+                pages = 0
+            await asyncio.sleep(self.delay)
+
+            if pages and pages > IKMAN_PAGE_SOFT_LIMIT:
+                children = (locations_by_id.get(loc_id) or {}).get("children") or []
+                child_ids = [int(c) for c in children if str(c).isdigit() or isinstance(c, int)]
+                if child_ids:
+                    for child_id in child_ids:
+                        child = locations_by_id.get(child_id) or {}
+                        shards.append((child_id, f"{name}/{child.get('name') or child_id}"))
+                    continue
+            if count > 0 or pages > 0:
+                shards.append((loc_id, name))
+
+        if not shards:
+            # Fallback: island-wide (may truncate at API 500 wall)
+            shards.append((None, "island-wide"))
+        return shards
+
+    async def _scrape_serp_shard(
+        self,
+        client: httpx.AsyncClient,
+        *,
+        category: int,
+        location: int | None,
+        label: str,
+        page_cap: int,
+    ) -> tuple[int, int]:
+        found = new = 0
+        page = 1
+        token = None
+        dup_pages = 0
+        hard_fail_streak = 0
+
+        while True:
+            if page_cap and page > page_cap:
+                break
+            try:
+                data = await self.fetch_serp_page(
+                    client,
+                    category=category,
+                    page=page,
+                    next_page_token=token,
+                    location=location,
+                )
+                hard_fail_streak = 0
+            except httpx.HTTPStatusError as e:
+                hard_fail_streak += 1
+                log.warning(
+                    "ikman_serp_http_error",
+                    category=category,
+                    location=location,
+                    label=label,
+                    page=page,
+                    status=e.response.status_code,
+                )
+                if e.response.status_code >= 500 or hard_fail_streak >= 3:
+                    break
+                await asyncio.sleep(self.delay * 2)
+                continue
+
+            results = (data.get("serp") or {}).get("results") or []
+            if not results:
+                break
+
+            page_new = 0
+            for result in results:
+                if not isinstance(result, dict):
+                    continue
+                mapped = map_ikman_serp_result(
+                    result,
+                    default_property_type=CATEGORY_PROPERTY_TYPE.get(category, "house"),
+                )
+                if not mapped:
+                    continue
+                found += 1
+                if self._upsert_mapped(mapped):
+                    page_new += 1
+                    new += 1
+
+            self.db.commit()
+            log.info(
+                "ikman_serp_page",
+                category=category,
+                location=location,
+                label=label,
+                page=page,
+                results=len(results),
+                new=page_new,
+            )
+
+            if page_new == 0:
+                dup_pages += 1
+                if dup_pages >= self.stop_after_dup_pages:
+                    break
+            else:
+                dup_pages = 0
+
+            pagination = data.get("pagination") or {}
+            token = pagination.get("next_page_token")
+            pages_total = int(pagination.get("pages") or page)
+            if not token and page >= pages_total:
+                break
+            # Safety: stop before the known API 500 wall on oversized shards
+            if page >= IKMAN_PAGE_SOFT_LIMIT + 50:
+                log.warning(
+                    "ikman_serp_soft_stop",
+                    category=category,
+                    location=location,
+                    label=label,
+                    page=page,
+                )
+                break
+            page += 1
+            await asyncio.sleep(self.delay)
+
+        return found, new
 
     def _upsert_mapped(self, mapped: dict[str, Any]) -> bool:
         now = datetime.utcnow()
@@ -464,72 +664,82 @@ class IkmanApiScraper:
         return exists is None
 
     async def scrape_serp(self, max_pages: int | None = None) -> tuple[int, int]:
+        """Island-wide per-category SERP (incremental / capped runs)."""
         page_cap = max_pages if max_pages is not None else self.max_pages
         total_found = 0
         total_new = 0
 
         async with httpx.AsyncClient(headers=self._headers(), timeout=40.0) as client:
             for category in self.categories:
-                page = 1
-                token = None
-                dup_pages = 0
-                while True:
-                    if page_cap and page > page_cap:
-                        break
-                    data = await self.fetch_serp_page(
-                        client, category=category, page=page, next_page_token=token
-                    )
-                    results = (data.get("serp") or {}).get("results") or []
-                    if not results:
-                        break
+                found, new = await self._scrape_serp_shard(
+                    client,
+                    category=category,
+                    location=None,
+                    label="island-wide",
+                    page_cap=page_cap,
+                )
+                total_found += found
+                total_new += new
 
-                    page_new = 0
-                    for result in results:
-                        if not isinstance(result, dict):
-                            continue
-                        mapped = map_ikman_serp_result(
-                            result,
-                            default_property_type=CATEGORY_PROPERTY_TYPE.get(category, "house"),
-                        )
-                        if not mapped:
-                            continue
-                        if mapped.get("is_short_term"):
-                            # Still store but flag in raw_json; cleaner detects short-term
-                            pass
-                        total_found += 1
-                        if self._upsert_mapped(mapped):
-                            page_new += 1
-                            total_new += 1
+        log.info("ikman_serp_done", found=total_found, new=total_new, mode="island")
+        return total_found, total_new
 
-                    self.db.commit()
-                    log.info(
-                        "ikman_serp_page",
+    async def scrape_serp_sharded(
+        self,
+        max_pages: int | None = None,
+        *,
+        categories: list[int] | None = None,
+    ) -> tuple[int, int]:
+        """Location-sharded SERP to bypass the ~page-500 API wall and max inventory."""
+        page_cap = max_pages if max_pages is not None else self.max_pages
+        cats = categories or self.categories
+        total_found = 0
+        total_new = 0
+
+        async with httpx.AsyncClient(headers=self._headers(), timeout=40.0) as client:
+            locations_by_id = await self.fetch_locations_tree(client)
+            for category in cats:
+                shards = await self.resolve_location_shards(
+                    client, category=category, locations_by_id=locations_by_id
+                )
+                log.info(
+                    "ikman_serp_shards",
+                    category=category,
+                    shards=len(shards),
+                )
+                for location, label in shards:
+                    found, new = await self._scrape_serp_shard(
+                        client,
                         category=category,
-                        page=page,
-                        results=len(results),
-                        new=page_new,
+                        location=location,
+                        label=label,
+                        page_cap=page_cap,
                     )
+                    total_found += found
+                    total_new += new
 
-                    if page_new == 0:
-                        dup_pages += 1
-                        if dup_pages >= self.stop_after_dup_pages:
-                            break
-                    else:
-                        dup_pages = 0
-
-                    pagination = data.get("pagination") or {}
-                    token = pagination.get("next_page_token")
-                    if not token and page >= int(pagination.get("pages") or page):
-                        break
-                    page += 1
-                    await asyncio.sleep(self.delay)
-
-        log.info("ikman_serp_done", found=total_found, new=total_new)
+        log.info("ikman_serp_done", found=total_found, new=total_new, mode="sharded")
         return total_found, total_new
 
 
-async def scrape_ikman_api(db: Session, max_pages: int | None = None) -> tuple[int, int]:
-    return await IkmanApiScraper(db).scrape_serp(max_pages=max_pages)
+def _truthy_env(name: str, default: str = "0") -> bool:
+    return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
+
+
+async def scrape_ikman_api(
+    db: Session,
+    max_pages: int | None = None,
+    *,
+    sharded: bool | None = None,
+    categories: list[int] | None = None,
+) -> tuple[int, int]:
+    scraper = IkmanApiScraper(db)
+    if categories is not None:
+        scraper.categories = categories
+    use_shards = _truthy_env("IKMAN_API_LOCATION_SHARD") if sharded is None else sharded
+    if use_shards:
+        return await scraper.scrape_serp_sharded(max_pages=max_pages, categories=categories)
+    return await scraper.scrape_serp(max_pages=max_pages)
 
 
 async def fetch_ikman_detail_attrs(ad_id: str) -> dict[str, Any]:

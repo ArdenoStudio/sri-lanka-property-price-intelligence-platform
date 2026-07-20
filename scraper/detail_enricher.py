@@ -364,11 +364,29 @@ class DetailEnricher:
                         "bathrooms": attrs.get("bathrooms"),
                         "raw_location": attrs.get("raw_location"),
                         "description": attrs.get("description"),
+                        "views": attrs.get("views"),
+                        "raw_size": attrs.get("raw_size"),
+                        "detail_raw_json": attrs.get("raw_json"),
                     }
             except Exception as e:
-                visited_ids.add(listing_id)
+                # Transport/HTTP failures: leave enrichment_attempted_at unset for retry.
+                retryable = e.__class__.__name__ in {
+                    "HTTPStatusError",
+                    "HTTPError",
+                    "TimeoutException",
+                    "ConnectError",
+                    "ReadTimeout",
+                    "ConnectTimeout",
+                }
+                if not retryable:
+                    visited_ids.add(listing_id)
                 stats["errors"] += 1
-                log.debug("ikman_detail_api_error", ad_id=ad_id, error=str(e))
+                log.debug(
+                    "ikman_detail_api_error",
+                    ad_id=ad_id,
+                    error=str(e),
+                    retryable=retryable,
+                )
             await asyncio.sleep(delay)
 
         self._write_enrichment_results(results, visited_ids, stats)
@@ -401,30 +419,54 @@ class DetailEnricher:
                 if attrs.get("bathrooms") and listing.bathrooms is None:
                     listing.bathrooms = attrs["bathrooms"]
                     changed = True
+                raw = self.db.get(RawListing, listing.raw_id) if listing.raw_id else None
+                if attrs.get("description") and raw and (
+                    not raw.description or len(attrs["description"]) > len(raw.description or "")
+                ):
+                    raw.description = attrs["description"]
+                    changed = True
+                if attrs.get("raw_size") and raw and not raw.raw_size:
+                    raw.raw_size = attrs["raw_size"]
+                    changed = True
+
+                # Merge detail fields (views, properties) into raw_json
+                if raw and (attrs.get("views") is not None or attrs.get("detail_raw_json")):
+                    payload = dict(raw.raw_json) if isinstance(raw.raw_json, dict) else {}
+                    if attrs.get("views") is not None:
+                        payload["views"] = attrs["views"]
+                    detail_json = attrs.get("detail_raw_json")
+                    if isinstance(detail_json, dict):
+                        if detail_json.get("properties"):
+                            payload["properties"] = detail_json["properties"]
+                        if detail_json.get("statistics"):
+                            payload["statistics"] = detail_json["statistics"]
+                    payload["detail_enriched_at"] = now.isoformat()
+                    raw.raw_json = payload
+                    changed = True
+
                 if attrs.get("raw_location"):
                     raw_location = str(attrs["raw_location"]).strip()
                     if raw_location and raw_location != (listing.raw_location or ""):
                         listing.raw_location = raw_location
                         changed = True
-                    raw = self.db.get(RawListing, listing.raw_id) if listing.raw_id else None
                     title = raw.title if raw else ""
                     if raw and raw_location != (raw.raw_location or ""):
                         raw.raw_location = raw_location
-                        if attrs.get("description") and not raw.description:
-                            raw.description = attrs["description"]
-                        self.db.add(raw)
-                    district, city, confidence = cleaner.parse_location(raw_location, title)
-                    if district and (listing.district != district or not listing.city):
-                        location = cleaner._get_or_create_location(district, city, confidence)
-                        listing.district = district
-                        if city:
-                            listing.city = city
-                        listing.geocode_confidence = confidence
-                        if location:
-                            listing.location_id = location.id
-                            listing.lat = location.lat
-                            listing.lng = location.lng
-                        changed = True
+                    if raw_location:
+                        district, city, confidence = cleaner.parse_location(raw_location, title)
+                        if district and (listing.district != district or not listing.city):
+                            location = cleaner._get_or_create_location(district, city, confidence)
+                            listing.district = district
+                            if city:
+                                listing.city = city
+                            listing.geocode_confidence = confidence
+                            if location:
+                                listing.location_id = location.id
+                                listing.lat = location.lat
+                                listing.lng = location.lng
+                            changed = True
+                if raw:
+                    self.db.add(raw)
                 if (
                     listing.size_perches
                     and listing.price_per_perch
