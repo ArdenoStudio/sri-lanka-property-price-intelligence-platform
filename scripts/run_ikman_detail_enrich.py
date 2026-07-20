@@ -15,7 +15,44 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from db.connection import SessionLocal
+from db.models import Listing, RawListing
 from scraper.detail_enricher import DetailEnricher
+from sqlalchemy import and_, or_
+
+
+def _clear_false_attempt_stamps(db) -> int:
+    """Clear enrichment_attempted_at on ikman rows that never got detail fields.
+
+    An earlier bug stamped legacy non-hex IDs as attempted without calling the API.
+    """
+    q = (
+        db.query(Listing)
+        .join(RawListing, Listing.raw_id == RawListing.id)
+        .filter(
+            RawListing.source == "ikman",
+            Listing.enrichment_attempted_at.isnot(None),
+            Listing.size_perches.is_(None),
+            Listing.size_sqft.is_(None),
+            or_(
+                Listing.bedrooms.is_(None),
+                Listing.property_type.notin_(["house", "apartment"]),
+            ),
+        )
+    )
+    # Only clear when description also missing (never wrote detail payload)
+    cleared = 0
+    for listing in q.limit(5000).all():
+        raw = db.get(RawListing, listing.raw_id) if listing.raw_id else None
+        if raw and raw.description:
+            continue
+        payload = raw.raw_json if raw and isinstance(raw.raw_json, dict) else {}
+        if payload.get("views") is not None or payload.get("detail_enriched_at"):
+            continue
+        listing.enrichment_attempted_at = None
+        cleared += 1
+    if cleared:
+        db.commit()
+    return cleared
 
 
 async def main() -> None:
@@ -34,7 +71,14 @@ async def main() -> None:
     os.environ["ENRICHER_SOURCES"] = "ikman"
     os.environ["ENRICHER_MAX_PER_RUN"] = str(args.max_per_run)
 
-    total = {"visited": 0, "enriched": 0, "errors": 0}
+    db = SessionLocal()
+    try:
+        cleared = _clear_false_attempt_stamps(db)
+        print(f"cleared_false_attempt_stamps={cleared}", flush=True)
+    finally:
+        db.close()
+
+    total = {"visited": 0, "enriched": 0, "errors": 0, "skipped_no_hex": 0}
     for batch in range(1, args.batches + 1):
         db = SessionLocal()
         try:
@@ -46,11 +90,16 @@ async def main() -> None:
             print(
                 f"batch={batch} visited={stats.get('visited')} "
                 f"enriched={stats.get('enriched')} errors={stats.get('errors')} "
-                f"ikman_api={stats.get('ikman_api')}",
+                f"ikman_api={stats.get('ikman_api')} "
+                f"skipped_no_hex={stats.get('skipped_no_hex')}",
                 flush=True,
             )
-            if int(stats.get("visited") or 0) == 0:
+            if int(stats.get("visited") or 0) == 0 and int(stats.get("skipped_no_hex") or 0) == 0:
                 print("nothing_left", flush=True)
+                break
+            # If we only skipped legacy IDs, stop — SERP catch-up will add hex rows.
+            if int(stats.get("visited") or 0) == 0 and int(stats.get("skipped_no_hex") or 0) > 0:
+                print("only_legacy_non_hex_remaining", flush=True)
                 break
         finally:
             db.close()

@@ -336,21 +336,36 @@ class DetailEnricher:
             ),
         )
 
+    @staticmethod
+    def _resolve_ikman_ad_id(source_id: str | None, raw_json) -> str | None:
+        """Prefer 24-char hex source_id; fall back to raw_json.hex_id."""
+        if source_id and re.fullmatch(r"[0-9a-f]{24}", str(source_id)):
+            return str(source_id)
+        payload = raw_json if isinstance(raw_json, dict) else {}
+        hex_id = payload.get("hex_id")
+        if hex_id and re.fullmatch(r"[0-9a-f]{24}", str(hex_id)):
+            return str(hex_id)
+        return None
+
     async def _enrich_ikman_via_api(self, rows: list) -> dict:
-        """rows: list of (listing_id, source_id, url)."""
+        """rows: list of (listing_id, source_id, url, raw_json)."""
         from scraper.ikman_api import fetch_ikman_detail_attrs
 
-        stats = {"visited": 0, "enriched": 0, "errors": 0}
+        stats = {"visited": 0, "enriched": 0, "errors": 0, "skipped_no_hex": 0}
         results: dict[int, dict] = {}
         visited_ids: set[int] = set()
         delay = float(os.getenv("IKMAN_API_DELAY_SECONDS", "0.4"))
 
-        for listing_id, source_id, url in rows:
-            ad_id = source_id
-            if not ad_id or not re.fullmatch(r"[0-9a-f]{24}", str(ad_id)):
-                # Try slug path still works if API accepts hex only — skip non-hex
-                stats["errors"] += 1
-                visited_ids.add(listing_id)
+        for row in rows:
+            if len(row) >= 4:
+                listing_id, source_id, url, raw_json = row[0], row[1], row[2], row[3]
+            else:
+                listing_id, source_id, url = row[0], row[1], row[2]
+                raw_json = None
+            ad_id = self._resolve_ikman_ad_id(source_id, raw_json)
+            if not ad_id:
+                # Legacy digit IDs without hex — do NOT stamp attempted (retry after bridge).
+                stats["skipped_no_hex"] += 1
                 continue
             try:
                 attrs = await fetch_ikman_detail_attrs(str(ad_id))
@@ -499,7 +514,13 @@ class DetailEnricher:
             sources = ["ikman", "lpw", "lamudi"]
 
         raw_rows = (
-            self.db.query(Listing.id, RawListing.url, RawListing.source, Listing.source_id)
+            self.db.query(
+                Listing.id,
+                RawListing.url,
+                RawListing.source,
+                Listing.source_id,
+                RawListing.raw_json,
+            )
             .join(RawListing, Listing.raw_id == RawListing.id)
             .filter(
                 Listing.is_outlier == False,
@@ -518,17 +539,17 @@ class DetailEnricher:
             log.info("detail_enricher_nothing_to_do")
             return {"visited": 0, "enriched": 0}
 
-        stats = {"visited": 0, "enriched": 0, "errors": 0, "ikman_api": 0}
+        stats = {"visited": 0, "enriched": 0, "errors": 0, "ikman_api": 0, "skipped_no_hex": 0}
 
         if use_ikman_detail_api():
             ikman_rows = [
-                (lid, source_id, url)
-                for lid, url, source, source_id in raw_rows
+                (lid, source_id, url, raw_json)
+                for lid, url, source, source_id, raw_json in raw_rows
                 if source == "ikman"
             ]
             other_rows = [
                 (lid, url, source)
-                for lid, url, source, source_id in raw_rows
+                for lid, url, source, source_id, _raw_json in raw_rows
                 if source != "ikman"
             ]
             if ikman_rows:
@@ -536,10 +557,13 @@ class DetailEnricher:
                 stats["visited"] += api_stats["visited"]
                 stats["enriched"] += api_stats["enriched"]
                 stats["errors"] += api_stats["errors"]
+                stats["skipped_no_hex"] = api_stats.get("skipped_no_hex", 0)
                 stats["ikman_api"] = api_stats["visited"]
             raw_rows = other_rows
         else:
-            raw_rows = [(lid, url, source) for lid, url, source, _sid in raw_rows]
+            raw_rows = [
+                (lid, url, source) for lid, url, source, _sid, _rj in raw_rows
+            ]
 
         if not raw_rows:
             log.info("detail_enricher_done", **stats)
