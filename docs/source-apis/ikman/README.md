@@ -1,5 +1,8 @@
 # ikman.lk — unofficial API map
 
+> **Portable docs kit:** [`ikman-api-docs/`](../../../ikman-api-docs/) — cse-api-docs-shaped
+> catalog, probe harness, samples, and static site (ready to split into its own UI/repo).
+
 **Base:** `https://api.ikman.lk`  
 **Also:** HTML pages set `window.apiURL = "https://api.ikman.lk"` and embed `window.initialData` (same shape as SERP/detail).
 

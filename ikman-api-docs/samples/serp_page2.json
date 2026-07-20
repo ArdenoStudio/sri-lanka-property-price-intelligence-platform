@@ -1,0 +1,473 @@
+{
+  "_probe": {
+    "id": "serp_page2",
+    "url": "https://api.ikman.lk/v1/serp?category=409&page=2&next_page_token=1784523835",
+    "method": "GET",
+    "status": 200,
+    "verified_at": "2026-07-20T05:04:02.247898+00:00",
+    "fingerprint": {
+      "type": "object",
+      "keys": [
+        "pagination",
+        "serp"
+      ]
+    }
+  },
+  "response": {
+    "pagination": {
+      "page": 2,
+      "per_page": 25,
+      "total": 65664,
+      "pages": 2627,
+      "next_page_url": "https://api.ikman.lk/v1/serp?category=409&page=3&next_page_token=1784523835",
+      "next_page_token": "1784523835"
+    },
+    "serp": {
+      "categories": [
+        {
+          "id": 942,
+          "name": "Land For Sale",
+          "count": 31686
+        },
+        {
+          "id": 415,
+          "name": "Houses For Sale",
+          "count": 19293
+        },
+        {
+          "id": 416,
+          "name": "House Rentals",
+          "count": 3637
+        },
+        {
+          "id": 937,
+          "name": "Apartments For Sale",
+          "count": 3184
+        },
+        {
+          "id": 940,
+          "name": "Commercial Property Rentals",
+          "count": 2565
+        },
+        {
+          "id": 938,
+          "name": "Apartment Rentals",
+          "count": 2314
+        },
+        {
+          "id": 939,
+          "name": "Commercial Properties For Sale",
+          "count": 1605
+        },
+        {
+          "id": 413,
+          "name": "Room & Annex Rentals",
+          "count": 773
+        },
+        {
+          "id": 936,
+          "name": "Holiday & Short-Term Rental",
+          "count": 421
+        },
+        {
+          "id": 943,
+          "name": "Land Rentals",
+          "count": 186
+        }
+      ],
+      "locations": [
+        {
+          "id": 1506,
+          "name": "Colombo",
+          "count": 41301
+        },
+        {
+          "id": 1577,
+          "name": "Gampaha",
+          "count": 11662
+        },
+        {
+          "id": 1620,
+          "name": "Kalutara",
+          "count": 3381
+        },
+        {
+          "id": 1636,
+          "name": "Kandy",
+          "count": 1361
+        },
+        {
+          "id": 1674,
+          "name": "Kurunegala",
+          "count": 1327
+        },
+        {
+          "id": 1432,
+          "name": "Ampara",
+          "count": 81
+        },
+        {
+          "id": 1452,
+          "name": "Anuradhapura",
+          "count": 596
+        },
+        {
+          "id": 1475,
+          "name": "Badulla",
+          "count": 331
+        },
+        {
+          "id": 1491,
+          "name": "Batticaloa",
+          "count": 127
+        },
+        {
+          "id": 1559,
+          "name": "Galle",
+          "count": 1245
+        },
+        {
+          "id": 1592,
+          "name": "Hambantota",
+          "count": 797
+        },
+        {
+          "id": 1605,
+          "name": "Jaffna",
+          "count": 206
+        },
+        {
+          "id": 1658,
+          "name": "Kegalle",
+          "count": 209
+        },
+        {
+          "id": 1670,
+          "name": "Kilinochchi",
+          "count": 22
+        },
+        {
+          "id": 1706,
+          "name": "Mannar",
+          "count": 11
+        },
+        {
+          "id": 1712,
+          "name": "Matale",
+          "count": 338
+        },
+        {
+          "id": 1724,
+          "name": "Matara",
+          "count": 1269
+        },
+        {
+          "id": 1740,
+          "name": "Monaragala",
+          "count": 120
+        },
+        {
+          "id": 1752,
+          "name": "Mullativu",
+          "count": 2
+        },
+        {
+          "id": 1757,
+          "name": "Nuwara Eliya",
+          "count": 613
+        },
+        {
+          "id": 1763,
+          "name": "Polonnaruwa",
+          "count": 56
+        },
+        {
+          "id": 1771,
+          "name": "Puttalam",
+          "count": 334
+        },
+        {
+          "id": 1788,
+          "name": "Ratnapura",
+          "count": 178
+        },
+        {
+          "id": 1806,
+          "name": "Trincomalee",
+          "count": 77
+        },
+        {
+          "id": 1818,
+          "name": "Vavuniya",
+          "count": 20
+        }
+      ],
+      "types": [
+        {
+          "key": "for_sale",
+          "count": 55633
+        },
+        {
+          "key": "to_buy",
+          "count": 135
+        },
+        {
+          "key": "for_rent",
+          "count": 9635
+        },
+        {
+          "key": "to_rent",
+          "count": 261
+        }
+      ],
+      "sort_options": [
+        "price",
+        "date"
+      ],
+      "sort_option": "date",
+      "sort_order": "desc",
+      "top_ads": [],
+      "spotlights": [],
+      "buy_now_filter": {
+        "applicable": false
+      },
+      "enhancements": {
+        "cars": false,
+        "properties": false,
+        "jobs": false
+      },
+      "results": [
+        {
+          "id": "6a4f40523de4f75fa1fb6714",
+          "slug": "high-floor-2br-apartment-for-sale-at-trizen-only-lkr-695-million-for-sale-colombo",
+          "title": "High-Floor 2BR Apartment for Sale at Trizen – Only LKR 69.5 Million",
+          "type": "for_sale",
+          "date": "2026-07-09T12:01:46+05:30",
+          "deactivates": "2026-09-07T12:01:46+05:30",
+          "area": {
+            "id": 1506,
+            "name": "Colombo"
+          },
+          "location": {
+            "id": 1513,
+            "name": "Colombo 2"
+          },
+          "category": {
+            "id": 937,
+            "name": "Apartments For Sale"
+          },
+          "contact_card": {
+            "chat_enabled": true,
+            "delivery_methods": [],
+            "account_type": "private",
+            "opt_out": true,
+            "_redacted": true
+          },
+          "features": {
+            "buy_now": false,
+            "listing_fee": false
+          },
+          "by_paying_member": true,
+          "by_authorized_dealer": false,
+          "by_featured_member": false,
+          "membership_details": {
+            "level": "plus"
+          },
+          "info": "Rs 69,500,000",
+          "status": "published",
+          "details": [
+            "Bedrooms: 2",
+            "Bathrooms: 2"
+          ],
+          "url": "http://ikman.lk/en/ad/high-floor-2br-apartment-for-sale-at-trizen-only-lkr-695-million-for-sale-colombo",
+          "images": {
+            "ids": [
+              "cd8778e1-6a6f-402c-b797-2c63d9bb5758",
+              "144d1147-ebcb-4468-bb9b-7fa69e8068fe",
+              "4023966f-0d72-4d9b-b8e6-1c5f61beabfb",
+              "7624fb1e-66d5-463e-b7d0-3bc496b8cbbc",
+              "1a33a8ea-f159-4a85-ac7c-4d875dfe5b3f"
+            ],
+            "base_uri": "https://i.ikman-st.com"
+          },
+          "account": "[redacted]",
+          "promotions": {
+            "top_ad": false,
+            "bump_up": false,
+            "urgent_ad": false,
+            "spotlight": false,
+            "featured_ad": true
+          },
+          "display_preferences": {
+            "use_featured_ads_ui": true
+          },
+          "money": {
+            "label": "Price",
+            "amount": "Rs 69,500,000"
+          },
+          "layouts": {
+            "classic": {
+              "info": "Rs 69,500,000",
+              "subtitle": "Tri-Zen",
+              "details": [
+                "Bedrooms: 2",
+                "Bathrooms: 2"
+              ],
+              "serp_images_enabled": true
+            },
+            "single_column": {
+              "info": "Rs 69,500,000",
+              "subtitle": "Tri-Zen",
+              "details": [
+                "746 sqft",
+                "Bedrooms: 2",
+                "Bathrooms: 2"
+              ],
+              "serp_images_enabled": true
+            },
+            "fluid": {
+              "info": "Rs 69,500,000",
+              "subtitle": "Tri-Zen",
+              "details": [],
+              "serp_images_enabled": true
+            }
+          },
+          "shop": {
+            "id": "65ea912ee760e700018d6384",
+            "slug": "nire-realtors",
+            "name": "Nire Realtors",
+            "tagline": "Where Dreams Come Home",
+            "description": "Giving you the perfect property solutions so that you can spend your time comfortably, enjoyably, and safely among the sole asset where your investment lasts for generations.\r\n\r\nFor any clarifications please contact us and we are more than happy to resolve an issues or problems you may face and serve you well.",
+            "logo": {
+              "id": "6902a0f5-9c7a-4112-af8a-35fdfb93e34f",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "banner": {
+              "id": "3bc02807-c71b-4df3-a55d-605cb8a94987",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "contact_card": {
+              "_redacted": true
+            },
+            "job_page": false,
+            "location_id": 2179
+          }
+        },
+        {
+          "id": "6a5da8a64b503fc5e35d28d4",
+          "slug": "bttkaaettr-pilliyndl-agnaa-neevaasik-bim-kotts-for-sale-colombo",
+          "title": "බටකෑත්තර පිළියන්දල අගනා නේවාසික බිම් කොටස්",
+          "type": "for_sale",
+          "date": "2026-07-20T10:25:23+05:30",
+          "deactivates": "2026-09-18T10:25:23+05:30",
+          "area": {
+            "id": 1506,
+            "name": "Colombo"
+          },
+          "location": {
+            "id": 1553,
+            "name": "Piliyandala"
+          },
+          "category": {
+            "id": 942,
+            "name": "Land For Sale"
+          },
+          "contact_card": {
+            "chat_enabled": true,
+            "delivery_methods": [],
+            "account_type": "private",
+            "opt_out": true,
+            "_redacted": true
+          },
+          "features": {
+            "buy_now": false,
+            "listing_fee": false
+          },
+          "by_paying_member": true,
+          "by_authorized_dealer": false,
+          "by_featured_member": false,
+          "membership_details": {
+            "level": "premium"
+          },
+          "info": "Rs 1,075,000 per perch",
+          "status": "published",
+          "details": [
+            "6.2 perches"
+          ],
+          "url": "http://ikman.lk/en/ad/bttkaaettr-pilliyndl-agnaa-neevaasik-bim-kotts-for-sale-colombo",
+          "images": {
+            "ids": [
+              "faf3c8f0-e913-4487-9fc6-f3dc646dfcd1",
+              "7ac81b98-9870-45d3-9efa-adcc9976c9ce",
+              "5e7601b5-6ce4-4a71-bc9a-1f152b73824d",
+              "e303ead4-59fe-48bd-a11e-ea1c7386391f",
+              "e2ed7f5a-707c-42b6-8e6b-e50f26ff7858",
+              "97a33df0-b074-45b0-a3e6-0a3ed82c02e9"
+            ],
+            "base_uri": "https://i.ikman-st.com"
+          },
+          "account": "[redacted]",
+          "promotions": {
+            "top_ad": false,
+            "bump_up": false,
+            "urgent_ad": false,
+            "spotlight": false,
+            "featured_ad": false
+          },
+          "money": {
+            "label": "Price",
+            "negotiable": "Negotiable",
+            "amount": "Rs 1,075,000 per perch"
+          },
+          "layouts": {
+            "classic": {
+              "info": "Rs 1,075,000 per perch",
+              "details": [
+                "6.2 perches"
+              ],
+              "serp_images_enabled": true
+            },
+            "single_column": {
+              "info": "Rs 1,075,000 per perch",
+              "details": [
+                "6.2 perches",
+                "Residential"
+              ],
+              "serp_images_enabled": true
+            },
+            "fluid": {
+              "info": "Rs 1,075,000 per perch",
+              "details": [],
+              "serp_images_enabled": true
+            }
+          },
+          "shop": {
+            "id": "6204e6b6dee69f0001036e7b",
+            "slug": "empire-lands-n-property-developers",
+            "name": "Empire Lands & Property Developers",
+            "tagline": "Where Dreams Come Home",
+            "description": "Giving you the perfect property solutions so that you can spend your time comfortably, enjoyably, and safely among the sole asset where your investment lasts for generations.\r\n\r\nFor any clarifications please contact us and we are more than happy to resolve an issues or problems you may face and serve you well.",
+            "logo": {
+              "id": "014d5678-afea-4580-bce1-3a3b48065b87",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "banner": {
+              "id": "6e2c88a7-892d-47ee-82cb-93bc5f2605b8",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "contact_card": {
+              "_redacted": true
+            },
+            "job_page": false,
+            "location_id": 1508
+          }
+        }
+      ]
+    },
+    "_truncated": {
+      "list_key": "_serp_results",
+      "kept": 2,
+      "original_len": 26
+    }
+  }
+}

@@ -1,0 +1,295 @@
+{
+  "_probe": {
+    "id": "locations",
+    "url": "https://api.ikman.lk/v1/locations",
+    "method": "GET",
+    "status": 200,
+    "verified_at": "2026-07-20T05:03:54.423777+00:00",
+    "fingerprint": {
+      "type": "object",
+      "keys": [
+        "groups",
+        "locations"
+      ]
+    }
+  },
+  "response": {
+    "locations": [
+      {
+        "id": 1506,
+        "children": [
+          1549,
+          1541,
+          1514,
+          1553,
+          1527,
+          1540,
+          1532,
+          1508,
+          1545,
+          1507,
+          1542,
+          1511,
+          1517,
+          1554,
+          2173,
+          1551,
+          1534,
+          1555,
+          1516,
+          2179,
+          1515,
+          2154,
+          1546,
+          2151,
+          1519,
+          1523,
+          1521,
+          1513,
+          2129,
+          2132,
+          1522,
+          1524,
+          2130,
+          2131,
+          1548,
+          1518,
+          1537,
+          1520,
+          1526,
+          1536,
+          1525,
+          1530,
+          1550,
+          1512,
+          2182,
+          2183,
+          2180,
+          2187,
+          2185,
+          2186,
+          2184
+        ],
+        "name": "Colombo",
+        "geography": {
+          "simple_polygons": [
+            {
+              "coordinates": [
+                {
+                  "latitude": 7.0046739,
+                  "longitude": 79.7998471
+                },
+                {
+                  "latitude": 6.7759989,
+                  "longitude": 79.8686274
+                },
+                {
+                  "latitude": 6.7851197,
+                  "longitude": 80.2225961
+                },
+                {
+                  "latitude": 6.8882788,
+                  "longitude": 80.1865805
+                },
+                {
+                  "latitude": 6.8833798,
+                  "longitude": 80.2077149
+                },
+                {
+                  "latitude": 6.9965688,
+                  "longitude": 80.2042819
+                },
+                {
+                  "latitude": 6.9682779,
+                  "longitude": 79.9754255
+                }
+              ]
+            }
+          ]
+        },
+        "geo_region": "LK-11",
+        "slug": "colombo"
+      },
+      {
+        "id": 1577,
+        "children": [
+          1582,
+          1590,
+          1586,
+          1591,
+          2303,
+          1583,
+          2342,
+          1585,
+          2308,
+          1588,
+          2355,
+          2311,
+          2282,
+          2370,
+          2369,
+          2292,
+          1580,
+          1589,
+          1703,
+          1702,
+          1597,
+          1598,
+          1701,
+          1707,
+          1709,
+          1713,
+          1705,
+          1599,
+          1600,
+          1700,
+          1711
+        ],
+        "name": "Gampaha",
+        "geography": {
+          "simple_polygons": [
+            {
+              "coordinates": [
+                {
+                  "latitude": 7.272027,
+                  "longitude": 79.75666
+                },
+                {
+                  "latitude": 6.989514,
+                  "longitude": 79.829041
+                },
+                {
+                  "latitude": 6.959255,
+                  "longitude": 79.979614
+                },
+                {
+                  "latitude": 6.987546,
+                  "longitude": 80.208466
+                },
+                {
+                  "latitude": 7.305431,
+                  "longitude": 80.19751
+                }
+              ]
+            }
+          ]
+        },
+        "geo_region": "LK-12",
+        "slug": "gampaha"
+      }
+    ],
+    "groups": [
+      {
+        "type": "region",
+        "name": "Districts",
+        "items": [
+          {
+            "location": 1506,
+            "emphasize": true
+          },
+          {
+            "location": 1636,
+            "emphasize": true
+          },
+          {
+            "location": 1559,
+            "emphasize": true
+          },
+          {
+            "location": 1432,
+            "emphasize": false
+          },
+          {
+            "location": 1452,
+            "emphasize": false
+          },
+          {
+            "location": 1475,
+            "emphasize": false
+          },
+          {
+            "location": 1491,
+            "emphasize": false
+          },
+          {
+            "location": 1577,
+            "emphasize": false
+          },
+          {
+            "location": 1592,
+            "emphasize": false
+          },
+          {
+            "location": 1605,
+            "emphasize": false
+          },
+          {
+            "location": 1620,
+            "emphasize": false
+          },
+          {
+            "location": 1658,
+            "emphasize": false
+          },
+          {
+            "location": 1670,
+            "emphasize": false
+          },
+          {
+            "location": 1674,
+            "emphasize": false
+          },
+          {
+            "location": 1706,
+            "emphasize": false
+          },
+          {
+            "location": 1712,
+            "emphasize": false
+          },
+          {
+            "location": 1724,
+            "emphasize": false
+          },
+          {
+            "location": 1740,
+            "emphasize": false
+          },
+          {
+            "location": 1752,
+            "emphasize": false
+          },
+          {
+            "location": 1757,
+            "emphasize": false
+          },
+          {
+            "location": 1763,
+            "emphasize": false
+          },
+          {
+            "location": 1771,
+            "emphasize": false
+          },
+          {
+            "location": 1788,
+            "emphasize": false
+          },
+          {
+            "location": 1806,
+            "emphasize": false
+          },
+          {
+            "location": 1818,
+            "emphasize": false
+          }
+        ]
+      }
+    ],
+    "_truncated": {
+      "list_key": "locations",
+      "kept": 2,
+      "original_len": 331
+    }
+  }
+}

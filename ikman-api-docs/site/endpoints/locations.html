@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>locations · ikman API Docs (unofficial)</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #111111;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --accent: #e5e5e5;
+  --bad: #f5a5a5;
+  --ok: #c8f0c8;
+  --border: rgba(255,255,255,0.1);
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.55;
+}
+a { color: #ffffff; text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--muted); }
+header {
+  padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #151515, var(--bg));
+}
+header h1 { margin: 0 0 .35rem; font-size: 1.6rem; letter-spacing: -.02em; }
+header p { margin: 0; color: var(--muted); max-width: 52rem; }
+nav {
+  display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--border); background: var(--panel);
+  position: sticky; top: 0; z-index: 2;
+}
+nav a { text-decoration: none; color: var(--muted); }
+nav a:hover { color: var(--text); }
+main { padding: 1.25rem; max-width: 960px; margin: 0 auto; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.1rem; margin: 0 0 1rem;
+}
+.card h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.meta { color: var(--muted); font-size: .92rem; }
+.badge {
+  display: inline-block; font-size: .75rem; padding: .15rem .45rem;
+  border-radius: 999px; border: 1px solid var(--border); margin-right: .35rem;
+  font-family: var(--mono);
+}
+.badge.ok { color: var(--ok); border-color: #356b3d; }
+.badge.bad { color: var(--bad); border-color: #7a3b3b; }
+.badge.cat { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: .45rem .4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+code, pre { font-family: var(--mono); font-size: .85rem; }
+pre {
+  background: #050505; border: 1px solid var(--border); border-radius: 8px;
+  padding: .85rem; overflow: auto; max-height: 320px;
+}
+footer { padding: 2rem 1.25rem; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+h3 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .85rem; }
+.stat b { display: block; font-size: 1.4rem; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Unofficial ikman API Docs</h1>
+  <p>Live-probed documentation for <code>https://api.ikman.lk</code>. Not affiliated with ikman / Saltside.</p>
+</header>
+
+<nav>
+  <a href="../index.html">Home</a>
+  <a href="../endpoints/index.html">Endpoints</a>
+  <a href="../limitations.html">Limitations</a>
+  <a href="../ethics.html">Ethics</a>
+  <a href="../examples.html">Examples</a>
+  <a href="../probe.html">Last probe</a>
+  <a href="../changelog.html">Changelog</a>
+</nav>
+<main>
+
+<div class="card">
+  <h2><code>locations</code></h2>
+  <p>District/city tree with slug and geo_region (e.g. LK-11).</p>
+  <p class="meta">
+    <span class="badge cat">meta</span>
+    <span class="badge">GET</span>
+    <code>/v1/locations</code>
+  </p>
+  <p class="meta">Last probe:
+    ✅ 200
+  </p>
+  <h3>curl</h3>
+  <pre><code>curl -sS &#x27;https://api.ikman.lk/v1/locations&#x27; \
+  -H &#x27;Accept: application/json&#x27; \
+  -H &#x27;Application: web&#x27;</code></pre>
+  <h3>Notable fields</h3><ul><li><code>locations[].id</code></li><li><code>locations[].name</code></li><li><code>locations[].slug</code></li><li><code>locations[].geo_region</code></li><li><code>locations[].children[]</code></li></ul>
+  
+  <h3>Sample</h3>
+  <pre><code>{
+  &quot;_probe&quot;: {
+    &quot;id&quot;: &quot;locations&quot;,
+    &quot;url&quot;: &quot;https://api.ikman.lk/v1/locations&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;status&quot;: 200,
+    &quot;verified_at&quot;: &quot;2026-07-20T05:03:54.423777+00:00&quot;,
+    &quot;fingerprint&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;keys&quot;: [
+        &quot;groups&quot;,
+        &quot;locations&quot;
+      ]
+    }
+  },
+  &quot;response&quot;: {
+    &quot;locations&quot;: [
+      {
+        &quot;id&quot;: 1506,
+        &quot;children&quot;: [
+          1549,
+          1541,
+          1514,
+          1553,
+          1527,
+          1540,
+          1532,
+          1508,
+          1545,
+          1507,
+          1542,
+          1511,
+          1517,
+          1554,
+          2173,
+          1551,
+          1534,
+          1555,
+          1516,
+          2179,
+          1515,
+          2154,
+          1546,
+          2151,
+          1519,
+          1523,
+          1521,
+          1513,
+          2129,
+          2132,
+          1522,
+          1524,
+          2130,
+          2131,
+          1548,
+          1518,
+          1537,
+          1520,
+          1526,
+          1536,
+          1525,
+          1530,
+          1550,
+          1512,
+          2182,
+          2183,
+          2180,
+          2187,
+          2185,
+          2186,
+          2184
+        ],
+        &quot;name&quot;: &quot;Colombo&quot;,
+        &quot;geography&quot;: {
+          &quot;simple_polygons&quot;: [
+            {
+              &quot;coordinates&quot;: [
+                {
+                  &quot;latitude&quot;: 7.0046739,
+                  &quot;longitude&quot;: 79.7998471
+                },
+                {
+                  &quot;latitude&quot;: 6.7759989,
+                  &quot;longitude&quot;: 79.8686274
+                },
+                {
+                  &quot;latitude&quot;: 6.7851197,
+                  &quot;longitude&quot;: 80.2225961
+                },
+                {
+                  &quot;latitude&quot;: 6.8882788,
+                  &quot;longitude&quot;: 80.1865805
+                },
+                {
+                  &quot;latitude&quot;: 6.8833798,
+                  &quot;longitude&quot;: 80.2077149
+                },
+                {
+                  &quot;latitude&quot;: 6.9965688,
+                  &quot;longitude&quot;: 80.2042819
+                },
+                {
+                  &quot;latitude&quot;: 6.9682779,
+                  &quot;longitude&quot;: 79.9754255
+                }
+              ]
+            }
+          ]
+        },
+        &quot;geo_region&quot;: &quot;LK-11&quot;,
+        &quot;slug&quot;: &quot;colombo&quot;
+      },
+      {
+        &quot;id&quot;: 1577,
+        &quot;children&quot;: [
+          1582,
+          1590,
+          1586,
+          1591,
+          2303,
+          1583,
+          2342,
+          1585,
+          2308,
+          1588,
+          2355,
+          2311,
+          2282,
+          2370,
+          2369,
+          2292,
+          1580,
+          1589,
+          1703,
+          1702,
+          1597,
+          1598,
+          1701,
+          1707,
+          1709,
+          1713,
+          1705,
+          1599,
+          1600,
+          1700,
+          1711
+        ],
+        &quot;name&quot;: &quot;Gampaha&quot;,
+        &quot;geography&quot;: {
+          &quot;simple_polygons&quot;: [
+            {
+              &quot;coordinates&quot;: [
+                {
+                  &quot;latitude&quot;: 7.272027,
+                  &quot;longitude&quot;: 79.75666
+                },
+                {
+                  &quot;latitude&quot;: 6.989514,
+                  &quot;longitude&quot;: 79.829041
+                },
+                {
+                  &quot;latitude&quot;: 6.959255,
+                  &quot;longitude&quot;: 79.979614
+                },
+                {
+                  &quot;latitude&quot;: 6.987546,
+                  &quot;longitude&quot;: 80.208466
+                },
+                {
+                  &quot;latitude&quot;: 7.305431,
+                  &quot;longitude&quot;: 80.19751
+                }
+              ]
+            }
+          ]
+        },
+        &quot;geo_region&quot;: &quot;LK-12&quot;,
+        &quot;slug&quot;: &quot;gampaha&quot;
+      }
+    ],
+    &quot;groups&quot;: [
+      {
+        &quot;type&quot;: &quot;region&quot;,
+        &quot;name&quot;: &quot;Districts&quot;,
+        &quot;items&quot;: [
+          {
+            &quot;location&quot;: 1506,
+            &quot;emphasize&quot;: true
+          },
+          {
+            &quot;location&quot;: 1636,
+            &quot;emphasize&quot;: true
+          },
+          {
+            &quot;location&quot;: 1559,
+            &quot;emphasize&quot;: true
+          },
+          {
+            &quot;location&quot;: 1432,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1452,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1475,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1491,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1577,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1592,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1605,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1620,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1658,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1670,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1674,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1706,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1712,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1724,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1740,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1752,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1757,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1763,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1771,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1788,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1806,
+            &quot;emphasize&quot;: false
+          },
+          {
+            &quot;location&quot;: 1818,
+            &quot;emphasize&quot;: false
+          }
+        ]
+      }
+    ],
+    &quot;_truncated&quot;: {
+      &quot;list_key&quot;: &quot;locations&quot;,
+      &quot;kept&quot;: 2,
+      &quot;original_len&quot;: 331
+    }
+  }
+}
+</code></pre>
+</div>
+
+</main>
+<footer>
+  MIT-licensed harness · Educational use · <a href="../ethics.html">Ethics</a> ·
+  Generated 2026-07-20 05:04 UTC
+</footer>
+</body>
+</html>

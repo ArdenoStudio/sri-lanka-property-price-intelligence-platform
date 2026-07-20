@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Endpoints · ikman API Docs (unofficial)</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #111111;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --accent: #e5e5e5;
+  --bad: #f5a5a5;
+  --ok: #c8f0c8;
+  --border: rgba(255,255,255,0.1);
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.55;
+}
+a { color: #ffffff; text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--muted); }
+header {
+  padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #151515, var(--bg));
+}
+header h1 { margin: 0 0 .35rem; font-size: 1.6rem; letter-spacing: -.02em; }
+header p { margin: 0; color: var(--muted); max-width: 52rem; }
+nav {
+  display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--border); background: var(--panel);
+  position: sticky; top: 0; z-index: 2;
+}
+nav a { text-decoration: none; color: var(--muted); }
+nav a:hover { color: var(--text); }
+main { padding: 1.25rem; max-width: 960px; margin: 0 auto; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.1rem; margin: 0 0 1rem;
+}
+.card h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.meta { color: var(--muted); font-size: .92rem; }
+.badge {
+  display: inline-block; font-size: .75rem; padding: .15rem .45rem;
+  border-radius: 999px; border: 1px solid var(--border); margin-right: .35rem;
+  font-family: var(--mono);
+}
+.badge.ok { color: var(--ok); border-color: #356b3d; }
+.badge.bad { color: var(--bad); border-color: #7a3b3b; }
+.badge.cat { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: .45rem .4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+code, pre { font-family: var(--mono); font-size: .85rem; }
+pre {
+  background: #050505; border: 1px solid var(--border); border-radius: 8px;
+  padding: .85rem; overflow: auto; max-height: 320px;
+}
+footer { padding: 2rem 1.25rem; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+h3 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .85rem; }
+.stat b { display: block; font-size: 1.4rem; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Unofficial ikman API Docs</h1>
+  <p>Live-probed documentation for <code>https://api.ikman.lk</code>. Not affiliated with ikman / Saltside.</p>
+</header>
+
+<nav>
+  <a href="../index.html">Home</a>
+  <a href="../endpoints/index.html">Endpoints</a>
+  <a href="../limitations.html">Limitations</a>
+  <a href="../ethics.html">Ethics</a>
+  <a href="../examples.html">Examples</a>
+  <a href="../probe.html">Last probe</a>
+  <a href="../changelog.html">Changelog</a>
+</nav>
+<main>
+<h2>Endpoint catalog</h2>
+<h3 id='auth_observed'>auth_observed</h3><table><tr><th>ID</th><th>Method</th><th>Path</th><th>Probe</th></tr>
+<tr><td><a href='ads_list_auth.html'><code>ads_list_auth</code></a></td><td>GET</td><td><code>/v1/ads</code></td><td><span class='badge ok'>400</span></td></tr>
+</table>
+<h3 id='detail'>detail</h3><table><tr><th>ID</th><th>Method</th><th>Path</th><th>Probe</th></tr>
+<tr><td><a href='ad_detail.html'><code>ad_detail</code></a></td><td>GET</td><td><code>/v1/ads/{{ad_id}}</code></td><td><span class='badge ok'>200</span></td></tr>
+</table>
+<h3 id='meta'>meta</h3><table><tr><th>ID</th><th>Method</th><th>Path</th><th>Probe</th></tr>
+<tr><td><a href='categories.html'><code>categories</code></a></td><td>GET</td><td><code>/v1/categories</code></td><td><span class='badge ok'>200</span></td></tr>
+<tr><td><a href='locations.html'><code>locations</code></a></td><td>GET</td><td><code>/v1/locations</code></td><td><span class='badge ok'>200</span></td></tr>
+</table>
+<h3 id='search'>search</h3><table><tr><th>ID</th><th>Method</th><th>Path</th><th>Probe</th></tr>
+<tr><td><a href='serp_property.html'><code>serp_property</code></a></td><td>GET</td><td><code>/v1/serp</code></td><td><span class='badge ok'>200</span></td></tr>
+<tr><td><a href='serp_houses_sale.html'><code>serp_houses_sale</code></a></td><td>GET</td><td><code>/v1/serp</code></td><td><span class='badge ok'>200</span></td></tr>
+<tr><td><a href='serp_colombo.html'><code>serp_colombo</code></a></td><td>GET</td><td><code>/v1/serp</code></td><td><span class='badge ok'>200</span></td></tr>
+<tr><td><a href='serp_for_sale.html'><code>serp_for_sale</code></a></td><td>GET</td><td><code>/v1/serp</code></td><td><span class='badge ok'>200</span></td></tr>
+<tr><td><a href='serp_page2.html'><code>serp_page2</code></a></td><td>GET</td><td><code>/v1/serp</code></td><td><span class='badge ok'>200</span></td></tr>
+</table>
+</main>
+<footer>
+  MIT-licensed harness · Educational use · <a href="../ethics.html">Ethics</a> ·
+  Generated 2026-07-20 05:04 UTC
+</footer>
+</body>
+</html>

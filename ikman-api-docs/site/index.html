@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Home · ikman API Docs (unofficial)</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #111111;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --accent: #e5e5e5;
+  --bad: #f5a5a5;
+  --ok: #c8f0c8;
+  --border: rgba(255,255,255,0.1);
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.55;
+}
+a { color: #ffffff; text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--muted); }
+header {
+  padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #151515, var(--bg));
+}
+header h1 { margin: 0 0 .35rem; font-size: 1.6rem; letter-spacing: -.02em; }
+header p { margin: 0; color: var(--muted); max-width: 52rem; }
+nav {
+  display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--border); background: var(--panel);
+  position: sticky; top: 0; z-index: 2;
+}
+nav a { text-decoration: none; color: var(--muted); }
+nav a:hover { color: var(--text); }
+main { padding: 1.25rem; max-width: 960px; margin: 0 auto; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.1rem; margin: 0 0 1rem;
+}
+.card h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.meta { color: var(--muted); font-size: .92rem; }
+.badge {
+  display: inline-block; font-size: .75rem; padding: .15rem .45rem;
+  border-radius: 999px; border: 1px solid var(--border); margin-right: .35rem;
+  font-family: var(--mono);
+}
+.badge.ok { color: var(--ok); border-color: #356b3d; }
+.badge.bad { color: var(--bad); border-color: #7a3b3b; }
+.badge.cat { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: .45rem .4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+code, pre { font-family: var(--mono); font-size: .85rem; }
+pre {
+  background: #050505; border: 1px solid var(--border); border-radius: 8px;
+  padding: .85rem; overflow: auto; max-height: 320px;
+}
+footer { padding: 2rem 1.25rem; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+h3 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .85rem; }
+.stat b { display: block; font-size: 1.4rem; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Unofficial ikman API Docs</h1>
+  <p>Live-probed documentation for <code>https://api.ikman.lk</code>. Not affiliated with ikman / Saltside.</p>
+</header>
+
+<nav>
+  <a href="./index.html">Home</a>
+  <a href="./endpoints/index.html">Endpoints</a>
+  <a href="./limitations.html">Limitations</a>
+  <a href="./ethics.html">Ethics</a>
+  <a href="./examples.html">Examples</a>
+  <a href="./probe.html">Last probe</a>
+  <a href="./changelog.html">Changelog</a>
+</nav>
+<main>
+
+<div class="grid">
+  <div class="stat"><b>9</b>HTTP endpoints catalogued</div>
+  <div class="stat"><b>9</b>last probe passed</div>
+  <div class="stat"><b>11</b>property subcategories</div>
+  <div class="stat"><b>2026-07-20T05:04:03</b>last verified</div>
+</div>
+
+<div class="card">
+  <h2>What this is</h2>
+  <p class="meta">Unofficial, live-probed map of ikman’s public JSON API — the same surface
+  the ikman.lk web app calls. Request shapes, pagination tokens, category IDs,
+  truncated samples, and hard limits (deep-page 500s, no archive).</p>
+  <p class="meta">Structured like <a href="https://github.com/Cookie-Cat21/cse-api-docs">cse-api-docs</a>
+  so this folder can graduate into its own docs UI / GitHub Pages site.</p>
+</div>
+<div class="card">
+  <h2>Quick headers</h2>
+  <pre><code>Accept: application/json
+Application: web</code></pre>
+</div>
+<div class="card">
+  <h2>Categories</h2>
+  <ul>
+<li><a href='endpoints/index.html#auth_observed'><code>auth_observed</code></a> — 1 endpoints</li>
+<li><a href='endpoints/index.html#detail'><code>detail</code></a> — 1 endpoints</li>
+<li><a href='endpoints/index.html#meta'><code>meta</code></a> — 2 endpoints</li>
+<li><a href='endpoints/index.html#search'><code>search</code></a> — 5 endpoints</li>
+</ul></div>
+</main>
+<footer>
+  MIT-licensed harness · Educational use · <a href="./ethics.html">Ethics</a> ·
+  Generated 2026-07-20 05:04 UTC
+</footer>
+</body>
+</html>

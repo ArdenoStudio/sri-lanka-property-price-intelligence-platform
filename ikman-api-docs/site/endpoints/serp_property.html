@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>serp_property · ikman API Docs (unofficial)</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #111111;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --accent: #e5e5e5;
+  --bad: #f5a5a5;
+  --ok: #c8f0c8;
+  --border: rgba(255,255,255,0.1);
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.55;
+}
+a { color: #ffffff; text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--muted); }
+header {
+  padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #151515, var(--bg));
+}
+header h1 { margin: 0 0 .35rem; font-size: 1.6rem; letter-spacing: -.02em; }
+header p { margin: 0; color: var(--muted); max-width: 52rem; }
+nav {
+  display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--border); background: var(--panel);
+  position: sticky; top: 0; z-index: 2;
+}
+nav a { text-decoration: none; color: var(--muted); }
+nav a:hover { color: var(--text); }
+main { padding: 1.25rem; max-width: 960px; margin: 0 auto; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.1rem; margin: 0 0 1rem;
+}
+.card h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.meta { color: var(--muted); font-size: .92rem; }
+.badge {
+  display: inline-block; font-size: .75rem; padding: .15rem .45rem;
+  border-radius: 999px; border: 1px solid var(--border); margin-right: .35rem;
+  font-family: var(--mono);
+}
+.badge.ok { color: var(--ok); border-color: #356b3d; }
+.badge.bad { color: var(--bad); border-color: #7a3b3b; }
+.badge.cat { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: .45rem .4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+code, pre { font-family: var(--mono); font-size: .85rem; }
+pre {
+  background: #050505; border: 1px solid var(--border); border-radius: 8px;
+  padding: .85rem; overflow: auto; max-height: 320px;
+}
+footer { padding: 2rem 1.25rem; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+h3 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .85rem; }
+.stat b { display: block; font-size: 1.4rem; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Unofficial ikman API Docs</h1>
+  <p>Live-probed documentation for <code>https://api.ikman.lk</code>. Not affiliated with ikman / Saltside.</p>
+</header>
+
+<nav>
+  <a href="../index.html">Home</a>
+  <a href="../endpoints/index.html">Endpoints</a>
+  <a href="../limitations.html">Limitations</a>
+  <a href="../ethics.html">Ethics</a>
+  <a href="../examples.html">Examples</a>
+  <a href="../probe.html">Last probe</a>
+  <a href="../changelog.html">Changelog</a>
+</nav>
+<main>
+
+<div class="card">
+  <h2><code>serp_property</code></h2>
+  <p>Primary public search. Paginated property ads (~25/page).</p>
+  <p class="meta">
+    <span class="badge cat">search</span>
+    <span class="badge">GET</span>
+    <code>/v1/serp</code>
+  </p>
+  <p class="meta">Last probe:
+    ✅ 200
+  </p>
+  <h3>curl</h3>
+  <pre><code>curl -sS &#x27;https://api.ikman.lk/v1/serp?category=409&amp;page=1&#x27; \
+  -H &#x27;Accept: application/json&#x27; \
+  -H &#x27;Application: web&#x27;</code></pre>
+  <h3>Notable fields</h3><ul><li><code>pagination.page</code></li><li><code>pagination.per_page</code></li><li><code>pagination.total</code></li><li><code>pagination.pages</code></li><li><code>pagination.next_page_token</code></li><li><code>serp.types[]</code></li><li><code>serp.categories[]</code></li><li><code>serp.locations[]</code></li><li><code>serp.results[].id</code> — 24-char hex ad id</li><li><code>serp.results[].title</code></li><li><code>serp.results[].money.amount</code></li><li><code>serp.results[].details[]</code></li><li><code>serp.results[].images</code></li></ul>
+  <h3>Notes</h3><ul><li>page ≥ 2 usually needs next_page_token from prior response</li><li>Island-wide deep pages (~450–500) often HTTP 500 — location-shard</li><li>Active inventory only; not a multi-year archive</li></ul>
+  <h3>Sample</h3>
+  <pre><code>{
+  &quot;_probe&quot;: {
+    &quot;id&quot;: &quot;serp_property&quot;,
+    &quot;url&quot;: &quot;https://api.ikman.lk/v1/serp?category=409&amp;page=1&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;status&quot;: 200,
+    &quot;verified_at&quot;: &quot;2026-07-20T05:03:56.052416+00:00&quot;,
+    &quot;fingerprint&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;keys&quot;: [
+        &quot;pagination&quot;,
+        &quot;serp&quot;
+      ]
+    }
+  },
+  &quot;response&quot;: {
+    &quot;pagination&quot;: {
+      &quot;page&quot;: 1,
+      &quot;per_page&quot;: 25,
+      &quot;total&quot;: 65664,
+      &quot;pages&quot;: 2627,
+      &quot;next_page_url&quot;: &quot;https://api.ikman.lk/v1/serp?category=409&amp;page=2&amp;next_page_token=1784523835&quot;,
+      &quot;next_page_token&quot;: &quot;1784523835&quot;
+    },
+    &quot;serp&quot;: {
+      &quot;categories&quot;: [
+        {
+          &quot;id&quot;: 942,
+          &quot;name&quot;: &quot;Land For Sale&quot;,
+          &quot;count&quot;: 31686
+        },
+        {
+          &quot;id&quot;: 415,
+          &quot;name&quot;: &quot;Houses For Sale&quot;,
+          &quot;count&quot;: 19293
+        },
+        {
+          &quot;id&quot;: 416,
+          &quot;name&quot;: &quot;House Rentals&quot;,
+          &quot;count&quot;: 3637
+        },
+        {
+          &quot;id&quot;: 937,
+          &quot;name&quot;: &quot;Apartments For Sale&quot;,
+          &quot;count&quot;: 3184
+        },
+        {
+          &quot;id&quot;: 940,
+          &quot;name&quot;: &quot;Commercial Property Rentals&quot;,
+          &quot;count&quot;: 2565
+        },
+        {
+          &quot;id&quot;: 938,
+          &quot;name&quot;: &quot;Apartment Rentals&quot;,
+          &quot;count&quot;: 2314
+        },
+        {
+          &quot;id&quot;: 939,
+          &quot;name&quot;: &quot;Commercial Properties For Sale&quot;,
+          &quot;count&quot;: 1605
+        },
+        {
+          &quot;id&quot;: 413,
+          &quot;name&quot;: &quot;Room &amp; Annex Rentals&quot;,
+          &quot;count&quot;: 773
+        },
+        {
+          &quot;id&quot;: 936,
+          &quot;name&quot;: &quot;Holiday &amp; Short-Term Rental&quot;,
+          &quot;count&quot;: 421
+        },
+        {
+          &quot;id&quot;: 943,
+          &quot;name&quot;: &quot;Land Rentals&quot;,
+          &quot;count&quot;: 186
+        }
+      ],
+      &quot;locations&quot;: [
+        {
+          &quot;id&quot;: 1506,
+          &quot;name&quot;: &quot;Colombo&quot;,
+          &quot;count&quot;: 41301
+        },
+        {
+          &quot;id&quot;: 1577,
+          &quot;name&quot;: &quot;Gampaha&quot;,
+          &quot;count&quot;: 11662
+        },
+        {
+          &quot;id&quot;: 1620,
+          &quot;name&quot;: &quot;Kalutara&quot;,
+          &quot;count&quot;: 3381
+        },
+        {
+          &quot;id&quot;: 1636,
+          &quot;name&quot;: &quot;Kandy&quot;,
+          &quot;count&quot;: 1361
+        },
+        {
+          &quot;id&quot;: 1674,
+          &quot;name&quot;: &quot;Kurunegala&quot;,
+          &quot;count&quot;: 1327
+        },
+        {
+          &quot;id&quot;: 1432,
+          &quot;name&quot;: &quot;Ampara&quot;,
+          &quot;count&quot;: 81
+        },
+        {
+          &quot;id&quot;: 1452,
+          &quot;name&quot;: &quot;Anuradhapura&quot;,
+          &quot;count&quot;: 596
+        },
+        {
+          &quot;id&quot;: 1475,
+          &quot;name&quot;: &quot;Badulla&quot;,
+          &quot;count&quot;: 331
+        },
+        {
+          &quot;id&quot;: 1491,
+          &quot;name&quot;: &quot;Batticaloa&quot;,
+          &quot;count&quot;: 127
+        },
+        {
+          &quot;id&quot;: 1559,
+          &quot;name&quot;: &quot;Galle&quot;,
+          &quot;count&quot;: 1245
+        },
+        {
+          &quot;id&quot;: 1592,
+          &quot;name&quot;: &quot;Hambantota&quot;,
+          &quot;count&quot;: 797
+        },
+        {
+          &quot;id&quot;: 1605,
+          &quot;name&quot;: &quot;Jaffna&quot;,
+          &quot;count&quot;: 206
+        },
+        {
+          &quot;id&quot;: 1658,
+          &quot;name&quot;: &quot;Kegalle&quot;,
+          &quot;count&quot;: 209
+        },
+        {
+          &quot;id&quot;: 1670,
+          &quot;name&quot;: &quot;Kilinochchi&quot;,
+          &quot;count&quot;: 22
+        },
+        {
+          &quot;id&quot;: 1706,
+          &quot;name&quot;: &quot;Mannar&quot;,
+          &quot;count&quot;: 11
+        },
+        {
+          &quot;id&quot;: 1712,
+          &quot;name&quot;: &quot;Matale&quot;,
+          &quot;count&quot;: 338
+        },
+        {
+          &quot;id&quot;: 1724,
+          &quot;name&quot;: &quot;Matara&quot;,
+          &quot;count&quot;: 1269
+        },
+        {
+          &quot;id&quot;: 1740,
+          &quot;name&quot;: &quot;Monaragala&quot;,
+          &quot;count&quot;: 120
+        },
+        {
+          &quot;id&quot;: 1752,
+          &quot;name&quot;: &quot;Mullativu&quot;,
+          &quot;count&quot;: 2
+        },
+        {
+          &quot;id&quot;: 1757,
+          &quot;name&quot;: &quot;Nuwara Eliya&quot;,
+          &quot;count&quot;: 613
+        },
+        {
+          &quot;id&quot;: 1763,
+          &quot;name&quot;: &quot;Polonnaruwa&quot;,
+          &quot;count&quot;: 56
+        },
+        {
+          &quot;id&quot;: 1771,
+          &quot;name&quot;: &quot;Puttalam&quot;,
+          &quot;count&quot;: 334
+        },
+        {
+          &quot;id&quot;: 1788,
+          &quot;name&quot;: &quot;Ratnapura&quot;,
+          &quot;count&quot;: 178
+        },
+        {
+          &quot;id&quot;: 1806,
+          &quot;name&quot;: &quot;Trincomalee&quot;,
+          &quot;count&quot;: 77
+        },
+        {
+          &quot;id&quot;: 1818,
+          &quot;name&quot;: &quot;Vavuniya&quot;,
+          &quot;count&quot;: 20
+        }
+      ],
+      &quot;types&quot;: [
+        {
+          &quot;key&quot;: &quot;for_sale&quot;,
+          &quot;count&quot;: 55633
+        },
+        {
+          &quot;key&quot;: &quot;to_buy&quot;,
+          &quot;count&quot;: 135
+        },
+        {
+          &quot;key&quot;: &quot;for_rent&quot;,
+          &quot;count&quot;: 9635
+        },
+        {
+          &quot;key&quot;: &quot;to_rent&quot;,
+          &quot;count&quot;: 261
+        }
+      ],
+      &quot;sort_options&quot;: [
+        &quot;price&quot;,
+        &quot;date&quot;
+      ],
+      &quot;sort_option&quot;: &quot;date&quot;,
+      &quot;sort_order&quot;: &quot;desc&quot;,
+      &quot;top_ads&quot;: [],
+      &quot;spotlights&quot;: [],
+      &quot;buy_now_filter&quot;: {
+        &quot;applicable&quot;: false
+      },
+      &quot;enhancements&quot;: {
+        &quot;cars&quot;: false,
+        &quot;properties&quot;: false,
+        &quot;jobs&quot;: false
+      },
+      &quot;results&quot;: [
+        {
+          &quot;id&quot;: &quot;6a567c723f33f5dd8b724a21&quot;,
+          &quot;slug&quot;: &quot;brand-new-house-for-sale-colombo-846&quot;,
+          &quot;title&quot;: &quot;Brand new house&quot;,
+          &quot;type&quot;: &quot;for_sale&quot;,
+          &quot;date&quot;: &quot;2026-07-14T23:44:11+05:30&quot;,
+          &quot;deactivates&quot;: &quot;2026-09-12T23:44:11+05:30&quot;,
+          &quot;area&quot;: {
+            &quot;id&quot;: 1506,
+            &quot;name&quot;: &quot;Colombo&quot;
+          },
+          &quot;location&quot;: {
+            &quot;id&quot;: 1541,
+            &quot;name&quot;: &quot;Maharagama&quot;
+          },
+          &quot;category&quot;: {
+            &quot;id&quot;: 415,
+            &quot;name&quot;: &quot;Houses For Sale&quot;
+          },
+          &quot;contact_card&quot;: {
+            &quot;chat_enabled&quot;: true,
+            &quot;delivery_methods&quot;: [],
+            &quot;account_type&quot;: &quot;private&quot;,
+            &quot;opt_out&quot;: true,
+            &quot;_redacted&quot;: true
+          },
+          &quot;features&quot;: {
+            &quot;buy_now&quot;: false,
+            &quot;listing_fee&quot;: false
+          },
+          &quot;by_paying_member&quot;: true,
+          &quot;by_authorized_dealer&quot;: false,
+          &quot;by_featured_member&quot;: false,
+          &quot;membership_details&quot;: {
+            &quot;level&quot;: &quot;premium&quot;
+          },
+          &quot;info&quot;: &quot;Rs 46,000,000&quot;,
+          &quot;status&quot;: &quot;published&quot;,
+          &quot;details&quot;: [
+            &quot;Bedrooms: 4&quot;,
+            &quot;Bathrooms: 4&quot;
+          ],
+          &quot;url&quot;: &quot;http://ikman.lk/en/ad/brand-new-house-for-sale-colombo-846&quot;,
+          &quot;images&quot;: {
+            &quot;ids&quot;: [
+              &quot;25d04af5-622e-49e3-a3eb-77a55c655c61&quot;,
+              &quot;b3d0f579-3d47-45aa-891f-8904934741ec&quot;,
+              &quot;3f543679-b1af-4dcb-a707-af1f72dba661&quot;,
+              &quot;cec68977-8561-46a0-8163-e6b151fddf21&quot;,
+              &quot;2a1219cc-6046-4e98-9220-12de11ea2cb3&quot;,
+              &quot;7eaaafb1-6e6d-4609-850c-0b84182e2bbc&quot;,
+              &quot;09b2d9af-e78c-4b33-a076-9cf09dd645fc&quot;,
+              &quot;309838e9-6ce6-4794-b126-bdd673813f1a&quot;,
+              &quot;abf13159-d4f0-4352-b43a-dd71615fa3ac&quot;,
+              &quot;e118c03d-8855-42e8-9d34-959d2888198d&quot;,
+              &quot;97fb8520-69f3-4f75-8716-d21e7595c272&quot;,
+              &quot;c97d9120-174c-4f7a-b773-fbfafc37e102&quot;,
+              &quot;f8ae6bee-5c2b-48e5-ab72-8a01d9fee025&quot;,
+              &quot;f1b2c2b8-a3a2-40f8-894f-f593a9b9b150&quot;,
+              &quot;4e240145-73b9-4ff5-aea1-f109bcda85d0&quot;,
+              &quot;0fabe9ce-dc62-4ca6-a784-640a6f24a628&quot;,
+              &quot;1a2b72fc-826e-4802-8733-3bc997527b35&quot;,
+              &quot;9b62d83d-b0a4-4bae-a403-0151b5fc5fde&quot;,
+              &quot;de59590d-8f74-4a1e-967c-8890d8bfdc41&quot;,
+              &quot;30a5047d-dcc8-4efa-8f73-75c0cc8049db&quot;
+            ],
+            &quot;base_uri&quot;: &quot;https://i.ikman-st.com&quot;
+          },
+          &quot;account&quot;: &quot;[redacted]&quot;,
+          &quot;promotions&quot;: {
+            &quot;top_ad&quot;: false,
+            &quot;bump_up&quot;: false,
+            &quot;urgent_ad&quot;: false,
+            &quot;spotlight&quot;: false,
+            &quot;featured_ad&quot;: true
+          },
+          &quot;display_preferences&quot;: {
+            &quot;use_featured_ads_ui&quot;: true
+          },
+          &quot;money&quot;: {
+            &quot;label&quot;: &quot;Price&quot;,
+            &quot;amount&quot;: &quot;Rs 46,000,000&quot;
+          },
+          &quot;layouts&quot;: {
+            &quot;classic&quot;: {
+              &quot;info&quot;: &quot;Rs 46,000,000&quot;,
+              &quot;details&quot;: [
+                &quot;Bedrooms: 4&quot;,
+                &quot;Bathrooms: 4&quot;
+              ],
+              &quot;serp_images_enabled&quot;: true
+            },
+            &quot;single_col</code></pre>
+</div>
+
+</main>
+<footer>
+  MIT-licensed harness · Educational use · <a href="../ethics.html">Ethics</a> ·
+  Generated 2026-07-20 05:04 UTC
+</footer>
+</body>
+</html>

@@ -24,7 +24,7 @@ Our scrapers today mostly parse HTML (Playwright for ikman/house.lk, httpx+BS4 f
 
 | Source | API usable for listings? | Best entry point | Notes |
 |---|---|---|---|
-| **ikman.lk** | **Yes — strongest** | `https://api.ikman.lk/v1/serp` | Full SERP + ad detail JSON; no browser needed for list/detail |
+| **ikman.lk** | **Yes — strongest** | `https://api.ikman.lk/v1/serp` | Full SERP + ad detail JSON; no browser needed for list/detail. Portable docs kit: [`ikman-api-docs/`](../../ikman-api-docs/) (cse-api-docs shaped) |
 | **LankaPropertyWeb** | **Yes — strong** | `/api/v3/search2` | JWT + `secure_key` embedded in HTML; includes lat/lon, beds, price |
 | **onlineproperty.lk** | **Partial** | `/wp-json/wp/v2/rtcl_listing` | WP REST works (~206 listings). Dedicated `/rtcl/v1/*` returns `DENIED_REST_API` |
 | **house.lk** (ex-lamudi) | **No (from this environment)** | — | Cloudflare challenge blocks plain HTTP; keep Playwright |

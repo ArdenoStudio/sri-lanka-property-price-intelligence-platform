@@ -1,0 +1,225 @@
+{
+  "probed_at": "2026-07-20T05:04:03.839227+00:00",
+  "base_url": "https://api.ikman.lk",
+  "ad_id": "6a567c723f33f5dd8b724a21",
+  "next_page_token_present": true,
+  "failed": 0,
+  "passed": 9,
+  "total": 9,
+  "results": [
+    {
+      "id": "categories",
+      "path": "/v1/categories",
+      "method": "GET",
+      "category": "meta",
+      "summary": "Full category tree. Property root id is 409 (slug property).",
+      "status": 200,
+      "ok": true,
+      "fingerprint": {
+        "type": "object",
+        "keys": [
+          "available_serp_layouts",
+          "categories",
+          "default_serp_layout",
+          "verticals"
+        ]
+      },
+      "sample": "samples/categories.json"
+    },
+    {
+      "id": "locations",
+      "path": "/v1/locations",
+      "method": "GET",
+      "category": "meta",
+      "summary": "District/city tree with slug and geo_region (e.g. LK-11).",
+      "status": 200,
+      "ok": true,
+      "fingerprint": {
+        "type": "object",
+        "keys": [
+          "groups",
+          "locations"
+        ]
+      },
+      "sample": "samples/locations.json"
+    },
+    {
+      "id": "serp_property",
+      "path": "/v1/serp",
+      "method": "GET",
+      "category": "search",
+      "summary": "Primary public search. Paginated property ads (~25/page).",
+      "status": 200,
+      "ok": true,
+      "resolved_next_page_token": "1784523835\u2026",
+      "resolved_ad_id": "6a567c723f33f5dd8b724a21",
+      "fingerprint": {
+        "type": "object",
+        "keys": [
+          "pagination",
+          "serp"
+        ]
+      },
+      "sample": "samples/serp_property.json"
+    },
+    {
+      "id": "serp_houses_sale",
+      "path": "/v1/serp",
+      "method": "GET",
+      "category": "search",
+      "summary": "Houses for sale subcategory (415).",
+      "status": 200,
+      "ok": true,
+      "fingerprint": {
+        "type": "object",
+        "keys": [
+          "pagination",
+          "serp"
+        ]
+      },
+      "sample": "samples/serp_houses_sale.json"
+    },
+    {
+      "id": "serp_colombo",
+      "path": "/v1/serp",
+      "method": "GET",
+      "category": "search",
+      "summary": "Property SERP scoped to Colombo district (location=1506).",
+      "status": 200,
+      "ok": true,
+      "fingerprint": {
+        "type": "object",
+        "keys": [
+          "pagination",
+          "serp"
+        ]
+      },
+      "sample": "samples/serp_colombo.json"
+    },
+    {
+      "id": "serp_for_sale",
+      "path": "/v1/serp",
+      "method": "GET",
+      "category": "search",
+      "summary": "Property root filtered to for_sale listing type.",
+      "status": 200,
+      "ok": true,
+      "fingerprint": {
+        "type": "object",
+        "keys": [
+          "pagination",
+          "serp"
+        ]
+      },
+      "sample": "samples/serp_for_sale.json"
+    },
+    {
+      "id": "serp_page2",
+      "path": "/v1/serp",
+      "method": "GET",
+      "category": "search",
+      "summary": "Page 2 using next_page_token captured from serp_property.",
+      "status": 200,
+      "ok": true,
+      "fingerprint": {
+        "type": "object",
+        "keys": [
+          "pagination",
+          "serp"
+        ]
+      },
+      "sample": "samples/serp_page2.json"
+    },
+    {
+      "id": "ad_detail",
+      "path": "/v1/ads/{{ad_id}}",
+      "method": "GET",
+      "category": "detail",
+      "summary": "Single ad detail \u2014 description, properties[], statistics.views, similar_ads.",
+      "status": 200,
+      "ok": true,
+      "fingerprint": {
+        "type": "object",
+        "keys": [
+          "ad",
+          "safety_tips",
+          "similar_ads"
+        ]
+      },
+      "sample": "samples/ad_detail.json"
+    },
+    {
+      "id": "ads_list_auth",
+      "path": "/v1/ads",
+      "method": "GET",
+      "category": "auth_observed",
+      "summary": "Observed list route \u2014 returns Authentication missing without Bearer token.",
+      "status": 400,
+      "ok": true,
+      "fingerprint": {
+        "type": "object",
+        "keys": [
+          "_http_status",
+          "_non_json",
+          "text_preview"
+        ]
+      },
+      "sample": "samples/ads_list_auth.json"
+    }
+  ],
+  "property_categories": {
+    "root": 409,
+    "children": [
+      {
+        "id": 415,
+        "name": "Houses For Sale"
+      },
+      {
+        "id": 416,
+        "name": "House Rentals"
+      },
+      {
+        "id": 937,
+        "name": "Apartments For Sale"
+      },
+      {
+        "id": 938,
+        "name": "Apartment Rentals"
+      },
+      {
+        "id": 942,
+        "name": "Land For Sale"
+      },
+      {
+        "id": 943,
+        "name": "Land Rentals"
+      },
+      {
+        "id": 413,
+        "name": "Room & Annex Rentals"
+      },
+      {
+        "id": 939,
+        "name": "Commercial Properties For Sale"
+      },
+      {
+        "id": 940,
+        "name": "Commercial Property Rentals"
+      },
+      {
+        "id": 936,
+        "name": "Holiday & Short-Term Rental"
+      },
+      {
+        "id": 941,
+        "name": "New Projects"
+      }
+    ]
+  },
+  "listing_types": [
+    "for_sale",
+    "for_rent",
+    "to_buy",
+    "to_rent"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "_probe": {
+    "id": "ads_list_auth",
+    "url": "https://api.ikman.lk/v1/ads",
+    "method": "GET",
+    "status": 400,
+    "verified_at": "2026-07-20T05:04:03.438782+00:00",
+    "fingerprint": {
+      "type": "object",
+      "keys": [
+        "_http_status",
+        "_non_json",
+        "text_preview"
+      ]
+    }
+  },
+  "response": {
+    "_non_json": true,
+    "text_preview": "Application name missing",
+    "_http_status": 400
+  }
+}
