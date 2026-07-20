@@ -50,7 +50,10 @@ jobs:
             --python-version 3.13 \
             --only-binary=:all: \
             --upgrade
-          cp -r api db package/
+          # api.main imports scraper.privacy — package must include scraper/
+          cp -r api db scraper package/
+          # Keep the zip lean: drop Playwright-heavy scraper modules unused by the API
+          find package/scraper -type f -name '*.py' ! -name '__init__.py' ! -name 'privacy.py' -delete
           cd package
           zip -r ../lambda.zip . -x '*.pyc' '*/__pycache__/*'
 
@@ -81,15 +84,29 @@ jobs:
             --function-name "$LAMBDA_FUNCTION_NAME" \
             --query FunctionUrl \
             --output text)
-          endpoint="${function_url%/}/health"
-          echo "Testing: $endpoint"
-          for attempt in $(seq 1 10); do
-            echo "Attempt $attempt/10..."
-            status=$(curl --silent --output /tmp/smoke_body --write-out '%{http_code}' "$endpoint") || true
+          function_url="${function_url%/}"
+          echo "Function URL: $function_url"
+          for attempt in $(seq 1 12); do
+            echo "Attempt $attempt/12 health..."
+            status=$(curl --silent --output /tmp/smoke_body --write-out '%{http_code}' "$function_url/health") || true
             if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
-              echo "Smoke test passed (HTTP $status)"
+              echo "Health OK (HTTP $status)"
               cat /tmp/smoke_body
               echo
+              # Newest sort sanity: first_seen_at should be non-increasing
+              curl --silent --fail "$function_url/listings?sort=newest&limit=8" -o /tmp/newest.json
+              python3 -c '
+          import json
+          from datetime import datetime
+          data = json.load(open("/tmp/newest.json"))
+          rows = data.get("listings") or []
+          assert rows, "no listings returned"
+          firsts = [r.get("first_seen_at") for r in rows if r.get("first_seen_at")]
+          parsed = [datetime.fromisoformat(x.replace("Z", "+00:00")) for x in firsts]
+          assert parsed == sorted(parsed, reverse=True), f"newest not by first_seen_at: {firsts}"
+          days = [r.get("days_on_market") for r in rows]
+          print("newest_ok", {"days_on_market": days, "first_seen": firsts[:4], "total": data.get("total")})
+          '
               exit 0
             fi
             echo "HTTP $status – response:"
@@ -97,5 +114,5 @@ jobs:
             echo
             sleep 10
           done
-          echo "Smoke test failed after 10 attempts"
+          echo "Smoke test failed after 12 attempts"
           exit 1
