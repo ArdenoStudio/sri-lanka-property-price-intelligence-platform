@@ -65,3 +65,5 @@ IKMAN_API_MAX_PAGES=80   # daily / pipeline
 ```
 
 With the SERP flag on, coverage mode skips Playwright district walks for ikman and pulls island-wide category SERP instead (usually better coverage). Detail enrichment is slower (one request per ad); turn it on when beds/baths/size completeness matters.
+
+**Full inventory plan** (all ~65k + SERP/detail fields → Postgres): [`FULL_INVENTORY_PLAN.md`](FULL_INVENTORY_PLAN.md).
