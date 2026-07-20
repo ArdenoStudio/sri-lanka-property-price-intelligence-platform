@@ -4,7 +4,7 @@
   "outputDirectory": "dashboard/dist",
   "framework": null,
   "env": {
-    "VITE_API_URL": "https://property-price-intelligence-an-ardeno-production.fly.dev"
+    "VITE_API_URL": "https://6jzzb7iku2fxd5jxeunojg2bpm0pjeft.lambda-url.us-east-1.on.aws"
   },
   "rewrites": [
     { "source": "/((?!assets/).*)", "destination": "/index.html" }

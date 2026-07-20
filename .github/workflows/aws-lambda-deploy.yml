@@ -50,7 +50,10 @@ jobs:
             --python-version 3.13 \
             --only-binary=:all: \
             --upgrade
-          cp -r api db package/
+          # api.main imports scraper.privacy — package must include scraper/
+          cp -r api db scraper package/
+          # Keep the zip lean: drop Playwright-heavy scraper modules unused by the API
+          find package/scraper -type f -name '*.py' ! -name '__init__.py' ! -name 'privacy.py' -delete
           cd package
           zip -r ../lambda.zip . -x '*.pyc' '*/__pycache__/*'
 
