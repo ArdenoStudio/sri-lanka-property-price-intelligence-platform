@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>categories · ikman API Docs (unofficial)</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #111111;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --accent: #e5e5e5;
+  --bad: #f5a5a5;
+  --ok: #c8f0c8;
+  --border: rgba(255,255,255,0.1);
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.55;
+}
+a { color: #ffffff; text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--muted); }
+header {
+  padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #151515, var(--bg));
+}
+header h1 { margin: 0 0 .35rem; font-size: 1.6rem; letter-spacing: -.02em; }
+header p { margin: 0; color: var(--muted); max-width: 52rem; }
+nav {
+  display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--border); background: var(--panel);
+  position: sticky; top: 0; z-index: 2;
+}
+nav a { text-decoration: none; color: var(--muted); }
+nav a:hover { color: var(--text); }
+main { padding: 1.25rem; max-width: 960px; margin: 0 auto; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.1rem; margin: 0 0 1rem;
+}
+.card h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.meta { color: var(--muted); font-size: .92rem; }
+.badge {
+  display: inline-block; font-size: .75rem; padding: .15rem .45rem;
+  border-radius: 999px; border: 1px solid var(--border); margin-right: .35rem;
+  font-family: var(--mono);
+}
+.badge.ok { color: var(--ok); border-color: #356b3d; }
+.badge.bad { color: var(--bad); border-color: #7a3b3b; }
+.badge.cat { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: .45rem .4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+code, pre { font-family: var(--mono); font-size: .85rem; }
+pre {
+  background: #050505; border: 1px solid var(--border); border-radius: 8px;
+  padding: .85rem; overflow: auto; max-height: 320px;
+}
+footer { padding: 2rem 1.25rem; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+h3 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .85rem; }
+.stat b { display: block; font-size: 1.4rem; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Unofficial ikman API Docs</h1>
+  <p>Live-probed documentation for <code>https://api.ikman.lk</code>. Not affiliated with ikman / Saltside.</p>
+</header>
+
+<nav>
+  <a href="../index.html">Home</a>
+  <a href="../endpoints/index.html">Endpoints</a>
+  <a href="../limitations.html">Limitations</a>
+  <a href="../ethics.html">Ethics</a>
+  <a href="../examples.html">Examples</a>
+  <a href="../probe.html">Last probe</a>
+  <a href="../changelog.html">Changelog</a>
+</nav>
+<main>
+
+<div class="card">
+  <h2><code>categories</code></h2>
+  <p>Full category tree. Property root id is 409 (slug property).</p>
+  <p class="meta">
+    <span class="badge cat">meta</span>
+    <span class="badge">GET</span>
+    <code>/v1/categories</code>
+  </p>
+  <p class="meta">Last probe:
+    ✅ 200
+  </p>
+  <h3>curl</h3>
+  <pre><code>curl -sS &#x27;https://api.ikman.lk/v1/categories&#x27; \
+  -H &#x27;Accept: application/json&#x27; \
+  -H &#x27;Application: web&#x27;</code></pre>
+  <h3>Notable fields</h3><ul><li><code>categories[].id</code></li><li><code>categories[].name</code></li><li><code>categories[].slug</code></li><li><code>categories[].children[]</code></li></ul>
+  
+  <h3>Sample</h3>
+  <pre><code>{
+  &quot;_probe&quot;: {
+    &quot;id&quot;: &quot;categories&quot;,
+    &quot;url&quot;: &quot;https://api.ikman.lk/v1/categories&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;status&quot;: 200,
+    &quot;verified_at&quot;: &quot;2026-07-20T05:03:53.273400+00:00&quot;,
+    &quot;fingerprint&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;keys&quot;: [
+        &quot;available_serp_layouts&quot;,
+        &quot;categories&quot;,
+        &quot;default_serp_layout&quot;,
+        &quot;verticals&quot;
+      ]
+    }
+  },
+  &quot;response&quot;: {
+    &quot;categories&quot;: [
+      {
+        &quot;id&quot;: 2000,
+        &quot;children&quot;: [
+          2003,
+          2004,
+          2001,
+          2002
+        ],
+        &quot;name&quot;: &quot;Mobiles&quot;,
+        &quot;ad_types&quot;: [],
+        &quot;serp_type&quot;: &quot;ads&quot;,
+        &quot;available_serp_layouts&quot;: [
+          &quot;classic&quot;,
+          &quot;fluid&quot;
+        ],
+        &quot;default_serp_layout&quot;: &quot;fluid&quot;,
+        &quot;type&quot;: &quot;mobiles&quot;,
+        &quot;slug&quot;: &quot;mobiles&quot;,
+        &quot;form_view_version&quot;: &quot;1&quot;,
+        &quot;post_ad_form_view_version&quot;: &quot;1&quot;
+      },
+      {
+        &quot;id&quot;: 2003,
+        &quot;children&quot;: [],
+        &quot;name&quot;: &quot;Mobile Phones&quot;,
+        &quot;ad_types&quot;: [
+          &quot;for_sale&quot;,
+          &quot;to_buy&quot;
+        ],
+        &quot;serp_type&quot;: &quot;ads&quot;,
+        &quot;available_serp_layouts&quot;: [
+          &quot;classic&quot;,
+          &quot;fluid&quot;
+        ],
+        &quot;default_serp_layout&quot;: &quot;fluid&quot;,
+        &quot;default_ad_type&quot;: &quot;for_sale&quot;,
+        &quot;slug&quot;: &quot;mobile-phones&quot;,
+        &quot;form_view_version&quot;: &quot;2&quot;,
+        &quot;post_ad_form_view_version&quot;: &quot;2&quot;
+      }
+    ],
+    &quot;available_serp_layouts&quot;: [
+      &quot;classic&quot;,
+      &quot;fluid&quot;
+    ],
+    &quot;default_serp_layout&quot;: &quot;fluid&quot;,
+    &quot;verticals&quot;: [
+      {
+        &quot;key&quot;: &quot;jobs&quot;,
+        &quot;name&quot;: &quot;Jobs in Sri Lanka&quot;,
+        &quot;categories&quot;: [
+          {
+            &quot;id&quot;: 700
+          },
+          {
+            &quot;id&quot;: 1401
+          },
+          {
+            &quot;id&quot;: 1559
+          },
+          {
+            &quot;id&quot;: 1524
+          },
+          {
+            &quot;id&quot;: 1525
+          },
+          {
+            &quot;id&quot;: 1526
+          },
+          {
+            &quot;id&quot;: 1527
+          },
+          {
+            &quot;id&quot;: 1402
+          },
+          {
+            &quot;id&quot;: 1558
+          },
+          {
+            &quot;id&quot;: 1403
+          },
+          {
+            &quot;id&quot;: 1481
+          },
+          {
+            &quot;id&quot;: 1563
+          },
+          {
+            &quot;id&quot;: 1497
+          },
+          {
+            &quot;id&quot;: 1496
+          },
+          {
+            &quot;id&quot;: 1404
+          },
+          {
+            &quot;id&quot;: 1561
+          },
+          {
+            &quot;id&quot;: 1498
+          },
+          {
+            &quot;id&quot;: 1532
+          },
+          {
+            &quot;id&quot;: 1565
+          },
+          {
+            &quot;id&quot;: 1499
+          },
+          {
+            &quot;id&quot;: 1405
+          },
+          {
+            &quot;id&quot;: 1528
+          },
+          {
+            &quot;id&quot;: 1500
+          },
+          {
+            &quot;id&quot;: 1529
+          },
+          {
+            &quot;id&quot;: 1513
+          },
+          {
+            &quot;id&quot;: 1501
+          },
+          {
+            &quot;id&quot;: 1406
+          },
+          {
+            &quot;id&quot;: 1407
+          },
+          {
+            &quot;id&quot;: 1408
+          },
+          {
+            &quot;id&quot;: 1409
+          },
+          {
+            &quot;id&quot;: 1502
+          },
+          {
+            &quot;id&quot;: 1410
+          },
+          {
+            &quot;id&quot;: 1411
+          },
+          {
+            &quot;id&quot;: 1531
+          },
+          {
+            &quot;id&quot;: 1485
+          },
+          {
+            &quot;id&quot;: 1412
+          },
+          {
+            &quot;id&quot;: 1560
+          },
+          {
+            &quot;id&quot;: 1413
+          },
+          {
+            &quot;id&quot;: 1533
+          },
+          {
+            &quot;id&quot;: 1530
+          },
+          {
+            &quot;id&quot;: 1414
+          },
+          {
+            &quot;id&quot;: 1503
+          },
+          {
+            &quot;id&quot;: 1415
+          },
+          {
+            &quot;id&quot;: 1534
+          },
+          {
+            &quot;id&quot;: 1514
+          },
+          {
+            &quot;id&quot;: 1535
+          },
+          {
+            &quot;id&quot;: 1416
+          },
+          {
+            &quot;id&quot;: 1417
+          },
+          {
+            &quot;id&quot;: 1504
+          },
+          {
+            &quot;id&quot;: 1536
+          },
+          {
+            &quot;id&quot;: 1505
+          },
+          {
+            &quot;id&quot;: 1494
+          },
+          {
+            &quot;id&quot;: 1418
+          },
+          {
+            &quot;id&quot;: 1419
+          },
+          {
+            &quot;id&quot;: 1537
+          },
+          {
+            &quot;id&quot;: 1420
+          },
+          {
+            &quot;id&quot;: 1421
+          },
+          {
+            &quot;id&quot;: 1538
+          },
+          {
+            &quot;id&quot;: 1422
+          },
+          {
+            &quot;id&quot;: 1423
+          },
+          {
+            &quot;id&quot;: 1506
+          },
+          {
+            &quot;id&quot;: 1424
+          },
+          {
+            &quot;id&quot;: 1482
+          },
+          {
+            &quot;id&quot;: 1539
+          },
+          {
+            &quot;id&quot;: 1425
+          },
+          {
+            &quot;id&quot;: 1426
+          },
+          {
+            &quot;id&quot;: 1427
+          },
+          {
+            &quot;id&quot;: 1428
+          },
+          {
+            &quot;id&quot;: 1540
+          },
+          {
+            &quot;id&quot;: 1429
+          },
+          {
+            &quot;id&quot;: 1430
+          },
+          {
+            &quot;id&quot;: 1486
+          },
+          {
+            &quot;id&quot;: 1431
+          },
+          {
+            &quot;id&quot;: 1515
+          },
+          {
+            &quot;id&quot;: 1432
+          },
+          {
+            &quot;id&quot;: 1490
+          },
+          {
+            &quot;id&quot;: 1541
+          },
+          {
+            &quot;id&quot;: 1433
+          },
+          {
+            &quot;id&quot;: 1523
+          },
+          {
+            &quot;id&quot;: 1434
+          },
+          {
+            &quot;id&quot;: 1542
+          },
+          {
+            &quot;id&quot;: 1516
+          },
+          {
+            &quot;id&quot;: 1543
+          },
+          {
+            &quot;id&quot;: 1493
+          },
+          {
+            &quot;id&quot;: 1544
+          },
+          {
+            &quot;id&quot;: 1489
+          },
+          {
+            &quot;id&quot;: 1545
+          },
+          {
+            &quot;id&quot;: 1435
+          },
+          {
+            &quot;id&quot;: 1436
+          },
+          {
+            &quot;id&quot;: 1492
+          },
+          {
+            &quot;id&quot;: 1567
+          },
+          {
+            &quot;id&quot;: 1437
+          },
+          {
+            &quot;id&quot;: 1438
+          },
+          {
+            &quot;id&quot;: 1439
+          },
+          {
+            &quot;id&quot;: 1491
+          },
+          {
+            &quot;id&quot;: 1440
+          },
+          {
+            &quot;id&quot;: 1507
+          },
+          {
+            &quot;id&quot;: 1508
+          },
+          {
+            &quot;id&quot;: 1441
+          },
+          {
+            &quot;id&quot;: 1442
+          },
+          {
+            &quot;id&quot;: 1547
+          },
+          {
+            &quot;id&quot;: 1495
+          },
+          {
+            &quot;id&quot;: 1443
+          },
+          {
+            &quot;id&quot;: 1444
+          },
+          {
+            &quot;id&quot;: 1445
+          },
+          {
+            &quot;id&quot;: 1446
+          },
+          {
+            &quot;id&quot;: 1447
+          },
+          {
+            &quot;id&quot;: 1566
+          },
+          {
+            &quot;id&quot;: 1448
+          },
+          {
+            &quot;id&quot;: 1449
+          },
+          {
+            &quot;id&quot;: 1509
+          },
+          {
+            &quot;id&quot;: 1450
+          },
+          {
+            &quot;id&quot;: 1452
+          },
+          {
+            &quot;id&quot;: 1453
+          },
+          {
+            &quot;id&quot;: 1454
+          },
+          {
+            &quot;id&quot;: 1456
+          },
+          {
+            &quot;id&quot;: 1457
+          },
+          {
+            &quot;id&quot;: 1548
+          },
+          {
+            &quot;id&quot;: 1458
+          },
+          {
+            &quot;id&quot;: 1459
+          },
+          {
+            &quot;id&quot;: 1510
+          },
+          {
+            &quot;id&quot;: 1549
+          },
+          {
+            &quot;id&quot;: 1460
+          },
+          {
+            &quot;id&quot;: 1483
+          },
+          {
+            &quot;id&quot;: 1461
+          },
+          {
+            &quot;id&quot;: 1462
+          },
+          {
+            &quot;id&quot;: 1550
+          },
+          {
+            &quot;id&quot;: 1463
+          },
+          {
+            &quot;id&quot;: 1488
+          },
+          {
+            &quot;id&quot;: 1464
+          },
+          {
+            &quot;id&quot;: 1465
+          },
+          {
+            &quot;id&quot;: 1551
+          },
+          {
+            &quot;id&quot;: 1552
+          },
+          {
+            &quot;id&quot;: 1466
+          },
+   </code></pre>
+</div>
+
+</main>
+<footer>
+  MIT-licensed harness · Educational use · <a href="../ethics.html">Ethics</a> ·
+  Generated 2026-07-20 05:04 UTC
+</footer>
+</body>
+</html>

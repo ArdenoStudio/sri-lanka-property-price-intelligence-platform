@@ -1,0 +1,185 @@
+# Source of truth for unofficial api.ikman.lk docs.
+# Base: https://api.ikman.lk
+# Probe with: python3 scripts/probe.py
+
+meta:
+  base_url: "https://api.ikman.lk"
+  web_origin: "https://ikman.lk"
+  test_category: 409          # Property root
+  test_subcategory: 415       # Houses For Sale
+  test_location: 1506         # Colombo district
+  headers:
+    User-Agent: "Mozilla/5.0 (compatible; Ikman-API-Docs-Probe/1.0; +https://github.com/ArdenoStudio/sri-lanka-property-price-intelligence-platform; educational)"
+    Accept: "application/json"
+    Application: "web"
+  delay_seconds: 0.4
+  max_sample_bytes: 14000
+  # Keys stripped from samples before write (PII / seller contact)
+  sanitize_keys:
+    - contact_card
+    - phone
+    - email
+    - name
+    - mobile
+
+endpoints:
+  - id: categories
+    path: /v1/categories
+    method: GET
+    category: meta
+    summary: Full category tree. Property root id is 409 (slug property).
+    used_by_ui: Category filters / property taxonomy
+    expect_status: [200]
+    truncate_list_key: categories
+    fields:
+      - path: categories[].id
+      - path: categories[].name
+      - path: categories[].slug
+      - path: categories[].children[]
+
+  - id: locations
+    path: /v1/locations
+    method: GET
+    category: meta
+    summary: District/city tree with slug and geo_region (e.g. LK-11).
+    used_by_ui: Location filters / SERP sharding
+    expect_status: [200]
+    truncate_list_key: locations
+    fields:
+      - path: locations[].id
+      - path: locations[].name
+      - path: locations[].slug
+      - path: locations[].geo_region
+      - path: locations[].children[]
+
+  - id: serp_property
+    path: /v1/serp
+    method: GET
+    category: search
+    summary: Primary public search. Paginated property ads (~25/page).
+    used_by_ui: Listing SERP / inventory ingest
+    query:
+      category: "{{category}}"
+      page: "1"
+    expect_status: [200]
+    truncate_list_key: _serp_results
+    resolve_ad_id_from: true
+    notes:
+      - "page ≥ 2 usually needs next_page_token from prior response"
+      - "Island-wide deep pages (~450–500) often HTTP 500 — location-shard"
+      - "Active inventory only; not a multi-year archive"
+    fields:
+      - path: pagination.page
+      - path: pagination.per_page
+      - path: pagination.total
+      - path: pagination.pages
+      - path: pagination.next_page_token
+      - path: serp.types[]
+      - path: serp.categories[]
+      - path: serp.locations[]
+      - path: serp.results[].id
+        note: 24-char hex ad id
+      - path: serp.results[].title
+      - path: serp.results[].money.amount
+      - path: serp.results[].details[]
+      - path: serp.results[].images
+
+  - id: serp_houses_sale
+    path: /v1/serp
+    method: GET
+    category: search
+    summary: Houses for sale subcategory (415).
+    query:
+      category: "{{subcategory}}"
+      page: "1"
+    expect_status: [200]
+    truncate_list_key: _serp_results
+
+  - id: serp_colombo
+    path: /v1/serp
+    method: GET
+    category: search
+    summary: Property SERP scoped to Colombo district (location=1506).
+    query:
+      category: "{{category}}"
+      location: "{{location}}"
+      page: "1"
+    expect_status: [200]
+    truncate_list_key: _serp_results
+
+  - id: serp_for_sale
+    path: /v1/serp
+    method: GET
+    category: search
+    summary: Property root filtered to for_sale listing type.
+    query:
+      category: "{{category}}"
+      type: "for_sale"
+      page: "1"
+    expect_status: [200]
+    truncate_list_key: _serp_results
+
+  - id: serp_page2
+    path: /v1/serp
+    method: GET
+    category: search
+    summary: Page 2 using next_page_token captured from serp_property.
+    query:
+      category: "{{category}}"
+      page: "2"
+      next_page_token: "{{next_page_token}}"
+    expect_status: [200]
+    truncate_list_key: _serp_results
+    requires: next_page_token
+    notes:
+      - "Fails or returns empty without a valid next_page_token"
+
+  - id: ad_detail
+    path: /v1/ads/{{ad_id}}
+    method: GET
+    category: detail
+    summary: Single ad detail — description, properties[], statistics.views, similar_ads.
+    used_by_ui: Listing detail / attribute enrich
+    expect_status: [200]
+    requires: ad_id
+    fields:
+      - path: ad.id
+      - path: ad.title
+      - path: ad.description
+      - path: ad.properties[]
+        note: key/label/value for bedrooms, bathrooms, size, etc.
+      - path: ad.statistics.views
+      - path: similar_ads[]
+      - path: safety_tips[]
+
+  - id: ads_list_auth
+    path: /v1/ads
+    method: GET
+    category: auth_observed
+    summary: Observed list route — returns Authentication missing without Bearer token.
+    expect_status: [401, 403, 400]
+    notes:
+      - "Documented as observed-only. Do not automate login/session theft."
+      - "Not used by property.lk scrapers."
+
+# Property category IDs (for clients; not separate probe rows)
+property_categories:
+  root: 409
+  children:
+    - { id: 415, name: Houses For Sale }
+    - { id: 416, name: House Rentals }
+    - { id: 937, name: Apartments For Sale }
+    - { id: 938, name: Apartment Rentals }
+    - { id: 942, name: Land For Sale }
+    - { id: 943, name: Land Rentals }
+    - { id: 413, name: Room & Annex Rentals }
+    - { id: 939, name: Commercial Properties For Sale }
+    - { id: 940, name: Commercial Property Rentals }
+    - { id: 936, name: Holiday & Short-Term Rental }
+    - { id: 941, name: New Projects }
+
+listing_types:
+  - for_sale
+  - for_rent
+  - to_buy
+  - to_rent

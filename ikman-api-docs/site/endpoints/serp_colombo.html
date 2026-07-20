@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>serp_colombo · ikman API Docs (unofficial)</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #111111;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --accent: #e5e5e5;
+  --bad: #f5a5a5;
+  --ok: #c8f0c8;
+  --border: rgba(255,255,255,0.1);
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.55;
+}
+a { color: #ffffff; text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--muted); }
+header {
+  padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #151515, var(--bg));
+}
+header h1 { margin: 0 0 .35rem; font-size: 1.6rem; letter-spacing: -.02em; }
+header p { margin: 0; color: var(--muted); max-width: 52rem; }
+nav {
+  display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--border); background: var(--panel);
+  position: sticky; top: 0; z-index: 2;
+}
+nav a { text-decoration: none; color: var(--muted); }
+nav a:hover { color: var(--text); }
+main { padding: 1.25rem; max-width: 960px; margin: 0 auto; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.1rem; margin: 0 0 1rem;
+}
+.card h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.meta { color: var(--muted); font-size: .92rem; }
+.badge {
+  display: inline-block; font-size: .75rem; padding: .15rem .45rem;
+  border-radius: 999px; border: 1px solid var(--border); margin-right: .35rem;
+  font-family: var(--mono);
+}
+.badge.ok { color: var(--ok); border-color: #356b3d; }
+.badge.bad { color: var(--bad); border-color: #7a3b3b; }
+.badge.cat { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: .45rem .4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+code, pre { font-family: var(--mono); font-size: .85rem; }
+pre {
+  background: #050505; border: 1px solid var(--border); border-radius: 8px;
+  padding: .85rem; overflow: auto; max-height: 320px;
+}
+footer { padding: 2rem 1.25rem; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+h3 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .85rem; }
+.stat b { display: block; font-size: 1.4rem; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Unofficial ikman API Docs</h1>
+  <p>Live-probed documentation for <code>https://api.ikman.lk</code>. Not affiliated with ikman / Saltside.</p>
+</header>
+
+<nav>
+  <a href="../index.html">Home</a>
+  <a href="../endpoints/index.html">Endpoints</a>
+  <a href="../limitations.html">Limitations</a>
+  <a href="../ethics.html">Ethics</a>
+  <a href="../examples.html">Examples</a>
+  <a href="../probe.html">Last probe</a>
+  <a href="../changelog.html">Changelog</a>
+</nav>
+<main>
+
+<div class="card">
+  <h2><code>serp_colombo</code></h2>
+  <p>Property SERP scoped to Colombo district (location=1506).</p>
+  <p class="meta">
+    <span class="badge cat">search</span>
+    <span class="badge">GET</span>
+    <code>/v1/serp</code>
+  </p>
+  <p class="meta">Last probe:
+    ✅ 200
+  </p>
+  <h3>curl</h3>
+  <pre><code>curl -sS &#x27;https://api.ikman.lk/v1/serp?category=409&amp;location=1506&amp;page=1&#x27; \
+  -H &#x27;Accept: application/json&#x27; \
+  -H &#x27;Application: web&#x27;</code></pre>
+  
+  
+  <h3>Sample</h3>
+  <pre><code>{
+  &quot;_probe&quot;: {
+    &quot;id&quot;: &quot;serp_colombo&quot;,
+    &quot;url&quot;: &quot;https://api.ikman.lk/v1/serp?category=409&amp;location=1506&amp;page=1&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;status&quot;: 200,
+    &quot;verified_at&quot;: &quot;2026-07-20T05:03:58.806791+00:00&quot;,
+    &quot;fingerprint&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;keys&quot;: [
+        &quot;pagination&quot;,
+        &quot;serp&quot;
+      ]
+    }
+  },
+  &quot;response&quot;: {
+    &quot;pagination&quot;: {
+      &quot;page&quot;: 1,
+      &quot;per_page&quot;: 25,
+      &quot;total&quot;: 41301,
+      &quot;pages&quot;: 1653,
+      &quot;next_page_url&quot;: &quot;https://api.ikman.lk/v1/serp?category=409&amp;location=1506&amp;page=2&amp;next_page_token=1784523838&quot;,
+      &quot;next_page_token&quot;: &quot;1784523838&quot;
+    },
+    &quot;serp&quot;: {
+      &quot;categories&quot;: [
+        {
+          &quot;id&quot;: 942,
+          &quot;name&quot;: &quot;Land For Sale&quot;,
+          &quot;count&quot;: 15338
+        },
+        {
+          &quot;id&quot;: 415,
+          &quot;name&quot;: &quot;Houses For Sale&quot;,
+          &quot;count&quot;: 14257
+        },
+        {
+          &quot;id&quot;: 937,
+          &quot;name&quot;: &quot;Apartments For Sale&quot;,
+          &quot;count&quot;: 2981
+        },
+        {
+          &quot;id&quot;: 416,
+          &quot;name&quot;: &quot;House Rentals&quot;,
+          &quot;count&quot;: 2885
+        },
+        {
+          &quot;id&quot;: 938,
+          &quot;name&quot;: &quot;Apartment Rentals&quot;,
+          &quot;count&quot;: 2179
+        },
+        {
+          &quot;id&quot;: 940,
+          &quot;name&quot;: &quot;Commercial Property Rentals&quot;,
+          &quot;count&quot;: 2116
+        },
+        {
+          &quot;id&quot;: 939,
+          &quot;name&quot;: &quot;Commercial Properties For Sale&quot;,
+          &quot;count&quot;: 649
+        },
+        {
+          &quot;id&quot;: 413,
+          &quot;name&quot;: &quot;Room &amp; Annex Rentals&quot;,
+          &quot;count&quot;: 527
+        },
+        {
+          &quot;id&quot;: 936,
+          &quot;name&quot;: &quot;Holiday &amp; Short-Term Rental&quot;,
+          &quot;count&quot;: 255
+        },
+        {
+          &quot;id&quot;: 943,
+          &quot;name&quot;: &quot;Land Rentals&quot;,
+          &quot;count&quot;: 114
+        }
+      ],
+      &quot;locations&quot;: [
+        {
+          &quot;id&quot;: 1553,
+          &quot;name&quot;: &quot;Piliyandala&quot;,
+          &quot;count&quot;: 3595
+        },
+        {
+          &quot;id&quot;: 1507,
+          &quot;name&quot;: &quot;Athurugiriya&quot;,
+          &quot;count&quot;: 3010
+        },
+        {
+          &quot;id&quot;: 1532,
+          &quot;name&quot;: &quot;Homagama&quot;,
+          &quot;count&quot;: 2845
+        },
+        {
+          &quot;id&quot;: 1508,
+          &quot;name&quot;: &quot;Battaramulla&quot;,
+          &quot;count&quot;: 2378
+        },
+        {
+          &quot;id&quot;: 1542,
+          &quot;name&quot;: &quot;Malabe&quot;,
+          &quot;count&quot;: 2301
+        },
+        {
+          &quot;id&quot;: 2129,
+          &quot;name&quot;: &quot;Angoda&quot;,
+          &quot;count&quot;: 136
+        },
+        {
+          &quot;id&quot;: 2130,
+          &quot;name&quot;: &quot;Avissawella&quot;,
+          &quot;count&quot;: 308
+        },
+        {
+          &quot;id&quot;: 1511,
+          &quot;name&quot;: &quot;Boralesgamuwa&quot;,
+          &quot;count&quot;: 1262
+        },
+        {
+          &quot;id&quot;: 1512,
+          &quot;name&quot;: &quot;Colombo 1&quot;,
+          &quot;count&quot;: 102
+        },
+        {
+          &quot;id&quot;: 1521,
+          &quot;name&quot;: &quot;Colombo 10&quot;,
+          &quot;count&quot;: 172
+        },
+        {
+          &quot;id&quot;: 1522,
+          &quot;name&quot;: &quot;Colombo 11&quot;,
+          &quot;count&quot;: 28
+        },
+        {
+          &quot;id&quot;: 1523,
+          &quot;name&quot;: &quot;Colombo 12&quot;,
+          &quot;count&quot;: 32
+        },
+        {
+          &quot;id&quot;: 1524,
+          &quot;name&quot;: &quot;Colombo 13&quot;,
+          &quot;count&quot;: 50
+        },
+        {
+          &quot;id&quot;: 1525,
+          &quot;name&quot;: &quot;Colombo 14&quot;,
+          &quot;count&quot;: 48
+        },
+        {
+          &quot;id&quot;: 1526,
+          &quot;name&quot;: &quot;Colombo 15&quot;,
+          &quot;count&quot;: 152
+        },
+        {
+          &quot;id&quot;: 1513,
+          &quot;name&quot;: &quot;Colombo 2&quot;,
+          &quot;count&quot;: 982
+        },
+        {
+          &quot;id&quot;: 1514,
+          &quot;name&quot;: &quot;Colombo 3&quot;,
+          &quot;count&quot;: 992
+        },
+        {
+          &quot;id&quot;: 1515,
+          &quot;name&quot;: &quot;Colombo 4&quot;,
+          &quot;count&quot;: 458
+        },
+        {
+          &quot;id&quot;: 1516,
+          &quot;name&quot;: &quot;Colombo 5&quot;,
+          &quot;count&quot;: 1261
+        },
+        {
+          &quot;id&quot;: 1517,
+          &quot;name&quot;: &quot;Colombo 6&quot;,
+          &quot;count&quot;: 902
+        },
+        {
+          &quot;id&quot;: 1518,
+          &quot;name&quot;: &quot;Colombo 7&quot;,
+          &quot;count&quot;: 636
+        },
+        {
+          &quot;id&quot;: 1519,
+          &quot;name&quot;: &quot;Colombo 8&quot;,
+          &quot;count&quot;: 386
+        },
+        {
+          &quot;id&quot;: 1520,
+          &quot;name&quot;: &quot;Colombo 9&quot;,
+          &quot;count&quot;: 113
+        },
+        {
+          &quot;id&quot;: 1527,
+          &quot;name&quot;: &quot;Dehiwala&quot;,
+          &quot;count&quot;: 1789
+        },
+        {
+          &quot;id&quot;: 2185,
+          &quot;name&quot;: &quot;Embulgama&quot;,
+          &quot;count&quot;: 39
+        },
+        {
+          &quot;id&quot;: 2131,
+          &quot;name&quot;: &quot;Godagama&quot;,
+          &quot;count&quot;: 167
+        },
+        {
+          &quot;id&quot;: 1530,
+          &quot;name&quot;: &quot;Hanwella&quot;,
+          &quot;count&quot;: 181
+        },
+        {
+          &quot;id&quot;: 1534,
+          &quot;name&quot;: &quot;Kaduwela&quot;,
+          &quot;count&quot;: 555
+        },
+        {
+          &quot;id&quot;: 2182,
+          &quot;name&quot;: &quot;Kalubowila&quot;,
+          &quot;count&quot;: 196
+        },
+        {
+          &quot;id&quot;: 1536,
+          &quot;name&quot;: &quot;Kesbewa&quot;,
+          &quot;count&quot;: 601
+        },
+        {
+          &quot;id&quot;: 2151,
+          &quot;name&quot;: &quot;Kohuwala&quot;,
+          &quot;count&quot;: 210
+        },
+        {
+          &quot;id&quot;: 1537,
+          &quot;name&quot;: &quot;Kolonnawa&quot;,
+          &quot;count&quot;: 125
+        },
+        {
+          &quot;id&quot;: 2180,
+          &quot;name&quot;: &quot;Kotikawatta&quot;,
+          &quot;count&quot;: 24
+        },
+        {
+          &quot;id&quot;: 1540,
+          &quot;name&quot;: &quot;Kottawa&quot;,
+          &quot;count&quot;: 2176
+        },
+        {
+          &quot;id&quot;: 2154,
+          &quot;name&quot;: &quot;Kotte&quot;,
+          &quot;count&quot;: 1155
+        },
+        {
+          &quot;id&quot;: 1541,
+          &quot;name&quot;: &quot;Maharagama&quot;,
+          &quot;count&quot;: 1125
+        },
+        {
+          &quot;id&quot;: 2132,
+          &quot;name&quot;: &quot;Meegoda&quot;,
+          &quot;count&quot;: 349
+        },
+        {
+          &quot;id&quot;: 1545,
+          &quot;name&quot;: &quot;Moratuwa&quot;,
+          &quot;count&quot;: 785
+        },
+        {
+          &quot;id&quot;: 1546,
+          &quot;name&quot;: &quot;Mount Lavinia&quot;,
+          &quot;count&quot;: 919
+        },
+        {
+          &quot;id&quot;: 2187,
+          &quot;name&quot;: &quot;Nawagamuwa&quot;,
+          &quot;count&quot;: 113
+        },
+        {
+          &quot;id&quot;: 1548,
+          &quot;name&quot;: &quot;Nawala&quot;,
+          &quot;count&quot;: 680
+        },
+        {
+          &quot;id&quot;: 1549,
+          &quot;name&quot;: &quot;Nugegoda&quot;,
+          &quot;count&quot;: 2283
+        },
+        {
+          &quot;id&quot;: 2184,
+          &quot;name&quot;: &quot;Olaboduwa&quot;,
+          &quot;count&quot;: 6
+        },
+        {
+          &quot;id&quot;: 1550,
+          &quot;name&quot;: &quot;Padukka&quot;,
+          &quot;count&quot;: 272
+        },
+        {
+          &quot;id&quot;: 1551,
+          &quot;name&quot;: &quot;Pannipitiya&quot;,
+          &quot;count&quot;: 981
+        },
+        {
+          &quot;id&quot;: 2183,
+          &quot;name&quot;: &quot;Polgasowita&quot;,
+          &quot;count&quot;: 410
+        },
+        {
+          &quot;id&quot;: 1554,
+          &quot;name&quot;: &quot;Rajagiriya&quot;,
+          &quot;count&quot;: 1270
+        },
+        {
+          &quot;id&quot;: 2186,
+          &quot;name&quot;: &quot;Ranala&quot;,
+          &quot;count&quot;: 3
+        },
+        {
+          &quot;id&quot;: 1555,
+          &quot;name&quot;: &quot;Ratmalana&quot;,
+          &quot;count&quot;: 472
+        },
+        {
+          &quot;id&quot;: 2173,
+          &quot;name&quot;: &quot;Talawatugoda&quot;,
+          &quot;count&quot;: 1908
+        },
+        {
+          &quot;id&quot;: 2179,
+          &quot;name&quot;: &quot;Wellampitiya&quot;,
+          &quot;count&quot;: 358
+        }
+      ],
+      &quot;types&quot;: [
+        {
+          &quot;key&quot;: &quot;for_sale&quot;,
+          &quot;count&quot;: 33138
+        },
+        {
+          &quot;key&quot;: &quot;to_buy&quot;,
+          &quot;count&quot;: 87
+        },
+        {
+          &quot;key&quot;: &quot;for_rent&quot;,
+          &quot;count&quot;: 7879
+        },
+        {
+          &quot;key&quot;: &quot;to_rent&quot;,
+          &quot;count&quot;: 197
+        }
+      ],
+      &quot;sort_options&quot;: [
+        &quot;price&quot;,
+        &quot;date&quot;
+      ],
+      &quot;sort_option&quot;: &quot;date&quot;,
+      &quot;sort_order&quot;: &quot;desc&quot;,
+      &quot;top_ads&quot;: [],
+      &quot;spotlights&quot;: [],
+      &quot;buy_now_filter&quot;: {
+        &quot;applicable&quot;: false
+      },
+      &quot;enhancements&quot;: {
+        &quot;cars&quot;: false,
+        &quot;properties&quot;: false,
+        &quot;jobs&quot;: false
+      },
+      &quot;results&quot;: [
+        {
+          &quot;id&quot;: &quot;6a3104034404e8cdd9bec516&quot;,
+          &quot;slug&quot;: &quot;house-for-sale-in-piliyandala-for-sale-colombo-8341&quot;,
+          &quot;title&quot;: &quot;House for Sale in Piliyandala&quot;,
+          &quot;type&quot;: &quot;for_sale&quot;,
+          &quot;date&quot;: &quot;2026-06-16T13:37:07+05:30&quot;,
+          &quot;deactivates&quot;: &quot;2026-08-15T13:37:07+05:30&quot;,
+          &quot;area&quot;: {
+            &quot;id&quot;: 1506,
+            &quot;name&quot;: &quot;Colombo&quot;
+          },
+          &quot;location&quot;: {
+            &quot;id&quot;: 1553,
+            &quot;name&quot;: &quot;Piliyandala&quot;
+          },
+          &quot;category&quot;: {
+            &quot;id&quot;: 415,
+            &quot;name&quot;: &quot;Houses For Sale&quot;
+          },
+          &quot;contact_card&quot;:</code></pre>
+</div>
+
+</main>
+<footer>
+  MIT-licensed harness · Educational use · <a href="../ethics.html">Ethics</a> ·
+  Generated 2026-07-20 05:04 UTC
+</footer>
+</body>
+</html>

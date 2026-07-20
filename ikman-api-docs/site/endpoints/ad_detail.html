@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ad_detail · ikman API Docs (unofficial)</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #111111;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --accent: #e5e5e5;
+  --bad: #f5a5a5;
+  --ok: #c8f0c8;
+  --border: rgba(255,255,255,0.1);
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: var(--sans); background: var(--bg); color: var(--text);
+  line-height: 1.55;
+}
+a { color: #ffffff; text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--muted); }
+header {
+  padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #151515, var(--bg));
+}
+header h1 { margin: 0 0 .35rem; font-size: 1.6rem; letter-spacing: -.02em; }
+header p { margin: 0; color: var(--muted); max-width: 52rem; }
+nav {
+  display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--border); background: var(--panel);
+  position: sticky; top: 0; z-index: 2;
+}
+nav a { text-decoration: none; color: var(--muted); }
+nav a:hover { color: var(--text); }
+main { padding: 1.25rem; max-width: 960px; margin: 0 auto; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.1rem; margin: 0 0 1rem;
+}
+.card h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.meta { color: var(--muted); font-size: .92rem; }
+.badge {
+  display: inline-block; font-size: .75rem; padding: .15rem .45rem;
+  border-radius: 999px; border: 1px solid var(--border); margin-right: .35rem;
+  font-family: var(--mono);
+}
+.badge.ok { color: var(--ok); border-color: #356b3d; }
+.badge.bad { color: var(--bad); border-color: #7a3b3b; }
+.badge.cat { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: .45rem .4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+code, pre { font-family: var(--mono); font-size: .85rem; }
+pre {
+  background: #050505; border: 1px solid var(--border); border-radius: 8px;
+  padding: .85rem; overflow: auto; max-height: 320px;
+}
+footer { padding: 2rem 1.25rem; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+h3 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .85rem; }
+.stat b { display: block; font-size: 1.4rem; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Unofficial ikman API Docs</h1>
+  <p>Live-probed documentation for <code>https://api.ikman.lk</code>. Not affiliated with ikman / Saltside.</p>
+</header>
+
+<nav>
+  <a href="../index.html">Home</a>
+  <a href="../endpoints/index.html">Endpoints</a>
+  <a href="../limitations.html">Limitations</a>
+  <a href="../ethics.html">Ethics</a>
+  <a href="../examples.html">Examples</a>
+  <a href="../probe.html">Last probe</a>
+  <a href="../changelog.html">Changelog</a>
+</nav>
+<main>
+
+<div class="card">
+  <h2><code>ad_detail</code></h2>
+  <p>Single ad detail — description, properties[], statistics.views, similar_ads.</p>
+  <p class="meta">
+    <span class="badge cat">detail</span>
+    <span class="badge">GET</span>
+    <code>/v1/ads/{{ad_id}}</code>
+  </p>
+  <p class="meta">Last probe:
+    ✅ 200
+  </p>
+  <h3>curl</h3>
+  <pre><code>curl -sS &#x27;https://api.ikman.lk/v1/ads/&lt;ad_id&gt;&#x27; \
+  -H &#x27;Accept: application/json&#x27; \
+  -H &#x27;Application: web&#x27;</code></pre>
+  <h3>Notable fields</h3><ul><li><code>ad.id</code></li><li><code>ad.title</code></li><li><code>ad.description</code></li><li><code>ad.properties[]</code> — key/label/value for bedrooms, bathrooms, size, etc.</li><li><code>ad.statistics.views</code></li><li><code>similar_ads[]</code></li><li><code>safety_tips[]</code></li></ul>
+  
+  <h3>Sample</h3>
+  <pre><code>{
+  &quot;_probe&quot;: {
+    &quot;id&quot;: &quot;ad_detail&quot;,
+    &quot;url&quot;: &quot;https://api.ikman.lk/v1/ads/6a567c723f33f5dd8b724a21&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;status&quot;: 200,
+    &quot;verified_at&quot;: &quot;2026-07-20T05:04:02.860959+00:00&quot;,
+    &quot;fingerprint&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;keys&quot;: [
+        &quot;ad&quot;,
+        &quot;safety_tips&quot;,
+        &quot;similar_ads&quot;
+      ]
+    }
+  },
+  &quot;response&quot;: {
+    &quot;ad&quot;: {
+      &quot;id&quot;: &quot;6a567c723f33f5dd8b724a21&quot;,
+      &quot;slug&quot;: &quot;brand-new-house-for-sale-colombo-846&quot;,
+      &quot;title&quot;: &quot;Brand new house&quot;,
+      &quot;description&quot;: &quot;Maharagama junction 4.7 km\n\n341 Piliyandala bus road 150 m\n\n25 feet road facing \n\n4 bedroom \n4 bathroom \nMaster bedroom with attached bathroom \nKitchen with teak pantry \nLiving and Dining area \nServant bedroom with toilet  \nVet kitchen area \nBeautiful garden space \nRooftop terrace \nCCTV camera \nHot water \nTeak wooden doors and windows \n2 vehicle parking space \nBedroom with wall cupboard\nFully complete two story house \n\n46 million \nNo brokers \n\n&quot;,
+      &quot;type&quot;: &quot;for_sale&quot;,
+      &quot;date&quot;: &quot;2026-07-14T23:44:11+05:30&quot;,
+      &quot;deactivates&quot;: &quot;2026-09-12T23:44:11+05:30&quot;,
+      &quot;area&quot;: {
+        &quot;id&quot;: 1506,
+        &quot;name&quot;: &quot;Colombo&quot;
+      },
+      &quot;location&quot;: {
+        &quot;id&quot;: 1541,
+        &quot;name&quot;: &quot;Maharagama&quot;
+      },
+      &quot;category&quot;: {
+        &quot;id&quot;: 415,
+        &quot;name&quot;: &quot;Houses For Sale&quot;
+      },
+      &quot;contact_card&quot;: {
+        &quot;chat_enabled&quot;: true,
+        &quot;delivery_methods&quot;: [],
+        &quot;account_type&quot;: &quot;private&quot;,
+        &quot;opt_out&quot;: true,
+        &quot;_redacted&quot;: true
+      },
+      &quot;features&quot;: {
+        &quot;buy_now&quot;: false,
+        &quot;listing_fee&quot;: false
+      },
+      &quot;by_paying_member&quot;: true,
+      &quot;by_authorized_dealer&quot;: false,
+      &quot;by_featured_member&quot;: false,
+      &quot;membership_details&quot;: {
+        &quot;level&quot;: &quot;premium&quot;,
+        &quot;paid_member_since&quot;: &quot;2021-08-01T18:30:00+00:00&quot;
+      },
+      &quot;info&quot;: &quot;Rs 46,000,000&quot;,
+      &quot;status&quot;: &quot;published&quot;,
+      &quot;details&quot;: [
+        &quot;Bedrooms: 4&quot;,
+        &quot;Bathrooms: 4&quot;
+      ],
+      &quot;url&quot;: &quot;http://ikman.lk/en/ad/brand-new-house-for-sale-colombo-846&quot;,
+      &quot;images&quot;: {
+        &quot;ids&quot;: [
+          &quot;25d04af5-622e-49e3-a3eb-77a55c655c61&quot;,
+          &quot;b3d0f579-3d47-45aa-891f-8904934741ec&quot;,
+          &quot;3f543679-b1af-4dcb-a707-af1f72dba661&quot;,
+          &quot;cec68977-8561-46a0-8163-e6b151fddf21&quot;,
+          &quot;2a1219cc-6046-4e98-9220-12de11ea2cb3&quot;,
+          &quot;7eaaafb1-6e6d-4609-850c-0b84182e2bbc&quot;,
+          &quot;09b2d9af-e78c-4b33-a076-9cf09dd645fc&quot;,
+          &quot;309838e9-6ce6-4794-b126-bdd673813f1a&quot;,
+          &quot;abf13159-d4f0-4352-b43a-dd71615fa3ac&quot;,
+          &quot;e118c03d-8855-42e8-9d34-959d2888198d&quot;,
+          &quot;97fb8520-69f3-4f75-8716-d21e7595c272&quot;,
+          &quot;c97d9120-174c-4f7a-b773-fbfafc37e102&quot;,
+          &quot;f8ae6bee-5c2b-48e5-ab72-8a01d9fee025&quot;,
+          &quot;f1b2c2b8-a3a2-40f8-894f-f593a9b9b150&quot;,
+          &quot;4e240145-73b9-4ff5-aea1-f109bcda85d0&quot;,
+          &quot;0fabe9ce-dc62-4ca6-a784-640a6f24a628&quot;,
+          &quot;1a2b72fc-826e-4802-8733-3bc997527b35&quot;,
+          &quot;9b62d83d-b0a4-4bae-a403-0151b5fc5fde&quot;,
+          &quot;de59590d-8f74-4a1e-967c-8890d8bfdc41&quot;,
+          &quot;30a5047d-dcc8-4efa-8f73-75c0cc8049db&quot;
+        ],
+        &quot;base_uri&quot;: &quot;https://i.ikman-st.com&quot;
+      },
+      &quot;account&quot;: &quot;[redacted]&quot;,
+      &quot;properties&quot;: [
+        {
+          &quot;label&quot;: &quot;Address&quot;,
+          &quot;value&quot;: &quot;Piliyandala road 4.7 km&quot;,
+          &quot;key&quot;: &quot;address&quot;
+        },
+        {
+          &quot;label&quot;: &quot;Bedrooms&quot;,
+          &quot;value&quot;: &quot;4&quot;,
+          &quot;key&quot;: &quot;bedrooms&quot;,
+          &quot;value_key&quot;: &quot;4-bedrooms&quot;
+        },
+        {
+          &quot;label&quot;: &quot;Bathrooms&quot;,
+          &quot;value&quot;: &quot;4&quot;,
+          &quot;key&quot;: &quot;bathrooms&quot;,
+          &quot;value_key&quot;: &quot;4&quot;
+        },
+        {
+          &quot;label&quot;: &quot;House size&quot;,
+          &quot;value&quot;: &quot;2,600.0 sqft&quot;,
+          &quot;key&quot;: &quot;house_size&quot;
+        },
+        {
+          &quot;label&quot;: &quot;Land size&quot;,
+          &quot;value&quot;: &quot;8.0 perches&quot;,
+          &quot;key&quot;: &quot;land_size&quot;
+        }
+      ],
+      &quot;promotions&quot;: {
+        &quot;top_ad&quot;: false,
+        &quot;bump_up&quot;: false,
+        &quot;urgent_ad&quot;: false,
+        &quot;spotlight&quot;: false,
+        &quot;featured_ad&quot;: true
+      },
+      &quot;money&quot;: {
+        &quot;label&quot;: &quot;Price&quot;,
+        &quot;amount&quot;: &quot;Rs 46,000,000&quot;
+      },
+      &quot;shop&quot;: {
+        &quot;id&quot;: &quot;57a9bc605dac93000173cc86&quot;,
+        &quot;slug&quot;: &quot;asitha-properties&quot;,
+        &quot;name&quot;: &quot;Asitha Properties&quot;,
+        &quot;tagline&quot;: &quot;Property Services&quot;,
+        &quot;description&quot;: &quot;Giving you the perfect property solutions so that you can spend your time comfortably, enjoyably, and safely among the sole asset where your investment lasts for generations. \r\n\r\nFor any clarifications please contact us and we are more than happy to resolve an issues or problems you may face and serve you well.&quot;,
+        &quot;logo&quot;: {
+          &quot;id&quot;: &quot;f0756832-799b-4f9b-870d-ef15cca9cfd2&quot;,
+          &quot;base_uri&quot;: &quot;https://i.ikman-st.com/u&quot;
+        },
+        &quot;banner&quot;: {
+          &quot;id&quot;: &quot;15b15033-feab-47e7-a644-cf3e16008619&quot;,
+          &quot;base_uri&quot;: &quot;https://i.ikman-st.com/u&quot;
+        },
+        &quot;contact_card&quot;: {
+          &quot;_redacted&quot;: true
+        },
+        &quot;job_page&quot;: false,
+        &quot;location_id&quot;: 1541
+      },
+      &quot;statistics&quot;: {
+        &quot;views&quot;: 291
+      }
+    },
+    &quot;similar_ads&quot;: [],
+    &quot;safety_tips&quot;: [
+      &quot;ikman support will never message you in chat. Don’t click links, share OTPs/cards, or pay without seeing the item. ikman has no delivery service.&quot;
+    ]
+  }
+}
+</code></pre>
+</div>
+
+</main>
+<footer>
+  MIT-licensed harness · Educational use · <a href="../ethics.html">Ethics</a> ·
+  Generated 2026-07-20 05:04 UTC
+</footer>
+</body>
+</html>

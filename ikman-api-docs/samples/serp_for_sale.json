@@ -1,0 +1,454 @@
+{
+  "_probe": {
+    "id": "serp_for_sale",
+    "url": "https://api.ikman.lk/v1/serp?category=409&type=for_sale&page=1",
+    "method": "GET",
+    "status": 200,
+    "verified_at": "2026-07-20T05:04:00.166956+00:00",
+    "fingerprint": {
+      "type": "object",
+      "keys": [
+        "pagination",
+        "serp"
+      ]
+    }
+  },
+  "response": {
+    "pagination": {
+      "page": 1,
+      "per_page": 25,
+      "total": 55633,
+      "pages": 2226,
+      "next_page_url": "https://api.ikman.lk/v1/serp?category=409&type=for_sale&page=2&next_page_token=1784523839",
+      "next_page_token": "1784523839"
+    },
+    "serp": {
+      "categories": [
+        {
+          "id": 942,
+          "name": "Land For Sale",
+          "count": 31648
+        },
+        {
+          "id": 415,
+          "name": "Houses For Sale",
+          "count": 19241
+        },
+        {
+          "id": 937,
+          "name": "Apartments For Sale",
+          "count": 3150
+        },
+        {
+          "id": 939,
+          "name": "Commercial Properties For Sale",
+          "count": 1594
+        }
+      ],
+      "locations": [
+        {
+          "id": 1506,
+          "name": "Colombo",
+          "count": 33138
+        },
+        {
+          "id": 1577,
+          "name": "Gampaha",
+          "count": 10574
+        },
+        {
+          "id": 1620,
+          "name": "Kalutara",
+          "count": 3270
+        },
+        {
+          "id": 1674,
+          "name": "Kurunegala",
+          "count": 1267
+        },
+        {
+          "id": 1724,
+          "name": "Matara",
+          "count": 1235
+        },
+        {
+          "id": 1432,
+          "name": "Ampara",
+          "count": 72
+        },
+        {
+          "id": 1452,
+          "name": "Anuradhapura",
+          "count": 554
+        },
+        {
+          "id": 1475,
+          "name": "Badulla",
+          "count": 307
+        },
+        {
+          "id": 1491,
+          "name": "Batticaloa",
+          "count": 115
+        },
+        {
+          "id": 1559,
+          "name": "Galle",
+          "count": 1151
+        },
+        {
+          "id": 1592,
+          "name": "Hambantota",
+          "count": 793
+        },
+        {
+          "id": 1605,
+          "name": "Jaffna",
+          "count": 146
+        },
+        {
+          "id": 1636,
+          "name": "Kandy",
+          "count": 1196
+        },
+        {
+          "id": 1658,
+          "name": "Kegalle",
+          "count": 186
+        },
+        {
+          "id": 1670,
+          "name": "Kilinochchi",
+          "count": 17
+        },
+        {
+          "id": 1706,
+          "name": "Mannar",
+          "count": 11
+        },
+        {
+          "id": 1712,
+          "name": "Matale",
+          "count": 323
+        },
+        {
+          "id": 1740,
+          "name": "Monaragala",
+          "count": 103
+        },
+        {
+          "id": 1752,
+          "name": "Mullativu",
+          "count": 2
+        },
+        {
+          "id": 1757,
+          "name": "Nuwara Eliya",
+          "count": 564
+        },
+        {
+          "id": 1763,
+          "name": "Polonnaruwa",
+          "count": 50
+        },
+        {
+          "id": 1771,
+          "name": "Puttalam",
+          "count": 324
+        },
+        {
+          "id": 1788,
+          "name": "Ratnapura",
+          "count": 162
+        },
+        {
+          "id": 1806,
+          "name": "Trincomalee",
+          "count": 57
+        },
+        {
+          "id": 1818,
+          "name": "Vavuniya",
+          "count": 16
+        }
+      ],
+      "types": [
+        {
+          "key": "for_sale",
+          "count": 55633
+        },
+        {
+          "key": "to_buy",
+          "count": 135
+        },
+        {
+          "key": "for_rent",
+          "count": 9635
+        },
+        {
+          "key": "to_rent",
+          "count": 261
+        }
+      ],
+      "sort_options": [
+        "price",
+        "date"
+      ],
+      "sort_option": "date",
+      "sort_order": "desc",
+      "top_ads": [],
+      "spotlights": [],
+      "buy_now_filter": {
+        "applicable": false
+      },
+      "enhancements": {
+        "cars": false,
+        "properties": false,
+        "jobs": false
+      },
+      "results": [
+        {
+          "id": "6a5af71a3bf651b4528e2750",
+          "slug": "brand-new-luxury-modern-home-for-sale-in-athurugiriya-for-sale-colombo",
+          "title": "Brand New Luxury Modern Home for Sale in Athurugiriya",
+          "type": "for_sale",
+          "date": "2026-07-18T10:10:17+05:30",
+          "deactivates": "2026-09-16T10:10:17+05:30",
+          "area": {
+            "id": 1506,
+            "name": "Colombo"
+          },
+          "location": {
+            "id": 1507,
+            "name": "Athurugiriya"
+          },
+          "category": {
+            "id": 415,
+            "name": "Houses For Sale"
+          },
+          "contact_card": {
+            "chat_enabled": true,
+            "delivery_methods": [],
+            "account_type": "private",
+            "opt_out": true,
+            "_redacted": true
+          },
+          "features": {
+            "buy_now": false,
+            "listing_fee": false
+          },
+          "by_paying_member": true,
+          "by_authorized_dealer": false,
+          "by_featured_member": false,
+          "membership_details": {
+            "level": "premium"
+          },
+          "info": "Rs 43,000,000",
+          "status": "published",
+          "details": [
+            "Bedrooms: 4",
+            "Bathrooms: 3"
+          ],
+          "url": "http://ikman.lk/en/ad/brand-new-luxury-modern-home-for-sale-in-athurugiriya-for-sale-colombo",
+          "images": {
+            "ids": [
+              "31277c39-2b18-4d75-9109-74d854c40fc7",
+              "639ea1dc-4064-4e95-bd8d-c9a2f9d15406",
+              "0dd90dd3-e127-4111-bfbd-c8a70e3da618",
+              "9895ea02-232c-4002-a179-6d3c4537046d",
+              "926ba093-8f47-4612-b718-abbd4e4b3ae3",
+              "59a0802c-052d-4e45-be97-c6c088c4b9d5",
+              "69e7ee36-a6ea-43d5-8945-d43e8fdc5d3d",
+              "aa2ed6e4-4d22-4832-a3f6-e36282f61ef2",
+              "5bbddbaf-1c48-42d8-a2b0-ff5dbdb72cf1",
+              "cc0e3015-f112-4220-ab84-11bb096460e4",
+              "6883e53c-b220-48c9-91f7-6a7e0f4b1f04",
+              "111feb81-5530-4a7c-b7ed-88408c704e26",
+              "54610175-02c1-4084-8532-e5826640045b",
+              "38d76f29-b1e8-4aad-9c9c-27f48a93e71b",
+              "98e97a21-581a-4a74-b1f6-c2acb2d09aea",
+              "99bf28cd-069e-40c1-92b5-5fcde52b20c3",
+              "2e7a72b9-7881-4076-9c81-441570d09bb5",
+              "97e3dabe-112d-445a-a1f5-baac50b89d70",
+              "4b52ce06-42ba-448a-bc6d-64723cab3dd2",
+              "6c6f4667-e3c2-4452-bb64-9538844373bc"
+            ],
+            "base_uri": "https://i.ikman-st.com"
+          },
+          "account": "[redacted]",
+          "promotions": {
+            "top_ad": false,
+            "bump_up": false,
+            "urgent_ad": false,
+            "spotlight": false,
+            "featured_ad": true
+          },
+          "display_preferences": {
+            "use_featured_ads_ui": true
+          },
+          "money": {
+            "label": "Price",
+            "negotiable": "Negotiable",
+            "amount": "Rs 43,000,000"
+          },
+          "layouts": {
+            "classic": {
+              "info": "Rs 43,000,000",
+              "details": [
+                "Bedrooms: 4",
+                "Bathrooms: 3"
+              ],
+              "serp_images_enabled": true
+            },
+            "single_column": {
+              "info": "Rs 43,000,000",
+              "details": [
+                "2,045.0 sqft",
+                "Bedrooms: 4",
+                "Bathrooms: 3"
+              ],
+              "serp_images_enabled": true
+            },
+            "fluid": {
+              "info": "Rs 43,000,000",
+              "details": [],
+              "serp_images_enabled": true
+            }
+          },
+          "shop": {
+            "id": "5c526b638c8b1100014f4b3e",
+            "slug": "dream-homes-real-estate",
+            "name": "Dream Homes Real Estate Pvt Ltd",
+            "tagline": "Where Dreams Come Home",
+            "description": "Giving you the perfect property solutions so that you can spend your time comfortably, enjoyably, and safely among the sole asset where your investment lasts for generations. \r\n\r\nFor any clarifications please contact us and we are more than happy to resolve an issues or problems you may face and serve you well.",
+            "logo": {
+              "id": "c9b66b41-acad-494e-a8a8-907b965233de",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "banner": {
+              "id": "86b4cd4d-202d-4425-9a7b-6c87bb964bd8",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "contact_card": {
+              "_redacted": true
+            },
+            "job_page": false,
+            "location_id": 2355
+          }
+        },
+        {
+          "id": "6a0d04abf662889c9dc56567",
+          "slug": "land-for-sale-kiribathgoda-for-sale-gampaha-792",
+          "title": "Land For Sale Kiribathgoda",
+          "type": "for_sale",
+          "date": "2026-07-20T10:33:25+05:30",
+          "deactivates": "2026-09-18T10:33:25+05:30",
+          "area": {
+            "id": 1577,
+            "name": "Gampaha"
+          },
+          "location": {
+            "id": 1586,
+            "name": "Kiribathgoda"
+          },
+          "category": {
+            "id": 942,
+            "name": "Land For Sale"
+          },
+          "contact_card": {
+            "chat_enabled": true,
+            "delivery_methods": [],
+            "account_type": "private",
+            "opt_out": true,
+            "_redacted": true
+          },
+          "features": {
+            "buy_now": false,
+            "listing_fee": false
+          },
+          "by_paying_member": true,
+          "by_authorized_dealer": true,
+          "by_featured_member": false,
+          "membership_details": {
+            "level": "premium"
+          },
+          "info": "Rs 1,950,000 per perch",
+          "status": "published",
+          "details": [
+            "7.0 perches"
+          ],
+          "url": "http://ikman.lk/en/ad/land-for-sale-kiribathgoda-for-sale-gampaha-792",
+          "images": {
+            "ids": [
+              "8e124351-759c-4c53-8e10-2513d66ee588",
+              "a46af3a7-8c88-4abd-bf81-3cb337151e56",
+              "d1c157d5-54cb-4ea3-9d21-29078e16d5e0",
+              "73a33630-f9bf-499a-ab39-e5ea1c59cfd8",
+              "cdc5599c-15fb-4376-a612-22c1a1f887c3"
+            ],
+            "base_uri": "https://i.ikman-st.com"
+          },
+          "account": "[redacted]",
+          "promotions": {
+            "top_ad": false,
+            "bump_up": false,
+            "urgent_ad": false,
+            "spotlight": false,
+            "featured_ad": false
+          },
+          "money": {
+            "label": "Price",
+            "amount": "Rs 1,950,000 per perch"
+          },
+          "layouts": {
+            "classic": {
+              "info": "Rs 1,950,000 per perch",
+              "details": [
+                "7.0 perches"
+              ],
+              "serp_images_enabled": true
+            },
+            "single_column": {
+              "info": "Rs 1,950,000 per perch",
+              "details": [
+                "7.0 perches",
+                "Residential"
+              ],
+              "serp_images_enabled": true
+            },
+            "fluid": {
+              "info": "Rs 1,950,000 per perch",
+              "details": [],
+              "serp_images_enabled": true
+            }
+          },
+          "shop": {
+            "id": "624fc580a152b90001c28560",
+            "slug": "primelands-colombo-8",
+            "name": "Prime Lands (Pvt) Ltd",
+            "tagline": "Where Dreams Come Home",
+            "description": "Giving you the perfect property solutions so that you can spend your time comfortably, enjoyably, and safely among the sole asset where your investment lasts for generations.\r\n\r\nFor any clarifications please contact us and we are more than happy to resolve an issues or problems you may face and serve you well.",
+            "logo": {
+              "id": "6a417b92-aa18-4106-a932-8116a646ce59",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "banner": {
+              "id": "03415858-a664-432c-9afd-f01aeeb9d41a",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "contact_card": {
+              "_redacted": true
+            },
+            "job_page": false,
+            "location_id": 1519
+          }
+        }
+      ]
+    },
+    "_truncated": {
+      "list_key": "_serp_results",
+      "kept": 2,
+      "original_len": 26
+    }
+  }
+}

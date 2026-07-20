@@ -1,0 +1,158 @@
+{
+  "_probe": {
+    "id": "ad_detail",
+    "url": "https://api.ikman.lk/v1/ads/6a567c723f33f5dd8b724a21",
+    "method": "GET",
+    "status": 200,
+    "verified_at": "2026-07-20T05:04:02.860959+00:00",
+    "fingerprint": {
+      "type": "object",
+      "keys": [
+        "ad",
+        "safety_tips",
+        "similar_ads"
+      ]
+    }
+  },
+  "response": {
+    "ad": {
+      "id": "6a567c723f33f5dd8b724a21",
+      "slug": "brand-new-house-for-sale-colombo-846",
+      "title": "Brand new house",
+      "description": "Maharagama junction 4.7 km\n\n341 Piliyandala bus road 150 m\n\n25 feet road facing \n\n4 bedroom \n4 bathroom \nMaster bedroom with attached bathroom \nKitchen with teak pantry \nLiving and Dining area \nServant bedroom with toilet  \nVet kitchen area \nBeautiful garden space \nRooftop terrace \nCCTV camera \nHot water \nTeak wooden doors and windows \n2 vehicle parking space \nBedroom with wall cupboard\nFully complete two story house \n\n46 million \nNo brokers \n\n",
+      "type": "for_sale",
+      "date": "2026-07-14T23:44:11+05:30",
+      "deactivates": "2026-09-12T23:44:11+05:30",
+      "area": {
+        "id": 1506,
+        "name": "Colombo"
+      },
+      "location": {
+        "id": 1541,
+        "name": "Maharagama"
+      },
+      "category": {
+        "id": 415,
+        "name": "Houses For Sale"
+      },
+      "contact_card": {
+        "chat_enabled": true,
+        "delivery_methods": [],
+        "account_type": "private",
+        "opt_out": true,
+        "_redacted": true
+      },
+      "features": {
+        "buy_now": false,
+        "listing_fee": false
+      },
+      "by_paying_member": true,
+      "by_authorized_dealer": false,
+      "by_featured_member": false,
+      "membership_details": {
+        "level": "premium",
+        "paid_member_since": "2021-08-01T18:30:00+00:00"
+      },
+      "info": "Rs 46,000,000",
+      "status": "published",
+      "details": [
+        "Bedrooms: 4",
+        "Bathrooms: 4"
+      ],
+      "url": "http://ikman.lk/en/ad/brand-new-house-for-sale-colombo-846",
+      "images": {
+        "ids": [
+          "25d04af5-622e-49e3-a3eb-77a55c655c61",
+          "b3d0f579-3d47-45aa-891f-8904934741ec",
+          "3f543679-b1af-4dcb-a707-af1f72dba661",
+          "cec68977-8561-46a0-8163-e6b151fddf21",
+          "2a1219cc-6046-4e98-9220-12de11ea2cb3",
+          "7eaaafb1-6e6d-4609-850c-0b84182e2bbc",
+          "09b2d9af-e78c-4b33-a076-9cf09dd645fc",
+          "309838e9-6ce6-4794-b126-bdd673813f1a",
+          "abf13159-d4f0-4352-b43a-dd71615fa3ac",
+          "e118c03d-8855-42e8-9d34-959d2888198d",
+          "97fb8520-69f3-4f75-8716-d21e7595c272",
+          "c97d9120-174c-4f7a-b773-fbfafc37e102",
+          "f8ae6bee-5c2b-48e5-ab72-8a01d9fee025",
+          "f1b2c2b8-a3a2-40f8-894f-f593a9b9b150",
+          "4e240145-73b9-4ff5-aea1-f109bcda85d0",
+          "0fabe9ce-dc62-4ca6-a784-640a6f24a628",
+          "1a2b72fc-826e-4802-8733-3bc997527b35",
+          "9b62d83d-b0a4-4bae-a403-0151b5fc5fde",
+          "de59590d-8f74-4a1e-967c-8890d8bfdc41",
+          "30a5047d-dcc8-4efa-8f73-75c0cc8049db"
+        ],
+        "base_uri": "https://i.ikman-st.com"
+      },
+      "account": "[redacted]",
+      "properties": [
+        {
+          "label": "Address",
+          "value": "Piliyandala road 4.7 km",
+          "key": "address"
+        },
+        {
+          "label": "Bedrooms",
+          "value": "4",
+          "key": "bedrooms",
+          "value_key": "4-bedrooms"
+        },
+        {
+          "label": "Bathrooms",
+          "value": "4",
+          "key": "bathrooms",
+          "value_key": "4"
+        },
+        {
+          "label": "House size",
+          "value": "2,600.0 sqft",
+          "key": "house_size"
+        },
+        {
+          "label": "Land size",
+          "value": "8.0 perches",
+          "key": "land_size"
+        }
+      ],
+      "promotions": {
+        "top_ad": false,
+        "bump_up": false,
+        "urgent_ad": false,
+        "spotlight": false,
+        "featured_ad": true
+      },
+      "money": {
+        "label": "Price",
+        "amount": "Rs 46,000,000"
+      },
+      "shop": {
+        "id": "57a9bc605dac93000173cc86",
+        "slug": "asitha-properties",
+        "name": "Asitha Properties",
+        "tagline": "Property Services",
+        "description": "Giving you the perfect property solutions so that you can spend your time comfortably, enjoyably, and safely among the sole asset where your investment lasts for generations. \r\n\r\nFor any clarifications please contact us and we are more than happy to resolve an issues or problems you may face and serve you well.",
+        "logo": {
+          "id": "f0756832-799b-4f9b-870d-ef15cca9cfd2",
+          "base_uri": "https://i.ikman-st.com/u"
+        },
+        "banner": {
+          "id": "15b15033-feab-47e7-a644-cf3e16008619",
+          "base_uri": "https://i.ikman-st.com/u"
+        },
+        "contact_card": {
+          "_redacted": true
+        },
+        "job_page": false,
+        "location_id": 1541
+      },
+      "statistics": {
+        "views": 291
+      }
+    },
+    "similar_ads": [],
+    "safety_tips": [
+      "ikman support will never message you in chat. Don’t click links, share OTPs/cards, or pay without seeing the item. ikman has no delivery service."
+    ]
+  }
+}

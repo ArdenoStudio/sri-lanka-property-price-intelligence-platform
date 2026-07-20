@@ -1,0 +1,436 @@
+{
+  "_probe": {
+    "id": "serp_houses_sale",
+    "url": "https://api.ikman.lk/v1/serp?category=415&page=1",
+    "method": "GET",
+    "status": 200,
+    "verified_at": "2026-07-20T05:03:57.448441+00:00",
+    "fingerprint": {
+      "type": "object",
+      "keys": [
+        "pagination",
+        "serp"
+      ]
+    }
+  },
+  "response": {
+    "pagination": {
+      "page": 1,
+      "per_page": 25,
+      "total": 19293,
+      "pages": 772,
+      "next_page_url": "https://api.ikman.lk/v1/serp?category=415&page=2&next_page_token=1784523836",
+      "next_page_token": "1784523836"
+    },
+    "serp": {
+      "categories": [
+        {
+          "id": 415,
+          "name": "Houses For Sale",
+          "count": 19293
+        }
+      ],
+      "locations": [
+        {
+          "id": 1506,
+          "name": "Colombo",
+          "count": 14257
+        },
+        {
+          "id": 1577,
+          "name": "Gampaha",
+          "count": 3550
+        },
+        {
+          "id": 1620,
+          "name": "Kalutara",
+          "count": 370
+        },
+        {
+          "id": 1636,
+          "name": "Kandy",
+          "count": 352
+        },
+        {
+          "id": 1674,
+          "name": "Kurunegala",
+          "count": 172
+        },
+        {
+          "id": 1432,
+          "name": "Ampara",
+          "count": 18
+        },
+        {
+          "id": 1452,
+          "name": "Anuradhapura",
+          "count": 42
+        },
+        {
+          "id": 1475,
+          "name": "Badulla",
+          "count": 51
+        },
+        {
+          "id": 1491,
+          "name": "Batticaloa",
+          "count": 21
+        },
+        {
+          "id": 1559,
+          "name": "Galle",
+          "count": 111
+        },
+        {
+          "id": 1592,
+          "name": "Hambantota",
+          "count": 21
+        },
+        {
+          "id": 1605,
+          "name": "Jaffna",
+          "count": 33
+        },
+        {
+          "id": 1658,
+          "name": "Kegalle",
+          "count": 36
+        },
+        {
+          "id": 1670,
+          "name": "Kilinochchi",
+          "count": 2
+        },
+        {
+          "id": 1706,
+          "name": "Mannar",
+          "count": 1
+        },
+        {
+          "id": 1712,
+          "name": "Matale",
+          "count": 34
+        },
+        {
+          "id": 1724,
+          "name": "Matara",
+          "count": 74
+        },
+        {
+          "id": 1740,
+          "name": "Monaragala",
+          "count": 11
+        },
+        {
+          "id": 1757,
+          "name": "Nuwara Eliya",
+          "count": 43
+        },
+        {
+          "id": 1763,
+          "name": "Polonnaruwa",
+          "count": 19
+        },
+        {
+          "id": 1771,
+          "name": "Puttalam",
+          "count": 34
+        },
+        {
+          "id": 1788,
+          "name": "Ratnapura",
+          "count": 27
+        },
+        {
+          "id": 1806,
+          "name": "Trincomalee",
+          "count": 9
+        },
+        {
+          "id": 1818,
+          "name": "Vavuniya",
+          "count": 5
+        }
+      ],
+      "types": [
+        {
+          "key": "for_sale",
+          "count": 19241
+        },
+        {
+          "key": "to_buy",
+          "count": 52
+        }
+      ],
+      "sort_options": [
+        "price",
+        "date"
+      ],
+      "sort_option": "date",
+      "sort_order": "desc",
+      "top_ads": [],
+      "spotlights": [],
+      "buy_now_filter": {
+        "applicable": false
+      },
+      "enhancements": {
+        "cars": false,
+        "properties": false,
+        "jobs": false
+      },
+      "results": [
+        {
+          "id": "6a3104034404e8cdd9bec516",
+          "slug": "house-for-sale-in-piliyandala-for-sale-colombo-8341",
+          "title": "House for Sale in Piliyandala",
+          "type": "for_sale",
+          "date": "2026-06-16T13:37:07+05:30",
+          "deactivates": "2026-08-15T13:37:07+05:30",
+          "area": {
+            "id": 1506,
+            "name": "Colombo"
+          },
+          "location": {
+            "id": 1553,
+            "name": "Piliyandala"
+          },
+          "category": {
+            "id": 415,
+            "name": "Houses For Sale"
+          },
+          "contact_card": {
+            "chat_enabled": false,
+            "delivery_methods": [],
+            "account_type": "private",
+            "opt_out": true,
+            "_redacted": true
+          },
+          "features": {
+            "buy_now": false,
+            "listing_fee": false
+          },
+          "buy_now_options": {
+            "opt_in": false,
+            "eligible": false
+          },
+          "membership_details": {
+            "level": "free"
+          },
+          "info": "Rs 45,000,000",
+          "status": "published",
+          "details": [
+            "Bedrooms: 5",
+            "Bathrooms: 4"
+          ],
+          "url": "http://ikman.lk/en/ad/house-for-sale-in-piliyandala-for-sale-colombo-8341",
+          "images": {
+            "ids": [
+              "07d42ab7-2560-4720-ac5d-ba2047d83338",
+              "ab710f15-d492-4f75-9b60-aaf0760382d7",
+              "0ab5f95b-3062-4d4f-9ff8-9f51e54b0134",
+              "a0c4c5d2-e2ab-4f85-a520-a550b526eff2",
+              "14cef606-5fc9-4431-ac8b-6197c1c1b464",
+              "6355a423-faac-4220-b96d-6bced04e6f39",
+              "e778cdfd-bca7-42fc-88da-6d52959f02cf",
+              "87f540c3-832a-4cae-95bc-be01dfc2dd36"
+            ],
+            "base_uri": "https://i.ikman-st.com"
+          },
+          "account": "[redacted]",
+          "promotions": {
+            "top_ad": true,
+            "bump_up": true,
+            "urgent_ad": true,
+            "spotlight": false,
+            "featured_ad": true
+          },
+          "display_preferences": {
+            "use_featured_ads_ui": true
+          },
+          "money": {
+            "label": "Price",
+            "negotiable": "Negotiable",
+            "amount": "Rs 45,000,000"
+          },
+          "layouts": {
+            "classic": {
+              "info": "Rs 45,000,000",
+              "details": [
+                "Bedrooms: 5",
+                "Bathrooms: 4"
+              ],
+              "serp_images_enabled": true
+            },
+            "single_column": {
+              "info": "Rs 45,000,000",
+              "details": [
+                "4,300.0 sqft",
+                "Bedrooms: 5",
+                "Bathrooms: 4"
+              ],
+              "serp_images_enabled": true
+            },
+            "fluid": {
+              "info": "Rs 45,000,000",
+              "details": [],
+              "serp_images_enabled": true
+            }
+          },
+          "shop": {
+            "id": "593a7ec9aa66d800010e18f0",
+            "slug": "listing-telemarketing",
+            "name": "Telemarketing",
+            "tagline": "Only the best for you.",
+            "description": "ikman.lk, Sri Lanka’s largest market place, introduced Listing Telemarketing services to educate sellers on the various benefits that can be obtained by posting their ads on ikman.\r\n \r\nAdditional support is extended to sellers who need their ads created and posted on ikman, where the Listing Telemarketing team does all the work to get the ads published. This service is offered for all types of ads, which provides a unique opportunity of gaining more prominence and exposure for their listed advertisements, at a nominal fee.",
+            "logo": {
+              "id": "c69715f2-5451-45f1-a600-a1417b8704d3",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "banner": {
+              "id": "81018ab4-0be5-4c5a-9930-5bc75829d3f6",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "contact_card": {
+              "_redacted": true
+            },
+            "job_page": false,
+            "location_id": 1513
+          },
+          "last_bump_up_date": "2026-07-19T12:43:00+05:30"
+        },
+        {
+          "id": "6a55bc1564a8ae03909cc296",
+          "slug": "bh155-two-storey-modern-house-for-sale-in-wattala-for-sale-gampaha-1",
+          "title": "(BH155) Two Storey Modern House for Sale in Wattala",
+          "type": "for_sale",
+          "date": "2026-07-14T10:03:26+05:30",
+          "deactivates": "2026-09-12T10:03:26+05:30",
+          "area": {
+            "id": 1577,
+            "name": "Gampaha"
+          },
+          "location": {
+            "id": 1591,
+            "name": "Wattala"
+          },
+          "category": {
+            "id": 415,
+            "name": "Houses For Sale"
+          },
+          "contact_card": {
+            "chat_enabled": true,
+            "delivery_methods": [],
+            "account_type": "private",
+            "opt_out": true,
+            "_redacted": true
+          },
+          "features": {
+            "buy_now": false,
+            "listing_fee": false
+          },
+          "by_paying_member": true,
+          "by_authorized_dealer": false,
+          "by_featured_member": false,
+          "membership_details": {
+            "level": "premium"
+          },
+          "info": "Rs 33,000,000",
+          "status": "published",
+          "details": [
+            "Bedrooms: 4",
+            "Bathrooms: 2"
+          ],
+          "url": "http://ikman.lk/en/ad/bh155-two-storey-modern-house-for-sale-in-wattala-for-sale-gampaha-1",
+          "images": {
+            "ids": [
+              "f0b88c19-c250-44ec-846f-200bf20a754a",
+              "89deff95-ee14-4321-be16-b87b1bfeeffc",
+              "2bb17cd4-d2a0-4a0a-a5fa-b97f85cde380",
+              "f8908ece-7c3e-429b-8664-187359fce21c",
+              "3528461d-a9ee-4352-8882-359722cdcd57",
+              "1c12be37-bf89-4836-8cb6-76317e56e01b",
+              "5006cfa4-e534-470a-8371-df5731fbc871",
+              "6ddcaf44-575f-4d3f-a00f-53608ef1cb01",
+              "43bfdbe2-ab1d-47a2-baba-b7126fe35a0d",
+              "7646d11f-ce0e-45f4-b9e8-8bbb30ae3359",
+              "eeaed862-7b76-4ce6-9ea7-9fb5407ca6d4",
+              "b7c3887d-f828-43c9-abbe-57c08eb29baf",
+              "1110b8b2-6fe3-4aa7-a65b-4031b840f4bb",
+              "05da4738-aa1c-4fed-a137-288d723ea09e",
+              "b11f4df3-982e-4322-b551-5b574324a25b",
+              "a2515453-902f-463d-8cf0-cee64b331596",
+              "149f3c48-00dd-4c10-92ec-90195fffc817",
+              "694de65c-4ec8-444d-bf6f-db0e7f77ec62",
+              "1887946d-44f6-4264-b58c-f723c583cd2c",
+              "e70fa727-7edf-4365-b140-0903b5a3051c"
+            ],
+            "base_uri": "https://i.ikman-st.com"
+          },
+          "account": "[redacted]",
+          "promotions": {
+            "top_ad": false,
+            "bump_up": true,
+            "urgent_ad": false,
+            "spotlight": false,
+            "featured_ad": false
+          },
+          "money": {
+            "label": "Price",
+            "negotiable": "Negotiable",
+            "amount": "Rs 33,000,000"
+          },
+          "layouts": {
+            "classic": {
+              "info": "Rs 33,000,000",
+              "details": [
+                "Bedrooms: 4",
+                "Bathrooms: 2"
+              ],
+              "serp_images_enabled": true
+            },
+            "single_column": {
+              "info": "Rs 33,000,000",
+              "details": [
+                "2,000.0 sqft",
+                "Bedrooms: 4",
+                "Bathrooms: 2"
+              ],
+              "serp_images_enabled": true
+            },
+            "fluid": {
+              "info": "Rs 33,000,000",
+              "details": [],
+              "serp_images_enabled": true
+            }
+          },
+          "shop": {
+            "id": "66e3c4253416b90001312820",
+            "slug": "primetime-properties-",
+            "name": "Primetime Properties",
+            "tagline": "Where Dreams Come Home",
+            "description": "Giving you the perfect property solutions so that you can spend your time comfortably, enjoyably, and safely among the sole asset where your investment lasts for generations.\r\n\r\nFor any clarifications please contact us and we are more than happy to resolve an issues or problems you may face and serve you well.",
+            "logo": {
+              "id": "5570b36e-b225-4ba6-a4ca-41f21890a77d",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "banner": {
+              "id": "b052ff63-8892-4ce4-a4f7-bc241186f67a",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "contact_card": {
+              "_redacted": true
+            },
+            "job_page": false,
+            "location_id": 1541
+          },
+          "last_bump_up_date": "2026-07-20T10:32:10+05:30"
+        }
+      ]
+    },
+    "_truncated": {
+      "list_key": "_serp_results",
+      "kept": 2,
+      "original_len": 26
+    }
+  }
+}

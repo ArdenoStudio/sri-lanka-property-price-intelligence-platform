@@ -1,0 +1,606 @@
+{
+  "_probe": {
+    "id": "serp_colombo",
+    "url": "https://api.ikman.lk/v1/serp?category=409&location=1506&page=1",
+    "method": "GET",
+    "status": 200,
+    "verified_at": "2026-07-20T05:03:58.806791+00:00",
+    "fingerprint": {
+      "type": "object",
+      "keys": [
+        "pagination",
+        "serp"
+      ]
+    }
+  },
+  "response": {
+    "pagination": {
+      "page": 1,
+      "per_page": 25,
+      "total": 41301,
+      "pages": 1653,
+      "next_page_url": "https://api.ikman.lk/v1/serp?category=409&location=1506&page=2&next_page_token=1784523838",
+      "next_page_token": "1784523838"
+    },
+    "serp": {
+      "categories": [
+        {
+          "id": 942,
+          "name": "Land For Sale",
+          "count": 15338
+        },
+        {
+          "id": 415,
+          "name": "Houses For Sale",
+          "count": 14257
+        },
+        {
+          "id": 937,
+          "name": "Apartments For Sale",
+          "count": 2981
+        },
+        {
+          "id": 416,
+          "name": "House Rentals",
+          "count": 2885
+        },
+        {
+          "id": 938,
+          "name": "Apartment Rentals",
+          "count": 2179
+        },
+        {
+          "id": 940,
+          "name": "Commercial Property Rentals",
+          "count": 2116
+        },
+        {
+          "id": 939,
+          "name": "Commercial Properties For Sale",
+          "count": 649
+        },
+        {
+          "id": 413,
+          "name": "Room & Annex Rentals",
+          "count": 527
+        },
+        {
+          "id": 936,
+          "name": "Holiday & Short-Term Rental",
+          "count": 255
+        },
+        {
+          "id": 943,
+          "name": "Land Rentals",
+          "count": 114
+        }
+      ],
+      "locations": [
+        {
+          "id": 1553,
+          "name": "Piliyandala",
+          "count": 3595
+        },
+        {
+          "id": 1507,
+          "name": "Athurugiriya",
+          "count": 3010
+        },
+        {
+          "id": 1532,
+          "name": "Homagama",
+          "count": 2845
+        },
+        {
+          "id": 1508,
+          "name": "Battaramulla",
+          "count": 2378
+        },
+        {
+          "id": 1542,
+          "name": "Malabe",
+          "count": 2301
+        },
+        {
+          "id": 2129,
+          "name": "Angoda",
+          "count": 136
+        },
+        {
+          "id": 2130,
+          "name": "Avissawella",
+          "count": 308
+        },
+        {
+          "id": 1511,
+          "name": "Boralesgamuwa",
+          "count": 1262
+        },
+        {
+          "id": 1512,
+          "name": "Colombo 1",
+          "count": 102
+        },
+        {
+          "id": 1521,
+          "name": "Colombo 10",
+          "count": 172
+        },
+        {
+          "id": 1522,
+          "name": "Colombo 11",
+          "count": 28
+        },
+        {
+          "id": 1523,
+          "name": "Colombo 12",
+          "count": 32
+        },
+        {
+          "id": 1524,
+          "name": "Colombo 13",
+          "count": 50
+        },
+        {
+          "id": 1525,
+          "name": "Colombo 14",
+          "count": 48
+        },
+        {
+          "id": 1526,
+          "name": "Colombo 15",
+          "count": 152
+        },
+        {
+          "id": 1513,
+          "name": "Colombo 2",
+          "count": 982
+        },
+        {
+          "id": 1514,
+          "name": "Colombo 3",
+          "count": 992
+        },
+        {
+          "id": 1515,
+          "name": "Colombo 4",
+          "count": 458
+        },
+        {
+          "id": 1516,
+          "name": "Colombo 5",
+          "count": 1261
+        },
+        {
+          "id": 1517,
+          "name": "Colombo 6",
+          "count": 902
+        },
+        {
+          "id": 1518,
+          "name": "Colombo 7",
+          "count": 636
+        },
+        {
+          "id": 1519,
+          "name": "Colombo 8",
+          "count": 386
+        },
+        {
+          "id": 1520,
+          "name": "Colombo 9",
+          "count": 113
+        },
+        {
+          "id": 1527,
+          "name": "Dehiwala",
+          "count": 1789
+        },
+        {
+          "id": 2185,
+          "name": "Embulgama",
+          "count": 39
+        },
+        {
+          "id": 2131,
+          "name": "Godagama",
+          "count": 167
+        },
+        {
+          "id": 1530,
+          "name": "Hanwella",
+          "count": 181
+        },
+        {
+          "id": 1534,
+          "name": "Kaduwela",
+          "count": 555
+        },
+        {
+          "id": 2182,
+          "name": "Kalubowila",
+          "count": 196
+        },
+        {
+          "id": 1536,
+          "name": "Kesbewa",
+          "count": 601
+        },
+        {
+          "id": 2151,
+          "name": "Kohuwala",
+          "count": 210
+        },
+        {
+          "id": 1537,
+          "name": "Kolonnawa",
+          "count": 125
+        },
+        {
+          "id": 2180,
+          "name": "Kotikawatta",
+          "count": 24
+        },
+        {
+          "id": 1540,
+          "name": "Kottawa",
+          "count": 2176
+        },
+        {
+          "id": 2154,
+          "name": "Kotte",
+          "count": 1155
+        },
+        {
+          "id": 1541,
+          "name": "Maharagama",
+          "count": 1125
+        },
+        {
+          "id": 2132,
+          "name": "Meegoda",
+          "count": 349
+        },
+        {
+          "id": 1545,
+          "name": "Moratuwa",
+          "count": 785
+        },
+        {
+          "id": 1546,
+          "name": "Mount Lavinia",
+          "count": 919
+        },
+        {
+          "id": 2187,
+          "name": "Nawagamuwa",
+          "count": 113
+        },
+        {
+          "id": 1548,
+          "name": "Nawala",
+          "count": 680
+        },
+        {
+          "id": 1549,
+          "name": "Nugegoda",
+          "count": 2283
+        },
+        {
+          "id": 2184,
+          "name": "Olaboduwa",
+          "count": 6
+        },
+        {
+          "id": 1550,
+          "name": "Padukka",
+          "count": 272
+        },
+        {
+          "id": 1551,
+          "name": "Pannipitiya",
+          "count": 981
+        },
+        {
+          "id": 2183,
+          "name": "Polgasowita",
+          "count": 410
+        },
+        {
+          "id": 1554,
+          "name": "Rajagiriya",
+          "count": 1270
+        },
+        {
+          "id": 2186,
+          "name": "Ranala",
+          "count": 3
+        },
+        {
+          "id": 1555,
+          "name": "Ratmalana",
+          "count": 472
+        },
+        {
+          "id": 2173,
+          "name": "Talawatugoda",
+          "count": 1908
+        },
+        {
+          "id": 2179,
+          "name": "Wellampitiya",
+          "count": 358
+        }
+      ],
+      "types": [
+        {
+          "key": "for_sale",
+          "count": 33138
+        },
+        {
+          "key": "to_buy",
+          "count": 87
+        },
+        {
+          "key": "for_rent",
+          "count": 7879
+        },
+        {
+          "key": "to_rent",
+          "count": 197
+        }
+      ],
+      "sort_options": [
+        "price",
+        "date"
+      ],
+      "sort_option": "date",
+      "sort_order": "desc",
+      "top_ads": [],
+      "spotlights": [],
+      "buy_now_filter": {
+        "applicable": false
+      },
+      "enhancements": {
+        "cars": false,
+        "properties": false,
+        "jobs": false
+      },
+      "results": [
+        {
+          "id": "6a3104034404e8cdd9bec516",
+          "slug": "house-for-sale-in-piliyandala-for-sale-colombo-8341",
+          "title": "House for Sale in Piliyandala",
+          "type": "for_sale",
+          "date": "2026-06-16T13:37:07+05:30",
+          "deactivates": "2026-08-15T13:37:07+05:30",
+          "area": {
+            "id": 1506,
+            "name": "Colombo"
+          },
+          "location": {
+            "id": 1553,
+            "name": "Piliyandala"
+          },
+          "category": {
+            "id": 415,
+            "name": "Houses For Sale"
+          },
+          "contact_card": {
+            "chat_enabled": false,
+            "delivery_methods": [],
+            "account_type": "private",
+            "opt_out": true,
+            "_redacted": true
+          },
+          "features": {
+            "buy_now": false,
+            "listing_fee": false
+          },
+          "buy_now_options": {
+            "opt_in": false,
+            "eligible": false
+          },
+          "membership_details": {
+            "level": "free"
+          },
+          "info": "Rs 45,000,000",
+          "status": "published",
+          "details": [
+            "Bedrooms: 5",
+            "Bathrooms: 4"
+          ],
+          "url": "http://ikman.lk/en/ad/house-for-sale-in-piliyandala-for-sale-colombo-8341",
+          "images": {
+            "ids": [
+              "07d42ab7-2560-4720-ac5d-ba2047d83338",
+              "ab710f15-d492-4f75-9b60-aaf0760382d7",
+              "0ab5f95b-3062-4d4f-9ff8-9f51e54b0134",
+              "a0c4c5d2-e2ab-4f85-a520-a550b526eff2",
+              "14cef606-5fc9-4431-ac8b-6197c1c1b464",
+              "6355a423-faac-4220-b96d-6bced04e6f39",
+              "e778cdfd-bca7-42fc-88da-6d52959f02cf",
+              "87f540c3-832a-4cae-95bc-be01dfc2dd36"
+            ],
+            "base_uri": "https://i.ikman-st.com"
+          },
+          "account": "[redacted]",
+          "promotions": {
+            "top_ad": true,
+            "bump_up": true,
+            "urgent_ad": true,
+            "spotlight": false,
+            "featured_ad": true
+          },
+          "display_preferences": {
+            "use_featured_ads_ui": true
+          },
+          "money": {
+            "label": "Price",
+            "negotiable": "Negotiable",
+            "amount": "Rs 45,000,000"
+          },
+          "layouts": {
+            "classic": {
+              "info": "Rs 45,000,000",
+              "details": [
+                "Bedrooms: 5",
+                "Bathrooms: 4"
+              ],
+              "serp_images_enabled": true
+            },
+            "single_column": {
+              "info": "Rs 45,000,000",
+              "details": [
+                "4,300.0 sqft",
+                "Bedrooms: 5",
+                "Bathrooms: 4"
+              ],
+              "serp_images_enabled": true
+            },
+            "fluid": {
+              "info": "Rs 45,000,000",
+              "details": [],
+              "serp_images_enabled": true
+            }
+          },
+          "shop": {
+            "id": "593a7ec9aa66d800010e18f0",
+            "slug": "listing-telemarketing",
+            "name": "Telemarketing",
+            "tagline": "Only the best for you.",
+            "description": "ikman.lk, Sri Lanka’s largest market place, introduced Listing Telemarketing services to educate sellers on the various benefits that can be obtained by posting their ads on ikman.\r\n \r\nAdditional support is extended to sellers who need their ads created and posted on ikman, where the Listing Telemarketing team does all the work to get the ads published. This service is offered for all types of ads, which provides a unique opportunity of gaining more prominence and exposure for their listed advertisements, at a nominal fee.",
+            "logo": {
+              "id": "c69715f2-5451-45f1-a600-a1417b8704d3",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "banner": {
+              "id": "81018ab4-0be5-4c5a-9930-5bc75829d3f6",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "contact_card": {
+              "_redacted": true
+            },
+            "job_page": false,
+            "location_id": 1513
+          },
+          "last_bump_up_date": "2026-07-19T12:43:00+05:30"
+        },
+        {
+          "id": "6a5dac0f30097ad14c905370",
+          "slug": "land-for-sale-in-close-to-kahathuduwa-higway-for-sale-colombo",
+          "title": "Land for Sale in Close to Kahathuduwa Higway",
+          "type": "for_sale",
+          "date": "2026-07-20T10:33:16+05:30",
+          "deactivates": "2026-09-18T10:33:16+05:30",
+          "area": {
+            "id": 1506,
+            "name": "Colombo"
+          },
+          "location": {
+            "id": 1536,
+            "name": "Kesbewa"
+          },
+          "category": {
+            "id": 942,
+            "name": "Land For Sale"
+          },
+          "contact_card": {
+            "chat_enabled": true,
+            "delivery_methods": [],
+            "account_type": "private",
+            "opt_out": false,
+            "_redacted": true
+          },
+          "features": {
+            "buy_now": false,
+            "listing_fee": false
+          },
+          "by_paying_member": true,
+          "by_authorized_dealer": false,
+          "by_featured_member": false,
+          "membership_details": {
+            "level": "premium"
+          },
+          "info": "Rs 868,500 per perch",
+          "status": "published",
+          "details": [
+            "7.0 perches"
+          ],
+          "url": "http://ikman.lk/en/ad/land-for-sale-in-close-to-kahathuduwa-higway-for-sale-colombo",
+          "images": {
+            "ids": [
+              "f738a8bf-f425-457f-b43b-4e4708ebb037",
+              "9f54c7a7-8644-4956-836d-ba0d6cbd93bc",
+              "c7058e53-0834-4e8d-9759-22288503bfa6",
+              "0013927a-eb39-44e1-9165-b7d62150a1da",
+              "5e730bbb-a532-4416-b150-290dc19c20fa",
+              "48bc2de7-9783-49d0-91a6-602273cf8dec"
+            ],
+            "base_uri": "https://i.ikman-st.com"
+          },
+          "account": "[redacted]",
+          "promotions": {
+            "top_ad": false,
+            "bump_up": false,
+            "urgent_ad": false,
+            "spotlight": false,
+            "featured_ad": false
+          },
+          "money": {
+            "label": "Price",
+            "negotiable": "Negotiable",
+            "amount": "Rs 868,500 per perch"
+          },
+          "layouts": {
+            "classic": {
+              "info": "Rs 868,500 per perch",
+              "details": [
+                "7.0 perches"
+              ],
+              "serp_images_enabled": true
+            },
+            "single_column": {
+              "info": "Rs 868,500 per perch",
+              "details": [
+                "7.0 perches",
+                "Commercial, Residential"
+              ],
+              "serp_images_enabled": true
+            },
+            "fluid": {
+              "info": "Rs 868,500 per perch",
+              "details": [],
+              "serp_images_enabled": true
+            }
+          },
+          "shop": {
+            "id": "68c131b5480c698be1ff2b17",
+            "slug": "araliya-lands-and-homes-pvt-ltd",
+            "name": "Araliya Lands and Homes (Pvt) Ltd ",
+            "tagline": "Where Dreams Come Home",
+            "description": "Giving you the perfect property solutions so that you can spend your time comfortably, enjoyably, and safely among the sole asset where your investment lasts for generations.\r\n\r\nFor any clarifications please contact us and we are more than happy to resolve an issues or problems you may face and serve you well.",
+            "logo": {
+              "id": "1a4b0f3e-b6bf-4d64-a36a-99276a52be42",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "banner": {
+              "id": "585c83ec-0230-4eea-b191-432fb278eeba",
+              "base_uri": "https://i.ikman-st.com/u"
+            },
+            "contact_card": {
+              "_redacted": true
+            },
+            "job_page": false,
+            "location_id": 2303
+          }
+        }
+      ]
+    },
+    "_truncated": {
+      "list_key": "_serp_results",
+      "kept": 2,
+      "original_len": 26
+    }
+  }
+}
