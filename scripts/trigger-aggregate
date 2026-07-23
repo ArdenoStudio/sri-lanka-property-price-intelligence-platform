@@ -1,2 +1,2 @@
 # Touch this file and push/merge to master to trigger Aggregate Prices.
-# Last triggered: 2026-07-23T06:25:00Z — retry after statement_timeout on deal_score clear
+# Last triggered: 2026-07-23T06:37:00Z — skip re-migration; recompute aggregates + deal scores
