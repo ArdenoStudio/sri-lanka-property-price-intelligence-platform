@@ -28,7 +28,7 @@ listings  (+ locations cache)
         Freshness: GET /pipeline/status · metrics: GET /pipeline/metrics
 ```
 
-### Tables / models (`db/models.py` + migrations 001–007)
+### Tables / models (`db/models.py` + migrations 001–008)
 
 | Table | Role |
 |---|---|

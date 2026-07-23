@@ -113,7 +113,7 @@ CI workflow [ci.yml](.github/workflows/ci.yml) runs Python tests + dashboard `ts
 cp .env.example .env   # DATABASE_URL, NOMINATIM_USER_AGENT, ADMIN_API_KEY, …
 docker compose up -d db
 pip install -r requirements.txt
-# apply db/migrations/001–007
+# apply db/migrations/001–008
 uvicorn api.main:app --reload --port 8080
 cd dashboard && npm ci && npm run dev
 ```
