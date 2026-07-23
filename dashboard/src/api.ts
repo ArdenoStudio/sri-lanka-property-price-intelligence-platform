@@ -2,11 +2,6 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const API_TIMEOUT_MS = 15_000;
 
 type QueryValue = string | number | boolean | readonly unknown[] | undefined | null;
-type ChatHistoryMessage = {
-  role?: string;
-  content?: string;
-  [key: string]: unknown;
-};
 
 export class ApiError extends Error {
   status: number | null;
@@ -151,23 +146,6 @@ export const getListings = (params: {
 
 export const getPrices = (district: string, propertyType: string = 'land') =>
   fetchJSON<PriceHistory[]>('/prices', { district, property_type: propertyType });
-
-export interface ChatResponse {
-  response: string;
-  context_used: boolean;
-  filters?: {
-    district?: string;
-    property_type?: string;
-    listing_type?: string;
-    bedrooms?: number;
-    min_price?: number;
-    max_price?: number;
-    amenities?: string[];
-  };
-}
-
-export const sendChatMessage = (message: string, history: ChatHistoryMessage[] = []) =>
-  fetchJSON<ChatResponse>('/chat', { message, history }, 'POST');
 
 export const getPipelineStatus = () =>
   fetchJSON<PipelineStatusResponse>('/public/pipeline');

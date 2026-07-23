@@ -17,4 +17,4 @@ Tokens: `--ink` / `--paper` only — **never** teal, amber, red, or green. Calm 
 | **Estimate** | Button label “Estimating…” + ink spinner; result slot pulse | Pre-submit: helper line only. Post-submit zero comps: “No comparable listings” → Broaden | Result slot: “Couldn’t estimate — try again” + Retry (no red icon) |
 
 ## Out of scope
-Detail-page skeleton, chat widget, ops/pipeline alerts, multi-CTA empty panels.
+Detail-page skeleton, ops/pipeline alerts, multi-CTA empty panels.
