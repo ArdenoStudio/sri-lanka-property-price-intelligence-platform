@@ -321,12 +321,14 @@ async def trigger_backfill(
                 # Extrapolate backward: ~1.5% lower per month + small noise
                 trend = base * (1 - (i * 0.015)) * random.uniform(0.98, 1.02)
                 stmt = insert(PriceAggregate).values(
-                    district=d, property_type=pt, period_year=y, period_month=m,
+                    district=d, property_type=pt, listing_type="sale",
+                    period_year=y, period_month=m,
                     avg_price_lkr=trend, median_price_lkr=trend,
                     listing_count=random.randint(50, 400),
                     computed_at=datetime.utcnow()
                 ).on_conflict_do_update(
-                    index_elements=['district', 'property_type', 'period_year', 'period_month'],
+                    index_elements=['district', 'property_type', 'listing_type', 'period_year', 'period_month'],
+                    index_where=PriceAggregate.bedroom_bucket.is_(None),
                     set_={"avg_price_lkr": trend, "median_price_lkr": trend, "computed_at": datetime.utcnow()}
                 )
                 db.execute(stmt)
@@ -341,134 +343,156 @@ class PriceAggregator:
 
     @staticmethod
     def _bedroom_bucket(bedrooms) -> str | None:
-        if bedrooms is None:
-            return None
-        if bedrooms <= 1:
-            return "1"
-        if bedrooms == 2:
-            return "2"
-        if bedrooms == 3:
-            return "3"
-        if bedrooms == 4:
-            return "4"
-        return "5+"
+        from api.deal_score import bedroom_bucket
+        return bedroom_bucket(bedrooms)
 
     def aggregate(self):
-        """Calculates monthly stats and populates price_aggregates table."""
+        """Monthly medians by district × property_type × listing_type (+ bedroom bucket)."""
         now = datetime.utcnow()
+        median_price = func.percentile_cont(0.5).within_group(Listing.price_lkr.asc())
+        p25_price = func.percentile_cont(0.25).within_group(Listing.price_lkr.asc())
+        p75_price = func.percentile_cont(0.75).within_group(Listing.price_lkr.asc())
+        median_perch = func.percentile_cont(0.5).within_group(Listing.price_per_perch.asc())
 
-        # --- Broad aggregates: (district, property_type, period) ---
+        # --- Broad: district × property_type × listing_type × period ---
         broad_results = (
             self.db.query(
                 Listing.district,
                 Listing.property_type,
+                Listing.listing_type,
                 func.extract('year', Listing.scraped_at).label('year'),
                 func.extract('month', Listing.scraped_at).label('month'),
                 func.avg(Listing.price_lkr).label('avg_price'),
-                func.avg(Listing.price_per_perch).label('avg_perch'),
-                func.count(Listing.id).label('count')
+                median_price.label('median_price'),
+                p25_price.label('p25_price'),
+                p75_price.label('p75_price'),
+                median_perch.label('median_perch'),
+                func.count(Listing.id).label('count'),
             )
             .filter(
                 Listing.price_lkr.isnot(None),
                 Listing.district.isnot(None),
+                Listing.listing_type.in_(["sale", "rent"]),
                 Listing.is_outlier == False,
                 Listing.is_short_term == False,
             )
-            .group_by(Listing.district, Listing.property_type, 'year', 'month')
+            .group_by(
+                Listing.district, Listing.property_type, Listing.listing_type, 'year', 'month',
+            )
             .all()
         )
 
-        for d, pt, y, m, avg_lkr, avg_perch, count in broad_results:
+        for d, pt, lt, y, m, avg_lkr, med_lkr, p25, p75, med_perch, count in broad_results:
             stmt = insert(PriceAggregate).values(
                 district=d,
                 property_type=pt,
+                listing_type=lt,
                 bedroom_bucket=None,
                 period_year=int(y),
                 period_month=int(m),
                 avg_price_lkr=avg_lkr,
-                median_price_lkr=avg_lkr,
-                median_price_per_perch=avg_perch,
+                median_price_lkr=med_lkr if med_lkr is not None else avg_lkr,
+                p25_price_lkr=p25,
+                p75_price_lkr=p75,
+                median_price_per_perch=med_perch,
                 listing_count=count,
                 computed_at=now,
             ).on_conflict_do_update(
-                index_elements=['district', 'property_type', 'period_year', 'period_month'],
+                index_elements=['district', 'property_type', 'listing_type', 'period_year', 'period_month'],
                 index_where=PriceAggregate.bedroom_bucket.is_(None),
                 set_={
                     "avg_price_lkr": avg_lkr,
-                    "median_price_lkr": avg_lkr,
-                    "median_price_per_perch": avg_perch,
+                    "median_price_lkr": med_lkr if med_lkr is not None else avg_lkr,
+                    "p25_price_lkr": p25,
+                    "p75_price_lkr": p75,
+                    "median_price_per_perch": med_perch,
                     "listing_count": count,
                     "computed_at": now,
-                }
+                },
             )
             self.db.execute(stmt)
 
-        # --- Bucketed aggregates: (district, property_type, bedroom_bucket, period) ---
-        # Only for houses/apartments — land/commercial don't have meaningful bedroom counts
+        # --- Bucketed: + bedroom_bucket for house/apartment/villa ---
         bucketed_results = (
             self.db.query(
                 Listing.district,
                 Listing.property_type,
+                Listing.listing_type,
                 Listing.bedrooms,
                 func.extract('year', Listing.scraped_at).label('year'),
                 func.extract('month', Listing.scraped_at).label('month'),
                 func.avg(Listing.price_lkr).label('avg_price'),
-                func.avg(Listing.price_per_perch).label('avg_perch'),
-                func.count(Listing.id).label('count')
+                median_price.label('median_price'),
+                median_perch.label('median_perch'),
+                func.count(Listing.id).label('count'),
             )
             .filter(
                 Listing.price_lkr.isnot(None),
                 Listing.district.isnot(None),
+                Listing.listing_type.in_(["sale", "rent"]),
                 Listing.bedrooms.isnot(None),
                 Listing.property_type.in_(["house", "apartment", "villa"]),
                 Listing.is_outlier == False,
                 Listing.is_short_term == False,
             )
-            .group_by(Listing.district, Listing.property_type, Listing.bedrooms, 'year', 'month')
+            .group_by(
+                Listing.district, Listing.property_type, Listing.listing_type,
+                Listing.bedrooms, 'year', 'month',
+            )
             .all()
         )
 
-        # Collapse individual bedroom counts into buckets, re-summing within each bucket
         from collections import defaultdict
-        bucket_agg: dict = defaultdict(lambda: {"sum": 0.0, "count": 0, "perch_sum": 0.0})
-        for d, pt, beds, y, m, avg_lkr, avg_perch, cnt in bucketed_results:
+        bucket_agg: dict = defaultdict(
+            lambda: {"sum": 0.0, "med_sum": 0.0, "count": 0, "perch_sum": 0.0, "perch_n": 0}
+        )
+        for d, pt, lt, beds, y, m, avg_lkr, med_lkr, med_perch, cnt in bucketed_results:
             if avg_lkr is None:
                 continue
             bucket = self._bedroom_bucket(beds)
             if bucket is None:
                 continue
-            key = (d, pt, bucket, int(y), int(m))
+            key = (d, pt, lt, bucket, int(y), int(m))
             bucket_agg[key]["sum"] += float(avg_lkr) * cnt
+            bucket_agg[key]["med_sum"] += float(med_lkr if med_lkr is not None else avg_lkr) * cnt
             bucket_agg[key]["count"] += cnt
-            if avg_perch:
-                bucket_agg[key]["perch_sum"] += float(avg_perch) * cnt
+            if med_perch is not None:
+                bucket_agg[key]["perch_sum"] += float(med_perch) * cnt
+                bucket_agg[key]["perch_n"] += cnt
 
-        for (d, pt, bucket, y, m), agg in bucket_agg.items():
+        for (d, pt, lt, bucket, y, m), agg in bucket_agg.items():
             if agg["count"] < 3:
                 continue
             avg_lkr = agg["sum"] / agg["count"]
-            avg_perch = agg["perch_sum"] / agg["count"] if agg["perch_sum"] else None
+            med_lkr = agg["med_sum"] / agg["count"]
+            avg_perch = (
+                agg["perch_sum"] / agg["perch_n"] if agg["perch_n"] else None
+            )
             stmt = insert(PriceAggregate).values(
                 district=d,
                 property_type=pt,
+                listing_type=lt,
                 bedroom_bucket=bucket,
                 period_year=y,
                 period_month=m,
                 avg_price_lkr=avg_lkr,
-                median_price_lkr=avg_lkr,
+                median_price_lkr=med_lkr,
                 median_price_per_perch=avg_perch,
                 listing_count=agg["count"],
                 computed_at=now,
             ).on_conflict_do_update(
-                index_elements=['district', 'property_type', 'bedroom_bucket', 'period_year', 'period_month'],
+                index_elements=[
+                    'district', 'property_type', 'listing_type',
+                    'bedroom_bucket', 'period_year', 'period_month',
+                ],
                 index_where=PriceAggregate.bedroom_bucket.isnot(None),
                 set_={
                     "avg_price_lkr": avg_lkr,
-                    "median_price_lkr": avg_lkr,
+                    "median_price_lkr": med_lkr,
                     "median_price_per_perch": avg_perch,
                     "listing_count": agg["count"],
                     "computed_at": now,
-                }
+                },
             )
             self.db.execute(stmt)
 
@@ -477,50 +501,63 @@ class PriceAggregator:
         return len(broad_results)
 
     def _update_deal_scores(self):
-        """Stamps deal_score and market_median_lkr on each non-outlier listing.
+        """Stamp deal_score using same listing_type peers only (sale≠rent).
 
-        deal_score = 100 * (1 - price_lkr / market_median_lkr)
-        Positive = below median (good deal), negative = above median.
-        Clamped to [-100, 100].
-
-        Uses comparable-based pricing: compares against listings with the same
-        bedroom bucket (1/2/3/4/5+) in the same district+type (min 5 listings).
-        Falls back to broad district+type median if no bucket data.
-
-        Implemented as a single SQL UPDATE to avoid loading all listings into
-        Python memory (prior approach took ~108 min on large tables).
+        deal_score ≈ 100 * (1 - price / median) * sample_confidence
+        Positive = below peer median; negative = above. Clamped [-100, 100].
+        Null when short-term, outlier, unknown listing_type, thin sample,
+        missing peers, or price/median ratio is absurd (guards cross-market bugs).
         """
+        # Drop stale scores first so untrusted rows never keep a prior stamp.
+        self.db.execute(text("""
+            UPDATE listings
+            SET deal_score = NULL, market_median_lkr = NULL
+        """))
+
         self.db.execute(text("""
             WITH latest_broad AS (
-                SELECT DISTINCT ON (district, property_type)
-                    district, property_type, median_price_lkr
+                SELECT DISTINCT ON (district, property_type, listing_type)
+                    district, property_type, listing_type,
+                    median_price_lkr, listing_count
                 FROM price_aggregates
                 WHERE bedroom_bucket IS NULL
+                  AND listing_type IN ('sale', 'rent')
                   AND median_price_lkr IS NOT NULL
-                ORDER BY district, property_type, period_year DESC, period_month DESC
+                ORDER BY district, property_type, listing_type,
+                         period_year DESC, period_month DESC
             ),
             latest_bucketed AS (
-                SELECT DISTINCT ON (district, property_type, bedroom_bucket)
-                    district, property_type, bedroom_bucket,
+                SELECT DISTINCT ON (district, property_type, listing_type, bedroom_bucket)
+                    district, property_type, listing_type, bedroom_bucket,
                     median_price_lkr, listing_count
                 FROM price_aggregates
                 WHERE bedroom_bucket IS NOT NULL
+                  AND listing_type IN ('sale', 'rent')
                   AND median_price_lkr IS NOT NULL
-                ORDER BY district, property_type, bedroom_bucket,
+                ORDER BY district, property_type, listing_type, bedroom_bucket,
                          period_year DESC, period_month DESC
             ),
             resolved AS (
                 SELECT
                     l.id,
+                    l.price_lkr,
                     COALESCE(
                         CASE WHEN b.listing_count >= :min_bucket_count
-                             THEN b.median_price_lkr ELSE NULL END,
-                        br.median_price_lkr
-                    ) AS market_median
+                             THEN b.median_price_lkr END,
+                        CASE WHEN br.listing_count >= :min_broad_count
+                             THEN br.median_price_lkr END
+                    ) AS market_median,
+                    COALESCE(
+                        CASE WHEN b.listing_count >= :min_bucket_count
+                             THEN b.listing_count END,
+                        CASE WHEN br.listing_count >= :min_broad_count
+                             THEN br.listing_count END
+                    ) AS sample_n
                 FROM listings l
                 LEFT JOIN latest_bucketed b
                     ON  b.district       = l.district
                     AND b.property_type  = l.property_type
+                    AND b.listing_type   = l.listing_type
                     AND b.bedroom_bucket = CASE
                         WHEN l.bedrooms IS NULL THEN NULL
                         WHEN l.bedrooms <= 1    THEN '1'
@@ -532,25 +569,52 @@ class PriceAggregator:
                 LEFT JOIN latest_broad br
                     ON  br.district      = l.district
                     AND br.property_type = l.property_type
-                WHERE l.is_outlier = FALSE
-                  AND l.price_lkr      IS NOT NULL
-                  AND l.district       IS NOT NULL
-                  AND l.property_type  IS NOT NULL
+                    AND br.listing_type  = l.listing_type
+                WHERE COALESCE(l.is_outlier, FALSE) = FALSE
+                  AND COALESCE(l.is_short_term, FALSE) = FALSE
+                  AND l.price_lkr     IS NOT NULL
+                  AND l.district      IS NOT NULL
+                  AND l.property_type IS NOT NULL
+                  AND l.listing_type IN ('sale', 'rent')
+            ),
+            scored AS (
+                SELECT
+                    id,
+                    market_median,
+                    sample_n,
+                    CASE
+                        WHEN market_median IS NULL OR market_median <= 0 OR sample_n IS NULL
+                            THEN NULL
+                        WHEN (price_lkr::float8 / market_median::float8) < :min_ratio
+                          OR (price_lkr::float8 / market_median::float8) > :max_ratio
+                            THEN NULL
+                        ELSE GREATEST(-100.0, LEAST(100.0,
+                            ROUND((
+                                (1.0 - price_lkr::float8 / market_median::float8) * 100.0
+                                * LEAST(
+                                    1.0,
+                                    (sample_n::float8 - :min_broad_count + 1)
+                                      / (:full_confidence - :min_broad_count + 1)
+                                )
+                            )::numeric, 1)::float8
+                        ))
+                    END AS deal_score
+                FROM resolved
             )
             UPDATE listings
             SET
-                market_median_lkr = r.market_median,
-                deal_score = GREATEST(-100.0, LEAST(100.0,
-                    ROUND(
-                        ((1.0 - listings.price_lkr::float8 / r.market_median::float8) * 100.0)::numeric,
-                        1
-                    )::float8
-                ))
-            FROM resolved r
-            WHERE listings.id = r.id
-              AND r.market_median IS NOT NULL
-              AND r.market_median > 0
-        """), {"min_bucket_count": 5})
+                market_median_lkr = s.market_median,
+                deal_score = s.deal_score
+            FROM scored s
+            WHERE listings.id = s.id
+              AND s.deal_score IS NOT NULL
+        """), {
+            "min_bucket_count": 5,
+            "min_broad_count": 5,
+            "full_confidence": 15,
+            "min_ratio": 0.05,
+            "max_ratio": 20.0,
+        })
         self.db.commit()
 
 

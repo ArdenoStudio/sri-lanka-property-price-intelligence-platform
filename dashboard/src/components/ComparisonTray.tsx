@@ -123,7 +123,11 @@ export function ComparisonTray({
                           <p className="text-[9px] uppercase tracking-[0.18em] text-text-muted">Deal score</p>
                           <div className="mt-1">
                             {item.deal_score !== null ? (
-                              <DealScorePill score={item.deal_score} variant="compare" />
+                              <DealScorePill
+                                score={item.deal_score}
+                                listingType={item.listing_type}
+                                variant="compare"
+                              />
                             ) : (
                               <p className="text-[12px] font-semibold text-text-secondary num font-numeric-table">Deal N/A</p>
                             )}

@@ -22,7 +22,7 @@ export function ShareButton({ listing }: Props) {
   const shareUrl = `${window.location.origin}/listing/${listing.id}`;
   const shareTitle = listing.title || `Property in ${listing.district}`;
   const dealSummary = listing.deal_score != null && !isTypicalDealScore(listing.deal_score)
-    ? getDealScoreMeta(listing.deal_score).shortCopy.toLowerCase()
+    ? getDealScoreMeta(listing.deal_score, listing.listing_type).shortCopy.toLowerCase()
     : '';
   const shareText = [
     shareTitle,

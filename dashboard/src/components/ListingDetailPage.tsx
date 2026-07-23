@@ -196,7 +196,7 @@ export function ListingDetail() {
         if (d.price_lkr) {
           const dealSummary =
             d.deal_score != null && !isTypicalDealScore(d.deal_score)
-              ? ` · ${getDealScoreMeta(d.deal_score).shortCopy.toLowerCase()}`
+              ? ` · ${getDealScoreMeta(d.deal_score, d.listing_type).shortCopy.toLowerCase()}`
               : '';
           document.querySelector('meta[property="og:description"]')?.setAttribute(
             'content',
@@ -372,7 +372,12 @@ export function ListingDetail() {
 
           <div className="lg:col-span-5 lg:pl-6 lg:border-l lg:border-white/[0.08]">
             {detail.deal_score != null ? (
-              <DealScoreCard score={detail.deal_score} surface="dark" compact />
+              <DealScoreCard
+                score={detail.deal_score}
+                listingType={detail.listing_type}
+                surface="dark"
+                compact
+              />
             ) : (
               <>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-[#525252]">Deal score</p>

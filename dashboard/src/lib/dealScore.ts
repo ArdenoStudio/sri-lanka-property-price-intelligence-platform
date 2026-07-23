@@ -1,4 +1,5 @@
 export type DealScoreSurface = 'dark' | 'light';
+export type DealScoreListingType = 'sale' | 'rent' | string | null | undefined;
 
 export type DealScoreBandId =
   | 'much-higher'
@@ -6,6 +7,13 @@ export type DealScoreBandId =
   | 'typical'
   | 'lower'
   | 'much-lower';
+
+export function peerNoun(listingType?: DealScoreListingType): string {
+  const lt = typeof listingType === 'string' ? listingType.trim().toLowerCase() : '';
+  if (lt === 'rent') return 'rentals';
+  if (lt === 'sale') return 'sales';
+  return 'listings';
+}
 
 export interface DealScoreTone {
   accent: string;
@@ -39,9 +47,9 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
     id: 'much-higher',
     min: -100,
     max: -35,
-    legendLabel: 'Much higher than similar homes',
-    detailLabel: 'Much higher than similar homes',
-    description: 'The asking price is well above the usual range for comparable listings.',
+    legendLabel: 'Much higher than similar listings',
+    detailLabel: 'Much higher than similar listings',
+    description: 'The asking price is well above the usual range for comparable same-market listings.',
     tone: {
       accent: 'rgba(255, 255, 255, 0.38)',
       fgDark: 'rgba(255, 255, 255, 0.42)',
@@ -56,9 +64,9 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
     id: 'higher',
     min: -34,
     max: -10,
-    legendLabel: 'A bit higher than similar homes',
-    detailLabel: 'A bit higher than similar homes',
-    description: 'The asking price is above comparable listings, but not dramatically so.',
+    legendLabel: 'A bit higher than similar listings',
+    detailLabel: 'A bit higher than similar listings',
+    description: 'The asking price is above comparable same-market listings, but not dramatically so.',
     tone: {
       accent: 'rgba(255, 255, 255, 0.52)',
       fgDark: 'rgba(255, 255, 255, 0.58)',
@@ -90,9 +98,9 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
     id: 'lower',
     min: 10,
     max: 34,
-    legendLabel: 'A bit lower than similar homes',
-    detailLabel: 'A bit lower than similar homes',
-    description: 'The asking price is below comparable listings without being unusually low.',
+    legendLabel: 'A bit lower than similar listings',
+    detailLabel: 'A bit lower than similar listings',
+    description: 'The asking price is below comparable same-market listings without being unusually low.',
     tone: {
       accent: 'rgba(255, 255, 255, 0.84)',
       fgDark: 'rgba(255, 255, 255, 0.88)',
@@ -107,9 +115,9 @@ export const DEAL_SCORE_BANDS: DealScoreBand[] = [
     id: 'much-lower',
     min: 35,
     max: 100,
-    legendLabel: 'Much lower than similar homes',
-    detailLabel: 'Much lower than similar homes',
-    description: 'The asking price is well below the usual range for comparable listings.',
+    legendLabel: 'Much lower than similar listings',
+    detailLabel: 'Much lower than similar listings',
+    description: 'The asking price is well below the usual range for comparable same-market listings.',
     tone: {
       accent: '#ffffff',
       fgDark: '#ffffff',
@@ -141,20 +149,22 @@ export function isTypicalDealScore(score: number): boolean {
   return getDealScoreBand(score).id === 'typical';
 }
 
-export function getReadableDelta(score: number): string {
+export function getReadableDelta(score: number, listingType?: DealScoreListingType): string {
   const rounded = Math.abs(Math.round(clampDealScore(score)));
   if (isTypicalDealScore(score)) return 'Typical range';
-  return score > 0 ? `${rounded}% below similar` : `${rounded}% above similar`;
+  const peers = peerNoun(listingType);
+  return score > 0 ? `${rounded}% below similar ${peers}` : `${rounded}% above similar ${peers}`;
 }
 
-export function getDetailSentence(score: number): string {
+export function getDetailSentence(score: number, listingType?: DealScoreListingType): string {
   const rounded = Math.abs(Math.round(clampDealScore(score)));
+  const peers = peerNoun(listingType);
   if (isTypicalDealScore(score)) {
-    return 'This asking price is close to the usual range for similar property.lk listings.';
+    return `This asking price is close to the usual range for similar property.lk ${peers}.`;
   }
   return score > 0
-    ? `This asking price is about ${rounded}% below similar property.lk listings.`
-    : `This asking price is about ${rounded}% above similar property.lk listings.`;
+    ? `This asking price is about ${rounded}% below similar property.lk ${peers}.`
+    : `This asking price is about ${rounded}% above similar property.lk ${peers}.`;
 }
 
 export function getSurfaceTone(band: DealScoreBand, surface: DealScoreSurface) {
@@ -178,18 +188,18 @@ export function getDealScoreBand(score: number): DealScoreBand {
   return DEAL_SCORE_BANDS.find((band) => clamped >= band.min && clamped <= band.max) ?? DEAL_SCORE_BANDS[2];
 }
 
-export function getDealScoreAriaLabel(score: number): string {
+export function getDealScoreAriaLabel(score: number, listingType?: DealScoreListingType): string {
   const band = getDealScoreBand(score);
-  return `Deal score ${formatSignedScore(score)}. ${band.detailLabel}. ${getDetailSentence(score)}`;
+  return `Deal score ${formatSignedScore(score)}. ${band.detailLabel}. ${getDetailSentence(score, listingType)}`;
 }
 
-export function getDealScoreMeta(score: number) {
+export function getDealScoreMeta(score: number, listingType?: DealScoreListingType) {
   const clamped = clampDealScore(score);
   const band = getDealScoreBand(clamped);
   return {
     score: clamped,
     band,
-    shortCopy: getReadableDelta(clamped),
-    sentence: getDetailSentence(clamped),
+    shortCopy: getReadableDelta(clamped, listingType),
+    sentence: getDetailSentence(clamped, listingType),
   };
 }

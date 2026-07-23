@@ -74,7 +74,8 @@ Admin API (requires `x-admin-key`): `POST /trigger/process`, `POST /trigger/aggr
 ```bash
 cp .env.example .env
 docker compose up -d db
-# apply migrations 001–007 via psql or compose init volume
+# apply migrations 001–008 via psql or compose init volume
+# (008 splits price_aggregates by listing_type and clears stale deal scores)
 pip install -r requirements.txt
 uvicorn api.main:app --reload --port 8080
 cd dashboard && npm ci && npm run dev

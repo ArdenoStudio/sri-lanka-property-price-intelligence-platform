@@ -206,7 +206,7 @@ export function ListingsGrid({
             listing.deal_score != null
               ? {
                   key: 'deal-score',
-                  node: <DealScorePill score={listing.deal_score} />,
+                  node: <DealScorePill score={listing.deal_score} listingType={listing.listing_type} />,
                 }
               : null,
             listing.price_drop_pct != null && listing.price_drop_pct > 0

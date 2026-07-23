@@ -9,21 +9,24 @@ import {
   getReadableDelta,
   getSurfaceTone,
   isTypicalDealScore,
+  type DealScoreListingType,
   type DealScoreSurface,
 } from '../lib/dealScore';
 
 export function DealScorePill({
   score,
+  listingType,
   surface = 'dark',
   variant = 'list',
 }: {
   score: number | null | undefined;
+  listingType?: DealScoreListingType;
   surface?: DealScoreSurface;
   variant?: 'list' | 'compare';
 }) {
   if (score == null) return null;
 
-  const meta = getDealScoreMeta(score);
+  const meta = getDealScoreMeta(score, listingType);
   const tone = getSurfaceTone(meta.band, surface);
   const isCompare = variant === 'compare';
   const hairline = surface === 'light' ? 'rgba(10, 10, 10, 0.2)' : 'rgba(255, 255, 255, 0.22)';
@@ -42,7 +45,7 @@ export function DealScorePill({
         borderWidth: 1,
         fontWeight: 600,
       }}
-      aria-label={getDealScoreAriaLabel(score)}
+      aria-label={getDealScoreAriaLabel(score, listingType)}
       title={meta.sentence}
     >
       {isCompare ? (
@@ -51,7 +54,7 @@ export function DealScorePill({
           <span>{isTypicalDealScore(meta.score) ? 'Typical' : meta.score > 0 ? 'below' : 'above'}</span>
         </>
       ) : (
-        <span className="num">{getReadableDelta(meta.score)}</span>
+        <span className="num">{getReadableDelta(meta.score, listingType)}</span>
       )}
     </span>
   );
@@ -189,23 +192,25 @@ export function DealScoreLegend({
 
 export function DealScoreCard({
   score,
+  listingType,
   surface = 'dark',
   compact = false,
 }: {
   score: number | null | undefined;
+  listingType?: DealScoreListingType;
   surface?: DealScoreSurface;
   /** Hero sibling: score + meter + one sentence — legend behind disclosure */
   compact?: boolean;
 }) {
   if (score == null) return null;
 
-  const meta = getDealScoreMeta(score);
+  const meta = getDealScoreMeta(score, listingType);
   const tone = getSurfaceTone(meta.band, surface);
   const eyebrowColor = surface === 'light' ? '#525252' : 'rgba(255, 255, 255, 0.45)';
   const copyColor = surface === 'light' ? '#404040' : 'rgba(255, 255, 255, 0.55)';
 
   return (
-    <div aria-label={getDealScoreAriaLabel(score)}>
+    <div aria-label={getDealScoreAriaLabel(score, listingType)}>
       <p className="text-[11px] uppercase tracking-[0.16em] mb-3" style={{ color: eyebrowColor }}>
         Deal score
       </p>
