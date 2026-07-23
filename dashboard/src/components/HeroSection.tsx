@@ -2,6 +2,9 @@
  * Adapted from Watermelon UI hero-19
  * https://ui.watermelon.sh/block/hero-19
  * Registry: https://registry.watermelon.sh/r/hero-19.json
+ *
+ * Background: Lotus Tower from Pettah Floating Market, Colombo
+ * Wikimedia Commons (Saaremees) — CC-aware local asset for product UI
  */
 import { ArrowDown, ArrowRight } from 'lucide-react';
 import { motion, type Variants } from 'framer-motion';
@@ -103,13 +106,13 @@ export function HeroSection() {
       >
         <motion.img
           variants={buildingVariants}
-          src="/hero-19-bg.avif"
-          alt=""
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-left sm:object-center"
+          src="/hero-lotus-tower.jpg"
+          alt="Lotus Tower, Colombo, Sri Lanka"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[68%_35%] sm:object-[65%_30%]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/15"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/78 via-black/45 to-black/15"
         />
 
         <motion.nav
