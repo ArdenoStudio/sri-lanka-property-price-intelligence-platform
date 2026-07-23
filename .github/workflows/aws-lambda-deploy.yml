@@ -60,13 +60,7 @@ jobs:
             ! -name 'flags.py' \
             -delete
           # Fail fast if API import graph is broken before we ship a 502ing function
-          PYTHONPATH=package python -c "
-from scraper.privacy import redact_contact_channels
-from scraper.pipeline_metrics import build_pipeline_status, compute_pipeline_metrics
-from scraper.quality import run_quality_checks
-from scraper.flags import flag_snapshot
-print('lambda_scraper_modules_ok', sorted(flag_snapshot()))
-"
+          python scripts/check_lambda_scraper_modules.py package
           cd package
           zip -r ../lambda.zip . -x '*.pyc' '*/__pycache__/*'
 
@@ -113,21 +107,10 @@ print('lambda_scraper_modules_ok', sorted(flag_snapshot()))
                 -H "Access-Control-Request-Method: GET" \
                 -H "Access-Control-Request-Headers: content-type")
               echo "$opt_headers"
-              echo "$opt_headers" | grep -qi "access-control-allow-origin: https://propertylk-one.vercel.app"
+              echo "$opt_headers" | grep -qi 'access-control-allow-origin: https://propertylk-one.vercel.app'
               # Newest sort sanity: first_seen_at should be non-increasing
               curl --silent --fail "$function_url/listings?sort=newest&limit=8" -o /tmp/newest.json
-              python3 -c '
-          import json
-          from datetime import datetime
-          data = json.load(open("/tmp/newest.json"))
-          rows = data.get("listings") or []
-          assert rows, "no listings returned"
-          firsts = [r.get("first_seen_at") for r in rows if r.get("first_seen_at")]
-          parsed = [datetime.fromisoformat(x.replace("Z", "+00:00")) for x in firsts]
-          assert parsed == sorted(parsed, reverse=True), f"newest not by first_seen_at: {firsts}"
-          days = [r.get("days_on_market") for r in rows]
-          print("newest_ok", {"days_on_market": days, "first_seen": firsts[:4], "total": data.get("total")})
-          '
+              python scripts/lambda_smoke_newest.py /tmp/newest.json
               exit 0
             fi
             echo "HTTP $status – response:"
