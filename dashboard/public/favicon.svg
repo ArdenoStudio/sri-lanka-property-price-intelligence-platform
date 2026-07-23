@@ -1,43 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <defs>
-    <!-- Dark, premium background gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#140A23" />
-      <stop offset="100%" stop-color="#080310" />
-    </linearGradient>
-
-    <!-- Main Bolt Gradient -->
-    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#d094ff" />
-      <stop offset="50%" stop-color="#863bff" />
-      <stop offset="100%" stop-color="#5500ff" />
-    </linearGradient>
-    
-    <!-- Top inner glow / shine for a glossy, glassy finish -->
-    <linearGradient id="boltHighlight" x1="15%" y1="0%" x2="35%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
-      <stop offset="25%" stop-color="#ffffff" stop-opacity="0.1" />
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
-    </linearGradient>
-
-    <!-- Stunning double Drop Shadow for depth -->
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#863bff" flood-opacity="0.45" />
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#5500ff" flood-opacity="0.5" />
-    </filter>
-  </defs>
-
-  <!-- Base container with modern rounded corners -->
-  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
-  
-  <!-- Subtle border to define edges in dark mode -->
-  <rect width="508" height="508" x="2" y="2" rx="126" stroke="#ffffff" stroke-opacity="0.08" stroke-width="4" />
-
-  <!-- The original Bolt Path, now centered, scaled perfectly, and stylized -->
-  <g transform="translate(102.4, 112) scale(6.4)" filter="url(#shadow)">
-    <!-- Base colored bolt -->
-    <path fill="url(#boltGrad)" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" />
-    <!-- Glassy highlight overlay -->
-    <path fill="url(#boltHighlight)" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="property.lk">
+  <!-- property.lk mark: house on a plot — monochrome, no placeholder chrome -->
+  <rect width="64" height="64" rx="14" fill="#0a0a0a"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" stroke="#fff" stroke-opacity="0.12"/>
+  <!-- plot -->
+  <rect x="14" y="46" width="36" height="4" rx="1.5" fill="#f5f5f5"/>
+  <!-- house body -->
+  <path
+    fill="#f5f5f5"
+    d="M18 45V30.2L32 18l14 12.2V45H40.5V34.5h-9V45H18z"
+  />
+  <!-- door cut -->
+  <rect x="28.5" y="37" width="7" height="8" rx="1" fill="#0a0a0a"/>
+  <!-- chimney / data tick -->
+  <rect x="38" y="22" width="3.5" height="8" rx="1" fill="#f5f5f5"/>
 </svg>

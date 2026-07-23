@@ -9,6 +9,7 @@
 import { ArrowDown, ArrowRight } from 'lucide-react';
 import { motion, type Variants } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
+import { BrandMark } from './BrandMark';
 import { BRAND_NAME } from '../lib/brand';
 import { NAV_DESTINATIONS, navigateToDestination, scrollToAnchor } from '../lib/siteNavigation';
 
@@ -122,9 +123,9 @@ export function HeroSection() {
         >
           <a
             href="/"
-            className="brand-wordmark inline-flex min-h-10 items-center gap-2 text-lg text-white transition-[opacity,transform] duration-200 ease-out hover:opacity-85 active:scale-[0.96]"
+            className="brand-wordmark inline-flex min-h-10 items-center gap-2.5 text-lg text-white transition-[opacity,transform] duration-200 ease-out hover:opacity-85 active:scale-[0.96]"
           >
-            <img src="/favicon.svg" alt="" className="size-8" width={32} height={32} />
+            <BrandMark className="size-8 shrink-0" />
             {BRAND_NAME}
           </a>
 
