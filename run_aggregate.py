@@ -11,6 +11,7 @@ root = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(root, ".env"))
 sys.path.insert(0, root)
 
+from sqlalchemy import text
 from db.connection import SessionLocal
 from db.models import JobRun
 from api.main import PriceAggregator
@@ -19,6 +20,8 @@ from api.main import PriceAggregator
 def run():
     db = SessionLocal()
     try:
+        # percentile_cont + deal-score stamp over the full listings table
+        db.execute(text("SET statement_timeout = '15min'"))
         print("Running aggregates...", flush=True)
         start = datetime.utcnow()
         aggregator = PriceAggregator(db)
