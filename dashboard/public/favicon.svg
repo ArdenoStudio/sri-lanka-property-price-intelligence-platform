@@ -1,16 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="property.lk">
-  <!-- property.lk mark: house on a plot — monochrome, no placeholder chrome -->
-  <rect width="64" height="64" rx="14" fill="#0a0a0a"/>
-  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" stroke="#fff" stroke-opacity="0.12"/>
-  <!-- plot -->
-  <rect x="14" y="46" width="36" height="4" rx="1.5" fill="#f5f5f5"/>
-  <!-- house body -->
-  <path
-    fill="#f5f5f5"
-    d="M18 45V30.2L32 18l14 12.2V45H40.5V34.5h-9V45H18z"
-  />
-  <!-- door cut -->
-  <rect x="28.5" y="37" width="7" height="8" rx="1" fill="#0a0a0a"/>
-  <!-- chimney / data tick -->
-  <rect x="38" y="22" width="3.5" height="8" rx="1" fill="#f5f5f5"/>
+  <rect width="64" height="64" rx="16" fill="#111111"/>
+  <rect x="1" y="1" width="62" height="62" rx="15" stroke="#ffffff" stroke-opacity="0.16"/>
+  <path d="M14 30.5 L32 15 L50 30.5" stroke="#f5f5f5" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 29.5 V46.5 H45 V29.5" stroke="#f5f5f5" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M29 46.5 V36.5 H35 V46.5" stroke="#f5f5f5" stroke-width="3.25" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12 51.5 H52" stroke="#f5f5f5" stroke-width="3.25" stroke-linecap="round"/>
 </svg>
