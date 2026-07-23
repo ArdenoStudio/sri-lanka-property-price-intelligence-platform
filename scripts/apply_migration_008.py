@@ -68,18 +68,31 @@ def _apply_views(conn) -> None:
 
 
 def run() -> None:
-    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
-        conn.execute(text("SET statement_timeout = '15min'"))
-        if _has_listing_type(conn):
-            print("Migration 008 already applied (listing_type present). Skipping.", flush=True)
-            return
+    import time
 
-        print(f"Applying migration 008 ({len(STEPS)} steps + views)...", flush=True)
-        for i, stmt in enumerate(STEPS, 1):
-            preview = " ".join(stmt.split())[:110]
-            print(f"  [{i}/{len(STEPS)}] {preview}", flush=True)
-            conn.execute(text(stmt))
-        _apply_views(conn)
+    last_err: Exception | None = None
+    for attempt in range(1, 6):
+        try:
+            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+                conn.execute(text("SET statement_timeout = '15min'"))
+                if _has_listing_type(conn):
+                    print("Migration 008 already applied (listing_type present). Skipping.", flush=True)
+                    return
+
+                print(f"Applying migration 008 ({len(STEPS)} steps + views)...", flush=True)
+                for i, stmt in enumerate(STEPS, 1):
+                    preview = " ".join(stmt.split())[:110]
+                    print(f"  [{i}/{len(STEPS)}] {preview}", flush=True)
+                    conn.execute(text(stmt))
+                _apply_views(conn)
+            break
+        except Exception as e:
+            last_err = e
+            wait = min(30, 4 * attempt)
+            print(f"  connect/apply attempt {attempt} failed: {e}; retry in {wait}s", flush=True)
+            time.sleep(wait)
+    else:
+        raise last_err  # type: ignore[misc]
 
     db = SessionLocal()
     try:
