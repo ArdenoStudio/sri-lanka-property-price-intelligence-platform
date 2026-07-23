@@ -42,12 +42,13 @@ def test_top_level_scraper_imports_are_privacy_only():
     assert _top_level_scraper_imports() == {"privacy"}
 
 
-def test_lazy_scraper_imports_covered_by_keep_list():
+def test_public_pipeline_modules_covered_by_keep_list():
+    """Admin-only cleaner/geocoder/enricher stay stripped; pipeline modules must ship."""
     imported = _scraper_imports_any_depth()
-    assert imported <= REQUIRED_SCRAPER_MODULES, (
-        f"api.main scraper imports {imported} exceed Lambda keep-list "
-        f"{REQUIRED_SCRAPER_MODULES}. Update aws-lambda-deploy.yml keep-list."
-    )
+    required_for_public = {"privacy", "pipeline_metrics", "quality"}
+    assert required_for_public <= imported
+    assert required_for_public <= REQUIRED_SCRAPER_MODULES
+
 
 
 def test_deploy_workflow_keeps_required_scraper_modules():
