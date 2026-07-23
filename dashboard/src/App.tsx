@@ -353,9 +353,31 @@ function Dashboard() {
     });
   }, [COMPARISON_MAX]);
 
+  const [heroInView, setHeroInView] = useState(true);
+
+  useEffect(() => {
+    const hero = document.getElementById('hero');
+    if (!hero) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroInView(entry.isIntersecting),
+      { threshold: 0.12 }
+    );
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen relative overflow-x-hidden">
-      <Header />
+      {/* Sticky header appears after Watermelon hero leaves the viewport */}
+      <div
+        className={`fixed inset-x-0 top-0 z-[1000] transition-[opacity,transform] duration-300 ease-out ${
+          heroInView
+            ? 'pointer-events-none -translate-y-2 opacity-0'
+            : 'translate-y-0 opacity-100'
+        }`}
+      >
+        <Header />
+      </div>
       <HeroSection />
 
       <main
