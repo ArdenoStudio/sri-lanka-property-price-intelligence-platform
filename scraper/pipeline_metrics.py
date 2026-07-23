@@ -29,6 +29,8 @@ JOB_DEFS = [
         "kind": "scrape",
         "source": "ikman",
         "expected_hours": 24,
+        # Daily ingest uses api.ikman.lk (USE_IKMAN_SERP_API), not Playwright HTML.
+        "ingest": "api",
     },
     {
         "name": "scrape_lpw",
@@ -36,6 +38,7 @@ JOB_DEFS = [
         "kind": "scrape",
         "source": "lpw",
         "expected_hours": 24,
+        "ingest": "api",
     },
     {
         "name": "scrape_onlineproperty",
@@ -43,6 +46,7 @@ JOB_DEFS = [
         "kind": "scrape",
         "source": "onlineproperty",
         "expected_hours": 48,
+        "ingest": "html",
     },
     {
         "name": "scrape_lamudi",
@@ -50,6 +54,7 @@ JOB_DEFS = [
         "kind": "scrape",
         "source": "lamudi",
         "expected_hours": 48,
+        "ingest": "html",
     },
     {"name": "clean_listings", "label": "Cleaner", "kind": "job", "expected_hours": 24},
     {"name": "geocode_listings", "label": "Geocoder", "kind": "job", "expected_hours": 24},
@@ -104,6 +109,34 @@ def listing_counts_by_source(db: Session) -> tuple[dict[str, int], str]:
     return ({r["source"]: int(r["n"]) for r in rows if r["source"]}, "raw")
 
 
+def inventory_freshness(db: Session, source: str) -> Optional[datetime]:
+    """Latest touch for a source from listings / raw_listings.
+
+    Used when API ingest didn't write scrape_runs (ikman SERP path historically).
+    """
+    row = db.execute(
+        text(
+            """
+            SELECT GREATEST(
+                (SELECT MAX(last_seen_at) FROM listings WHERE source = :source),
+                (SELECT MAX(first_seen_at) FROM listings WHERE source = :source),
+                (SELECT MAX(scraped_at) FROM raw_listings WHERE source = :source)
+            ) AS ts
+            """
+        ),
+        {"source": source},
+    ).mappings().first()
+    return _to_utc(row["ts"]) if row and row.get("ts") else None
+
+
+def _newer(a: Optional[datetime], b: Optional[datetime]) -> Optional[datetime]:
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return a if a >= b else b
+
+
 def build_pipeline_status(db: Session) -> dict[str, Any]:
     """Per-source / per-job freshness surface (dashboard + /pipeline/status)."""
     now = datetime.now(timezone.utc)
@@ -153,7 +186,9 @@ def build_pipeline_status(db: Session) -> dict[str, Any]:
                 ),
                 {"source": source},
             ).mappings().first()
+            inv_fresh = inventory_freshness(db, source)
         else:
+            inv_fresh = None
             name = job["name"]
             last_success_run = db.execute(
                 text(
@@ -195,6 +230,14 @@ def build_pipeline_status(db: Session) -> dict[str, Any]:
         last_success = _to_utc(last_success_run["finished_at"]) if last_success_run else None
         last_started = _to_utc(last_run["started_at"]) if last_run else None
         running_started = _to_utc(last_running["started_at"]) if last_running else None
+        freshness_source = "scrape_runs"
+        if job["kind"] == "scrape":
+            # Prefer inventory touch for API ingest when scrape_runs lag (ikman).
+            merged_success = _newer(last_success, inv_fresh)
+            if inv_fresh and (last_success is None or inv_fresh > last_success):
+                freshness_source = "inventory"
+            last_success = merged_success
+            last_started = _newer(last_started, inv_fresh)
         status = _status_for(now, last_success, running_started, job["expected_hours"])
 
         payload: dict[str, Any] = {
@@ -210,6 +253,8 @@ def build_pipeline_status(db: Session) -> dict[str, Any]:
             payload.update(
                 {
                     "source": job["source"],
+                    "ingest": job.get("ingest", "html"),
+                    "freshness_source": freshness_source,
                     "last_probe": last_started.isoformat() if last_started else None,
                     "listing_count": listing_counts.get(job["source"], 0),
                     "listing_count_source": listing_count_source,
@@ -332,6 +377,8 @@ def compute_pipeline_metrics(db: Session, scrape_window: int = 30) -> dict[str, 
         ).mappings().first()
 
         last_success_at = _to_utc(last_success["finished_at"]) if last_success else None
+        inv_fresh = inventory_freshness(db, source)
+        last_success_at = _newer(last_success_at, inv_fresh)
         judged = success_n + failed_n
         median_runtime_s = None
         if durations:
@@ -350,6 +397,10 @@ def compute_pipeline_metrics(db: Session, scrape_window: int = 30) -> dict[str, 
                 "label": SOURCE_LABELS.get(source, source),
                 "listings": listings_by_source.get(source, 0),
                 "last_success_at": last_success_at.isoformat() if last_success_at else None,
+                "ingest": next(
+                    (j.get("ingest", "html") for j in JOB_DEFS if j.get("source") == source),
+                    "html",
+                ),
                 "scrape_runs_sampled": len(runs),
                 "scrape_success_count": success_n,
                 "scrape_failed_count": failed_n,

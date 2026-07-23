@@ -96,6 +96,9 @@ export interface PipelineJobStatus {
   label?: string;
   kind?: 'scrape' | 'job';
   source?: string;
+  /** How this source is ingested — ikman/lpw use public APIs now. */
+  ingest?: 'api' | 'html' | string;
+  freshness_source?: 'scrape_runs' | 'inventory' | string;
   status: 'ok' | 'delayed' | 'running';
   last_success: string | null;
   last_run: string | null;

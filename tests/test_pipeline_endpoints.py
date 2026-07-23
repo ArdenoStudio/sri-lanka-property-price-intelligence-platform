@@ -2,7 +2,14 @@
 import ast
 from pathlib import Path
 
-from scraper.pipeline_metrics import JOB_DEFS, KNOWN_SOURCES, SOURCE_LABELS, _pct, _status_for
+from scraper.pipeline_metrics import (
+    JOB_DEFS,
+    KNOWN_SOURCES,
+    SOURCE_LABELS,
+    _newer,
+    _pct,
+    _status_for,
+)
 from datetime import datetime, timedelta, timezone
 
 
@@ -49,6 +56,20 @@ def test_job_defs_include_four_scrape_sources_and_downstream():
     assert job_names == {"clean_listings", "geocode_listings", "compute_aggregates"}
 
 
+def test_ikman_marked_as_api_ingest():
+    ikman = next(j for j in JOB_DEFS if j["source"] == "ikman")
+    assert ikman["ingest"] == "api"
+    assert ikman["expected_hours"] == 24
+
+
+def test_inventory_freshness_beats_stale_scrape_run():
+    stale = datetime(2026, 6, 22, tzinfo=timezone.utc)
+    fresh = datetime(2026, 7, 22, 21, 0, tzinfo=timezone.utc)
+    assert _newer(stale, fresh) == fresh
+    assert _newer(None, fresh) == fresh
+    assert _newer(stale, None) == stale
+
+
 def test_pct_and_status_helpers():
     assert _pct(25, 100) == 25.0
     assert _pct(0, 0) is None
@@ -57,3 +78,10 @@ def test_pct_and_status_helpers():
     assert _status_for(now, now - timedelta(hours=1), None, 24) == "ok"
     assert _status_for(now, now - timedelta(days=10), None, 24) == "delayed"
     assert _status_for(now, None, now - timedelta(minutes=5), 24) == "running"
+
+
+def test_run_ikman_api_path_records_scrape_run():
+    source = Path("run_all_scrapers.py").read_text(encoding="utf-8")
+    assert "record_scrape_run" in source
+    assert "serp_api" in source
+    assert "use_ikman_serp_api()" in source

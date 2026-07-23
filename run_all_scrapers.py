@@ -59,8 +59,10 @@ async def run_ikman(
 ):
     """Run ikman scraper with its own DB session."""
     from scraper.flags import use_ikman_serp_api
+    from scraper.scrape_run import record_scrape_run
 
     db = SessionLocal()
+    started_at = datetime.utcnow()
     log.info(
         "scraper_starting",
         source="ikman",
@@ -77,6 +79,16 @@ async def run_ikman(
             except Exception as bridge_err:
                 log.warning("ikman_identity_bridge_skipped", error=str(bridge_err))
             found, new = await scrape_ikman_api(db, max_pages=max_pages or None)
+            # API path previously never wrote scrape_runs → pipeline strip stuck on Jun '25.
+            record_scrape_run(
+                db,
+                source="ikman",
+                started_at=started_at,
+                listings_found=found,
+                listings_new=new,
+                status="success",
+                stats={"via": "serp_api", "max_pages": max_pages},
+            )
             log.info("scraper_complete", source="ikman", found=found, new=new, via="serp_api")
             return {"source": "ikman", "found": found, "new": new, "success": True}
 
@@ -119,6 +131,18 @@ async def run_ikman(
         return {"source": "ikman", "found": found, "new": new, "success": True}
     except Exception as e:
         log.error("scraper_failed", source="ikman", error=str(e))
+        if use_ikman_serp_api():
+            try:
+                record_scrape_run(
+                    db,
+                    source="ikman",
+                    started_at=started_at,
+                    status="failed",
+                    error_message=str(e)[:500],
+                    stats={"via": "serp_api"},
+                )
+            except Exception:
+                pass
         return {"source": "ikman", "found": 0, "new": 0, "success": False, "error": str(e)}
     finally:
         db.close()
