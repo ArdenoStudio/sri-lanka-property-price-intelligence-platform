@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { BrandMark } from './BrandMark';
 import { CurrencySwitcher } from './CurrencySwitcher';
 import {
   getActiveDestinationId,
@@ -86,9 +87,10 @@ export function Header() {
                 handleDestination('home');
               }
             }}
-            className="flex min-w-0 items-center no-underline"
+            className="flex min-w-0 items-center gap-2.5 no-underline sm:gap-3"
             aria-label="property.lk home"
           >
+            <BrandMark className="size-9 shrink-0 sm:size-10" />
             <div className="min-w-0">
               <span className="brand-wordmark block text-[1.65rem] leading-none text-white sm:text-[1.9rem]">
                 property.lk

@@ -1,43 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <defs>
-    <!-- Dark, premium background gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#140A23" />
-      <stop offset="100%" stop-color="#080310" />
-    </linearGradient>
-
-    <!-- Main Bolt Gradient -->
-    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#d094ff" />
-      <stop offset="50%" stop-color="#863bff" />
-      <stop offset="100%" stop-color="#5500ff" />
-    </linearGradient>
-    
-    <!-- Top inner glow / shine for a glossy, glassy finish -->
-    <linearGradient id="boltHighlight" x1="15%" y1="0%" x2="35%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
-      <stop offset="25%" stop-color="#ffffff" stop-opacity="0.1" />
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
-    </linearGradient>
-
-    <!-- Stunning double Drop Shadow for depth -->
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#863bff" flood-opacity="0.45" />
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#5500ff" flood-opacity="0.5" />
-    </filter>
-  </defs>
-
-  <!-- Base container with modern rounded corners -->
-  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
-  
-  <!-- Subtle border to define edges in dark mode -->
-  <rect width="508" height="508" x="2" y="2" rx="126" stroke="#ffffff" stroke-opacity="0.08" stroke-width="4" />
-
-  <!-- The original Bolt Path, now centered, scaled perfectly, and stylized -->
-  <g transform="translate(102.4, 112) scale(6.4)" filter="url(#shadow)">
-    <!-- Base colored bolt -->
-    <path fill="url(#boltGrad)" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" />
-    <!-- Glassy highlight overlay -->
-    <path fill="url(#boltHighlight)" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="property.lk">
+  <rect width="64" height="64" rx="16" fill="#111111"/>
+  <rect x="1" y="1" width="62" height="62" rx="15" stroke="#ffffff" stroke-opacity="0.16"/>
+  <path d="M14 30.5 L32 15 L50 30.5" stroke="#f5f5f5" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 29.5 V46.5 H45 V29.5" stroke="#f5f5f5" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M29 46.5 V36.5 H35 V46.5" stroke="#f5f5f5" stroke-width="3.25" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12 51.5 H52" stroke="#f5f5f5" stroke-width="3.25" stroke-linecap="round"/>
 </svg>
