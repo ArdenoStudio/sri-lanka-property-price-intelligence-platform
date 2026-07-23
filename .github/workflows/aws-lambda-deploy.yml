@@ -50,10 +50,23 @@ jobs:
             --python-version 3.13 \
             --only-binary=:all: \
             --upgrade
-          # api.main imports scraper.privacy — package must include scraper/
+          # api.main imports scraper modules at import time — keep only those (drop Playwright scrapers)
           cp -r api db scraper package/
-          # Keep the zip lean: drop Playwright-heavy scraper modules unused by the API
-          find package/scraper -type f -name '*.py' ! -name '__init__.py' ! -name 'privacy.py' -delete
+          find package/scraper -type f -name '*.py' \
+            ! -name '__init__.py' \
+            ! -name 'privacy.py' \
+            ! -name 'pipeline_metrics.py' \
+            ! -name 'quality.py' \
+            ! -name 'flags.py' \
+            -delete
+          # Fail fast if API import graph is broken before we ship a 502ing function
+          PYTHONPATH=package python -c "
+from scraper.privacy import redact_contact_channels
+from scraper.pipeline_metrics import build_pipeline_status, compute_pipeline_metrics
+from scraper.quality import run_quality_checks
+from scraper.flags import flag_snapshot
+print('lambda_scraper_modules_ok', sorted(flag_snapshot()))
+"
           cd package
           zip -r ../lambda.zip . -x '*.pyc' '*/__pycache__/*'
 
@@ -93,6 +106,14 @@ jobs:
               echo "Health OK (HTTP $status)"
               cat /tmp/smoke_body
               echo
+              # CORS preflight must succeed for the production Vercel origin
+              opt_headers=$(curl --silent --output /dev/null --dump-header - \
+                -X OPTIONS "$function_url/listings" \
+                -H "Origin: https://propertylk-one.vercel.app" \
+                -H "Access-Control-Request-Method: GET" \
+                -H "Access-Control-Request-Headers: content-type")
+              echo "$opt_headers"
+              echo "$opt_headers" | grep -qi "access-control-allow-origin: https://propertylk-one.vercel.app"
               # Newest sort sanity: first_seen_at should be non-increasing
               curl --silent --fail "$function_url/listings?sort=newest&limit=8" -o /tmp/newest.json
               python3 -c '
