@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, Query, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, cast, Float, case, or_, text
 from sqlalchemy.dialects.postgresql import insert
@@ -20,10 +20,12 @@ from api.estimate_logic import (
 )
 from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel
+import logging
 import os
 import httpx
 
 app = FastAPI(title="PropertyLK — Sri Lanka property listing data platform")
+logger = logging.getLogger("propertylk.api")
 
 def _configured_cors_origins() -> list[str]:
     raw = os.getenv("CORS_ALLOW_ORIGINS", "")
@@ -45,6 +47,37 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _cors_headers_for_request(request: Request) -> dict[str, str]:
+    """Explicit ACAO for error paths — ServerErrorMiddleware sits outside CORS."""
+    origin = request.headers.get("origin") or ""
+    if origin and origin in _configured_cors_origins():
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Vary": "Origin",
+        }
+    return {}
+
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception):
+    """Return JSON 500s with CORS headers the browser can read.
+
+    Starlette's ServerErrorMiddleware sits *outside* CORSMiddleware. Unhandled
+    exceptions that bubble there become plain-text 500s with no
+    Access-Control-Allow-Origin, which Chromium reports as a CORS failure
+    (dashboard /stats showed this while OPTIONS preflight still passed).
+    """
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal Server Error",
+            "path": request.url.path,
+        },
+        headers=_cors_headers_for_request(request),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -146,18 +179,27 @@ DISTRICT_COORDS = {
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
+    # Lightweight SQL only — avoid loading full ORM rows (scrape_runs.stats can be huge).
     try:
-        last_run = db.query(ScrapeRun).order_by(desc(ScrapeRun.finished_at)).first()
-        raw_count = db.query(func.count(RawListing.id)).scalar()
-        clean_count = db.query(func.count(Listing.id)).scalar()
+        row = db.execute(
+            text(
+                """
+                SELECT
+                    (SELECT COUNT(*) FROM raw_listings) AS raw_listings,
+                    (SELECT COUNT(*) FROM listings) AS clean_listings,
+                    (SELECT MAX(finished_at) FROM scrape_runs) AS last_scrape
+                """
+            )
+        ).mappings().first()
         return {
             "status": "ok",
             "db": "connected",
-            "raw_listings": raw_count,
-            "clean_listings": clean_count,
-            "last_scrape": last_run.finished_at if last_run else None,
+            "raw_listings": int((row or {}).get("raw_listings") or 0),
+            "clean_listings": int((row or {}).get("clean_listings") or 0),
+            "last_scrape": (row or {}).get("last_scrape"),
         }
-    except Exception:
+    except Exception as exc:
+        logger.warning("Health DB check failed: %s", exc)
         return {"status": "ok", "db": "unreachable"}
 
 def _require_admin(req: Request):
@@ -629,81 +671,142 @@ class PriceAggregator:
 
 @app.get("/stats")
 def get_stats(db: Session = Depends(get_db)):
-    total_clean = db.query(func.count(Listing.id)).scalar()
-    has_districts = db.query(func.count(Listing.id)).filter(Listing.district.isnot(None)).scalar() > 0
-
-    if total_clean > 0:
-        total_listings = total_clean
-        seven_days_ago = datetime.utcnow() - timedelta(days=7)
-        recent_listings = db.query(func.count(Listing.id)).filter(
-            Listing.first_seen_at >= seven_days_ago
-        ).scalar()
-        avg_price = db.query(func.avg(Listing.price_lkr)).filter(
-            Listing.price_lkr.isnot(None),
-            Listing.is_outlier == False,
-        ).scalar()
-        by_type = dict(
-            db.query(Listing.property_type, func.count(Listing.id))
-            .group_by(Listing.property_type)
-            .all()
-        )
-    else:
-        total_listings = db.query(func.count(RawListing.id)).scalar()
-        seven_days_ago = datetime.utcnow() - timedelta(days=7)
-        recent_listings = db.query(func.count(RawListing.id)).filter(
-            RawListing.scraped_at >= seven_days_ago
-        ).scalar()
-        avg_price = None
-        by_type = dict(
-            db.query(RawListing.property_type, func.count(RawListing.id))
-            .group_by(RawListing.property_type)
-            .all()
-        )
-
-    # Always scan titles for district count (more reliable than relying on cleaned district field)
-    districts_covered = (
-        db.query(func.count(func.distinct(Listing.district))).filter(Listing.district.isnot(None)).scalar()
-        if has_districts
-        else sum(
-            1 for d in DISTRICT_COORDS
-            if db.query(func.count(RawListing.id)).filter(RawListing.title.ilike(f"%{d}%")).scalar() > 0
-        )
-    )
-
-    last_run = db.query(ScrapeRun).order_by(desc(ScrapeRun.finished_at)).first()
-
-    # Month-over-month price change from price_aggregates
-    price_change_pct = None
+    """Dashboard summary counters. Degrades to zeros instead of 500ing the UI."""
     try:
-        now = datetime.utcnow()
-        cur_y, cur_m = now.year, now.month
-        prev_m, prev_y = (cur_m - 1, cur_y) if cur_m > 1 else (12, cur_y - 1)
+        total_clean = int(
+            db.execute(text("SELECT COUNT(*) FROM listings")).scalar() or 0
+        )
+        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
-        cur_avg = db.query(func.avg(PriceAggregate.avg_price_lkr)).filter(
-            PriceAggregate.period_year == cur_y,
-            PriceAggregate.period_month == cur_m,
-            PriceAggregate.avg_price_lkr.isnot(None),
-        ).scalar()
-        prev_avg = db.query(func.avg(PriceAggregate.avg_price_lkr)).filter(
-            PriceAggregate.period_year == prev_y,
-            PriceAggregate.period_month == prev_m,
-            PriceAggregate.avg_price_lkr.isnot(None),
-        ).scalar()
-        if cur_avg and prev_avg and prev_avg > 0:
-            price_change_pct = round(((float(cur_avg) - float(prev_avg)) / float(prev_avg)) * 100, 1)
-    except Exception:
-        pass
+        if total_clean > 0:
+            total_listings = total_clean
+            recent_listings = int(
+                db.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM listings
+                        WHERE first_seen_at >= :since
+                        """
+                    ),
+                    {"since": seven_days_ago},
+                ).scalar()
+                or 0
+            )
+            avg_price = db.execute(
+                text(
+                    """
+                    SELECT AVG(price_lkr) FROM listings
+                    WHERE price_lkr IS NOT NULL
+                      AND COALESCE(is_outlier, false) = false
+                    """
+                )
+            ).scalar()
+            by_type_rows = db.execute(
+                text(
+                    """
+                    SELECT COALESCE(property_type, 'unknown') AS property_type,
+                           COUNT(*) AS n
+                    FROM listings
+                    GROUP BY COALESCE(property_type, 'unknown')
+                    """
+                )
+            ).mappings().all()
+            districts_covered = int(
+                db.execute(
+                    text(
+                        """
+                        SELECT COUNT(DISTINCT district) FROM listings
+                        WHERE district IS NOT NULL
+                        """
+                    )
+                ).scalar()
+                or 0
+            )
+            data_source = "cleaned"
+        else:
+            total_listings = int(
+                db.execute(text("SELECT COUNT(*) FROM raw_listings")).scalar() or 0
+            )
+            recent_listings = int(
+                db.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM raw_listings
+                        WHERE scraped_at >= :since
+                        """
+                    ),
+                    {"since": seven_days_ago},
+                ).scalar()
+                or 0
+            )
+            avg_price = None
+            by_type_rows = db.execute(
+                text(
+                    """
+                    SELECT COALESCE(property_type, 'unknown') AS property_type,
+                           COUNT(*) AS n
+                    FROM raw_listings
+                    GROUP BY COALESCE(property_type, 'unknown')
+                    """
+                )
+            ).mappings().all()
+            districts_covered = 0
+            data_source = "raw"
 
-    return {
-        "total_listings": total_listings,
-        "listings_last_7_days": recent_listings,
-        "avg_price_lkr": float(avg_price) if avg_price else None,
-        "price_change_pct": price_change_pct,
-        "districts_covered": districts_covered,
-        "listings_by_type": by_type,
-        "last_updated": last_run.finished_at.isoformat() if last_run and last_run.finished_at else None,
-        "data_source": "cleaned" if total_clean > 0 else "raw",
-    }
+        by_type = {str(r["property_type"]): int(r["n"]) for r in by_type_rows}
+
+        last_updated = db.execute(
+            text("SELECT MAX(finished_at) FROM scrape_runs")
+        ).scalar()
+
+        price_change_pct = None
+        try:
+            now = datetime.now(timezone.utc)
+            cur_y, cur_m = now.year, now.month
+            prev_m, prev_y = (cur_m - 1, cur_y) if cur_m > 1 else (12, cur_y - 1)
+            cur_avg = db.execute(
+                text(
+                    """
+                    SELECT AVG(avg_price_lkr) FROM price_aggregates
+                    WHERE period_year = :y AND period_month = :m
+                      AND avg_price_lkr IS NOT NULL
+                      AND bedroom_bucket IS NULL
+                    """
+                ),
+                {"y": cur_y, "m": cur_m},
+            ).scalar()
+            prev_avg = db.execute(
+                text(
+                    """
+                    SELECT AVG(avg_price_lkr) FROM price_aggregates
+                    WHERE period_year = :y AND period_month = :m
+                      AND avg_price_lkr IS NOT NULL
+                      AND bedroom_bucket IS NULL
+                    """
+                ),
+                {"y": prev_y, "m": prev_m},
+            ).scalar()
+            if cur_avg and prev_avg and float(prev_avg) > 0:
+                price_change_pct = round(
+                    ((float(cur_avg) - float(prev_avg)) / float(prev_avg)) * 100, 1
+                )
+        except Exception:
+            pass
+
+        return {
+            "total_listings": total_listings,
+            "listings_last_7_days": recent_listings,
+            "avg_price_lkr": float(avg_price) if avg_price else None,
+            "price_change_pct": price_change_pct,
+            "districts_covered": districts_covered,
+            "listings_by_type": by_type,
+            "last_updated": last_updated.isoformat() if last_updated else None,
+            "data_source": data_source,
+        }
+    except Exception as exc:
+        logger.exception("GET /stats failed: %s", exc)
+        # Prefer a structured 503 (CORS-safe via FastAPI) over an opaque Lambda 500.
+        raise HTTPException(status_code=503, detail="Stats temporarily unavailable")
 
 
 # ---------------------------------------------------------------------------
@@ -991,32 +1094,40 @@ def get_listings(
 def get_prices(
     district: str,
     property_type: str = "land",
+    listing_type: str = Query("sale", pattern="^(sale|rent)$"),
     months: int = Query(9, ge=1, le=24),
     db: Session = Depends(get_db),
 ):
-    aggregates = (
-        db.query(PriceAggregate)
-        .filter(
-            PriceAggregate.district == district,
-            PriceAggregate.property_type == property_type,
-            PriceAggregate.bedroom_bucket.is_(None),
+    """Monthly price series for district charts. Defaults to sale (never mix rent)."""
+    try:
+        aggregates = (
+            db.query(PriceAggregate)
+            .filter(
+                PriceAggregate.district == district,
+                PriceAggregate.property_type == property_type,
+                PriceAggregate.listing_type == listing_type,
+                PriceAggregate.bedroom_bucket.is_(None),
+            )
+            .order_by(desc(PriceAggregate.period_year), desc(PriceAggregate.period_month))
+            .limit(months)
+            .all()
         )
-        .order_by(desc(PriceAggregate.period_year), desc(PriceAggregate.period_month))
-        .limit(months)
-        .all()
-    )
 
-    return [
-        {
-            "year": a.period_year,
-            "month": a.period_month,
-            "median_price_lkr": float(a.median_price_lkr) if a.median_price_lkr else None,
-            "median_price_per_perch": float(a.median_price_per_perch) if a.median_price_per_perch else None,
-            "avg_price_lkr": float(a.avg_price_lkr) if a.avg_price_lkr else None,
-            "count": a.listing_count,
-        }
-        for a in aggregates
-    ]
+        return [
+            {
+                "year": a.period_year,
+                "month": a.period_month,
+                "listing_type": a.listing_type,
+                "median_price_lkr": float(a.median_price_lkr) if a.median_price_lkr else None,
+                "median_price_per_perch": float(a.median_price_per_perch) if a.median_price_per_perch else None,
+                "avg_price_lkr": float(a.avg_price_lkr) if a.avg_price_lkr else None,
+                "count": a.listing_count,
+            }
+            for a in aggregates
+        ]
+    except Exception as exc:
+        logger.exception("GET /prices failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Price history temporarily unavailable")
 
 
 # ---------------------------------------------------------------------------

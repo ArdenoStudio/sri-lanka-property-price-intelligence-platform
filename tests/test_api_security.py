@@ -34,6 +34,29 @@ def test_cors_is_configured_from_allowlist_not_wildcard():
     assert "allow_origins=_configured_cors_origins()" in source
 
 
+def test_unhandled_exceptions_return_json_with_cors_headers():
+    """Regression: plain-text Lambda 500s omit CORS and break the Vercel UI."""
+    source = _source()
+    assert "@app.exception_handler(Exception)" in source
+    assert "_unhandled_exception_handler" in source
+    assert "_cors_headers_for_request" in source
+    assert "Access-Control-Allow-Origin" in source
+    assert "JSONResponse" in source
+
+
+def test_stats_and_prices_degrade_instead_of_opaque_500():
+    stats = _function_node("get_stats")
+    prices = _function_node("get_prices")
+    stats_src = ast.get_source_segment(_source(), stats) or ""
+    prices_src = ast.get_source_segment(_source(), prices) or ""
+
+    assert "HTTPException" in stats_src
+    assert "SELECT COUNT(*) FROM listings" in stats_src
+    assert "MAX(finished_at)" in stats_src
+    assert "listing_type" in prices_src
+    assert "HTTPException" in prices_src
+
+
 def test_process_trigger_requires_admin():
     trigger_process = _function_node("trigger_process")
 
