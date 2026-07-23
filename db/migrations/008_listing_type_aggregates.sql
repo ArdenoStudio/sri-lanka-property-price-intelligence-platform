@@ -8,9 +8,12 @@ ALTER TABLE price_aggregates
 DELETE FROM price_aggregates;
 
 -- Clear untrustworthy scores until recomputed against sale/rent peers.
+-- Only rewrite rows that still have a score (full-table NULL times out on large DBs).
 UPDATE listings
 SET deal_score = NULL,
-    market_median_lkr = NULL;
+    market_median_lkr = NULL
+WHERE deal_score IS NOT NULL
+   OR market_median_lkr IS NOT NULL;
 
 DROP INDEX IF EXISTS idx_price_aggregates_broad;
 DROP INDEX IF EXISTS idx_price_aggregates_bucketed;
