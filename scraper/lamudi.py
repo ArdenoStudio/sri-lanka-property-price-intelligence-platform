@@ -385,8 +385,10 @@ class LamudiScraper:
             source=self.SOURCE,
             started_at=datetime.utcnow(),
             finished_at=datetime.utcnow(),
+            status="success",
             listings_found=total_found,
             listings_new=total_new,
+            listings_failed=0,
         ))
         self.db.commit()
         log.info("houseLk_scrape_complete", total_found=total_found, total_new=total_new)

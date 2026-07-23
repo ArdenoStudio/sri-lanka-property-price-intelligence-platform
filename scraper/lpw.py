@@ -317,8 +317,10 @@ class LPWScraper:
                 source=self.SOURCE,
                 started_at=datetime.utcnow(),
                 finished_at=datetime.utcnow(),
+                status="success",
                 listings_found=total_found,
-                listings_new=total_new
+                listings_new=total_new,
+                listings_failed=0,
             )
             self.db.add(new_run)
             self.db.commit()
@@ -432,9 +434,15 @@ async def scrape_lpw_districts(db: Session, max_pages: int = 50, use_all_distric
                     break
 
         from db.models import ScrapeRun
-        db.add(ScrapeRun(source="lpw", started_at=datetime.utcnow(),
-                         finished_at=datetime.utcnow(),
-                         listings_found=grand_total_found, listings_new=grand_total_new))
+        db.add(ScrapeRun(
+            source="lpw",
+            started_at=datetime.utcnow(),
+            finished_at=datetime.utcnow(),
+            status="success",
+            listings_found=grand_total_found,
+            listings_new=grand_total_new,
+            listings_failed=0,
+        ))
         db.commit()
         await browser.close()
 

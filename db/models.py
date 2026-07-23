@@ -110,7 +110,9 @@ class ScrapeRun(Base):
     status = Column(String(10))
     listings_found = Column(Integer, default=0)
     listings_new = Column(Integer, default=0)
+    listings_failed = Column(Integer, default=0)
     error_message = Column(Text)
+    stats = Column(JSON)
 
 class ListingSnapshot(Base):
     __tablename__ = 'listing_snapshots'

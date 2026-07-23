@@ -1,0 +1,42 @@
+[
+  {
+    "name": "cross_source_same_price_district",
+    "a": {
+      "source": "ikman",
+      "source_id": "hexaaaaaaaaaaaaaaaaaaaa",
+      "price_lkr": 12500000,
+      "raw_location": "Kandy",
+      "district": "Kandy",
+      "property_type": "house"
+    },
+    "b": {
+      "source": "lpw",
+      "source_id": "lpw-99881",
+      "price_lkr": 12500000,
+      "raw_location": "Kandy, Kandy District",
+      "district": "Kandy",
+      "property_type": "house"
+    },
+    "expect_duplicate": true
+  },
+  {
+    "name": "different_price_not_duplicate",
+    "a": {
+      "source": "ikman",
+      "source_id": "hexbbbbbbbbbbbbbbbbbbbb",
+      "price_lkr": 10000000,
+      "raw_location": "Galle",
+      "district": "Galle",
+      "property_type": "land"
+    },
+    "b": {
+      "source": "lpw",
+      "source_id": "lpw-11002",
+      "price_lkr": 11000000,
+      "raw_location": "Galle",
+      "district": "Galle",
+      "property_type": "land"
+    },
+    "expect_duplicate": false
+  }
+]

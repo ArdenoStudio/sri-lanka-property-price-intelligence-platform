@@ -1,4 +1,8 @@
-"""Lightweight scrape/cutover telemetry helpers."""
+"""Lightweight scrape/cutover telemetry helpers.
+
+For production inventory / freshness / duplicate rates, prefer
+`scraper.pipeline_metrics.compute_pipeline_metrics` (GET /pipeline/metrics).
+"""
 from __future__ import annotations
 
 from sqlalchemy import text
