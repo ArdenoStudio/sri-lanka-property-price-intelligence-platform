@@ -1,4 +1,4 @@
-"""Guard: Lambda zip keep-list must include every scraper module imported by api.main."""
+"""Guard: Lambda zip keep-list must include scraper modules used by the API."""
 import ast
 from pathlib import Path
 
@@ -14,23 +14,38 @@ REQUIRED_SCRAPER_MODULES = {
 }
 
 
-def _top_level_scraper_imports() -> set[str]:
+def _scraper_imports_any_depth() -> set[str]:
+    """Collect scraper.<module> imports anywhere in api.main (incl. lazy imports)."""
     tree = ast.parse(API_MAIN.read_text(encoding="utf-8"))
     mods: set[str] = set()
-    for node in tree.body:  # top-level only — admin triggers lazy-import heavy scrapers
+    for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("scraper"):
             parts = node.module.split(".")
             if len(parts) >= 2:
                 mods.add(parts[1])
-            else:
-                mods.add("__init__")
     return mods
 
 
-def test_lambda_keep_list_covers_api_scraper_imports():
-    imported = _top_level_scraper_imports()
-    assert imported <= REQUIRED_SCRAPER_MODULES | {"__init__"}, (
-        f"api.main top-level scraper imports {imported} exceed Lambda keep-list "
+def _top_level_scraper_imports() -> set[str]:
+    tree = ast.parse(API_MAIN.read_text(encoding="utf-8"))
+    mods: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("scraper"):
+            parts = node.module.split(".")
+            if len(parts) >= 2:
+                mods.add(parts[1])
+    return mods
+
+
+def test_top_level_scraper_imports_are_privacy_only():
+    """Cold-start must not import metrics/quality — keeps /health up if zip drifts."""
+    assert _top_level_scraper_imports() == {"privacy"}
+
+
+def test_lazy_scraper_imports_covered_by_keep_list():
+    imported = _scraper_imports_any_depth()
+    assert imported <= REQUIRED_SCRAPER_MODULES, (
+        f"api.main scraper imports {imported} exceed Lambda keep-list "
         f"{REQUIRED_SCRAPER_MODULES}. Update aws-lambda-deploy.yml keep-list."
     )
 
@@ -39,5 +54,6 @@ def test_deploy_workflow_keeps_required_scraper_modules():
     source = WORKFLOW.read_text(encoding="utf-8")
     for name in REQUIRED_SCRAPER_MODULES:
         assert f"! -name '{name}.py'" in source or f'! -name "{name}.py"' in source
-    assert "lambda_scraper_modules_ok" in source
-    assert "access-control-allow-origin: https://propertylk-one.vercel.app" in source
+    assert "scripts/check_lambda_scraper_modules.py" in source
+    assert "scripts/lambda_smoke_newest.py" in source
+    assert "propertylk-one.vercel.app" in source

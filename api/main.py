@@ -8,8 +8,6 @@ from typing import List, Optional
 from db.connection import get_db, SessionLocal
 from db.models import Listing, RawListing, ScrapeRun, PriceAggregate, JobRun, ListingSnapshot
 from scraper.privacy import redact_contact_channels
-from scraper.pipeline_metrics import build_pipeline_status, compute_pipeline_metrics
-from scraper.quality import run_quality_checks
 from api.estimate_logic import (
     MAX_DISPLAY_COMPS,
     MAX_ESTIMATE_COMPS,
@@ -184,12 +182,16 @@ def _public_description(value: Optional[str]) -> Optional[str]:
 @app.get("/public/pipeline")
 def public_pipeline(db: Session = Depends(get_db)):
     """Dashboard-facing pipeline freshness (sources + downstream jobs)."""
+    from scraper.pipeline_metrics import build_pipeline_status
+
     return build_pipeline_status(db)
 
 
 @app.get("/pipeline/status")
 def pipeline_status(db: Session = Depends(get_db)):
     """Alias of /public/pipeline — last success per source + job health."""
+    from scraper.pipeline_metrics import build_pipeline_status
+
     return build_pipeline_status(db)
 
 
@@ -199,12 +201,16 @@ def pipeline_metrics(
     db: Session = Depends(get_db),
 ):
     """Inventory, geocode, duplicate, and per-source scrape success rates (SQL-backed)."""
+    from scraper.pipeline_metrics import compute_pipeline_metrics
+
     return compute_pipeline_metrics(db, scrape_window=scrape_window)
 
 
 @app.get("/pipeline/quality")
 def pipeline_quality(db: Session = Depends(get_db)):
     """Freshness SLA + null/outlier/duplicate guards over cleaned listings."""
+    from scraper.quality import run_quality_checks
+
     return run_quality_checks(db)
 
 @app.get("/admin/job-runs")
