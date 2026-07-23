@@ -12,24 +12,28 @@ How PropertyLK turns listings into medians, comparables, and deal scores. Matche
 
 ## Monthly medians (`price_aggregates`)
 
-`PriceAggregator.aggregate()` groups non-outlier listings by district, property type, calendar month (and optionally bedroom bucket). Stores median/avg/p25/p75 and `listing_count`. Re-run via `python run_aggregate.py` or admin `/trigger/process`.
+`PriceAggregator.aggregate()` groups non-outlier, non-short-term listings by **district × property type × listing_type (sale|rent) × calendar month** (and optionally bedroom bucket). Stores true median (`percentile_cont`), avg/p25/p75 and `listing_count`. Re-run via `python run_aggregate.py` or admin `/trigger/process`.
 
-Bedroom buckets: `1`, `2`, `3`, `4`, `5+` when `bedrooms` is present (migration 004).
+Bedroom buckets: `1`, `2`, `3`, `4`, `5+` when `bedrooms` is present (migration 004). Listing-type grain: migration 008.
+
+Sale and rent are **never mixed** in a median row.
 
 ## Deal score
 
-Stamped on listings after aggregates:
+Stamped on listings after aggregates (`api/deal_score.py` + SQL in `PriceAggregator`):
 
 ```text
-deal_score = 100 * (1 - price_lkr / market_median_lkr)
+raw = 100 * (1 - price_lkr / market_median_lkr)
+deal_score = clamp(raw * sample_confidence(n), -100, 100)
 ```
 
-- Positive → below median (cheaper than comps); negative → above.
-- Clamped to [-100, 100].
-- Prefer **bedroom-bucket** median for same district+type when that bucket has ≥5 listings; else fall back to broad district+type median.
-- Outliers skipped.
+- Peers must share **listing_type** (sale vs rent), district, and property type.
+- Prefer bedroom-bucket median when that bucket has ≥5 peers; else broad same-market median (≥5).
+- `sample_confidence` ramps from n=5 → 1.0 at n=15 (thin samples dampen magnitude).
+- Null when: outlier, short-term, unknown listing_type, n&lt;5, no peer median, or price/median ratio outside [0.05, 20] (blocks fake ±100 from cross-market comps).
+- Positive → below peer median; negative → above.
 
-This is a **relative listing signal**, not an appraisal.
+This is a **relative same-market signal**, not an appraisal.
 
 ## Estimate / comparables API
 

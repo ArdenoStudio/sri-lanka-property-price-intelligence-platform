@@ -38,7 +38,7 @@ listings  (+ locations cache)
 | `locations` | Normalized city\|district geocode cache |
 | `scrape_runs` | Per-source scrape metadata (`status`, found/new/failed, optional `stats` JSON) |
 | `job_runs` | Downstream jobs: clean / geocode / aggregates (`stats` JSON) |
-| `price_aggregates` | District × type × month (+ optional bedroom bucket) medians |
+| `price_aggregates` | District × type × listing_type (sale|rent) × month (+ optional bedroom bucket) medians |
 | Mart views (007) | `mart_district_benchmarks`, `mart_property_type_trends`, `mart_source_inventory`, `mart_deal_score_coverage` |
 
 ### Metrics inventory (before → after this hardening)

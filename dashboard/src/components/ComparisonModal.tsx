@@ -388,7 +388,11 @@ export function ComparisonModal({
                               <div className="flex w-full items-center justify-between gap-3">
                                 {showDealScorePill ? (
                                   <span className={isWinner ? 'font-bold underline underline-offset-4 decoration-white/70' : undefined}>
-                                    <DealScorePill score={listing.deal_score} variant="compare" />
+                                    <DealScorePill
+                                      score={listing.deal_score}
+                                      listingType={listing.listing_type}
+                                      variant="compare"
+                                    />
                                   </span>
                                 ) : (
                                   <span className={`text-[13px] leading-5 sm:text-[14px] num font-numeric-table ${isWinner ? '' : 'font-semibold'} ${cellToneClass(cell.tone, isWinner)}`}>

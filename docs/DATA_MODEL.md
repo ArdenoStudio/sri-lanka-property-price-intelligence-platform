@@ -82,14 +82,15 @@ Downstream: `clean_listings`, `geocode_listings`, `compute_aggregates`. `stats` 
 
 ## `price_aggregates`
 
-Monthly mart grain: `district × property_type × (bedroom_bucket?) × year × month`.
+Monthly mart grain: `district × property_type × listing_type × (bedroom_bucket?) × year × month`.
 
+- `listing_type`: `sale` | `rent` (required; migration 008)
 - Broad rows: `bedroom_bucket IS NULL`
 - Bucketed rows: `1` / `2` / `3` / `4` / `5+` (migration 004)
 
-## Analytics views (migration 007)
+## Analytics views (migration 007 + 008)
 
-- `mart_district_benchmarks` — latest median per district/type/bucket
-- `mart_property_type_trends` — monthly series (broad)
+- `mart_district_benchmarks` — latest median per district/type/listing_type/bucket
+- `mart_property_type_trends` — monthly series (broad, by listing_type)
 - `mart_source_inventory` — per-source quality tallies
-- `mart_deal_score_coverage` — deal_score fill by district/type
+- `mart_deal_score_coverage` — deal_score fill by district/type/listing_type
