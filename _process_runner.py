@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from dotenv import load_dotenv
 
-root = r"C:\Users\Ovindu\Documents\Ardeno Studio\Property Price Intelligence An Ardeno Production"
+root = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(root, ".env"))
 sys.path.insert(0, root)
 
@@ -64,4 +64,5 @@ def run():
         db.close()
 
 
-run()
+if __name__ == "__main__":
+    run()

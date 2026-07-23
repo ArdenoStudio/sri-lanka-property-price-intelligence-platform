@@ -300,8 +300,10 @@ class IkmanScraper:
                     source=self.SOURCE,
                     started_at=datetime.utcnow(),
                     finished_at=datetime.utcnow(),
+                    status="success",
                     listings_found=total_found,
-                    listings_new=total_new
+                    listings_new=total_new,
+                    listings_failed=0,
                 )
                 self.db.add(new_run)
                 self.db.commit()
@@ -774,9 +776,15 @@ async def scrape_ikman_full(db: Session, main_pages: int = 50, district_pages: i
                               required=False)
 
         from db.models import ScrapeRun
-        db.add(ScrapeRun(source="ikman", started_at=datetime.utcnow(),
-                         finished_at=datetime.utcnow(),
-                         listings_found=grand_total_found, listings_new=grand_total_new))
+        db.add(ScrapeRun(
+            source="ikman",
+            started_at=datetime.utcnow(),
+            finished_at=datetime.utcnow(),
+            status="success",
+            listings_found=grand_total_found,
+            listings_new=grand_total_new,
+            listings_failed=0,
+        ))
         db.commit()
         await browser.close()
 

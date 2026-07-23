@@ -12,7 +12,8 @@ from datetime import datetime
 import httpx
 from bs4 import BeautifulSoup
 import structlog
-from db.models import RawListing, ListingSnapshot, ScrapeRun
+from db.models import RawListing, ListingSnapshot
+from scraper.scrape_run import record_scrape_run
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
@@ -223,16 +224,16 @@ def _write_scrape_run(
     error: str | None = None,
 ):
     try:
-        db.add(ScrapeRun(
+        record_scrape_run(
+            db,
             source=SOURCE,
             started_at=started_at,
-            finished_at=datetime.utcnow(),
-            status=status,
             listings_found=found,
             listings_new=new,
+            status=status,
             error_message=error,
-        ))
-        db.commit()
+            stats={"transport": "html"},
+        )
     except Exception as e:
         log.error("scrape_run_write_error", source=SOURCE, error=_format_error(e))
         db.rollback()

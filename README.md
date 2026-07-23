@@ -1,134 +1,139 @@
-<div align="center">
-  <img src="dashboard/public/ardeno-logo.svg" alt="Ardeno Studio" height="48" />
-  <br /><br />
-  <img src="dashboard/public/favicon.svg" alt="Nilam" height="64" />
+# PropertyLK — Sri Lanka property listing data platform
 
-  <h1>Sri Lanka Property Price Intelligence Platform</h1>
-  <p><strong>An Ardeno Studio Production</strong></p>
+Multi-source scrape → clean → geocode → quality checks → market marts → API
 
-  <p>
-    <img src="https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white" />
-    <img src="https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB" />
-    <img src="https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white" />
-    <img src="https://img.shields.io/badge/Deployed-AWS%20Lambda-FF9900?style=flat&logo=awslambda&logoColor=white" />
-    <img src="https://img.shields.io/badge/Frontend-Vercel-black?style=flat&logo=vercel" />
-  </p>
-</div>
+**Live app:** [propertylk-one.vercel.app](https://propertylk-one.vercel.app/)  
+**API:** Lambda Function URL in `vercel.json` (`VITE_API_URL`) — try `/health`, `/pipeline/status`, `/pipeline/metrics`
 
----
+[![CI](https://github.com/ArdenoStudio/sri-lanka-property-price-intelligence-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ArdenoStudio/sri-lanka-property-price-intelligence-platform/actions/workflows/ci.yml)
 
-A full-stack real estate intelligence platform that aggregates, cleans, and analyses property listings across Sri Lanka — surfacing market trends, deal scores, and price benchmarks by district, property type, and bedroom count.
+## Problem
 
-## Features
+Sri Lanka property portals publish listing prices in incompatible formats, with weak history and no shared quality layer. PropertyLK ingests multiple public sources on a schedule, normalizes them into a canonical Postgres schema, and exposes freshness-aware market analytics.
 
-- **Multi-source scraping** — ikman.lk, LankaPropertyWeb, house.lk scraped daily
-- **Smart deal scoring** — compares each listing against comparable properties (same bedroom count, district, and type) rather than a broad market average
-- **Price trends** — monthly median and average price charts per district and property type
-- **Geocoding** — all listings enriched with lat/lng via Nominatim (OSM)
-- **Heatmaps** — live price density map across Sri Lanka
-- **Pipeline dashboard** — real-time status of scrapers, cleaner, geocoder, and aggregator jobs
+## Architecture
 
-## Stack
+```mermaid
+flowchart TD
+  S1[ikman.lk API/HTML] --> ING[Ingestion scrapers]
+  S2[LankaPropertyWeb] --> ING
+  S3[house.lk / onlineproperty] --> ING
+  ING --> RAW[(raw_listings + scrape_runs)]
+  RAW --> SNAP[(listing_snapshots)]
+  RAW --> CLN[cleaner normalize + dedupe flags]
+  CLN --> LST[(listings + locations)]
+  LST --> GEO[geocoder / source coords]
+  GEO --> Q[quality checks]
+  LST --> MART[(price_aggregates + mart views)]
+  Q --> API[FastAPI]
+  MART --> API
+  API --> UI[React dashboard]
+  API --> PS["/pipeline/status + /metrics"]
+```
 
-| Layer | Tech |
+## Current production metrics
+
+Snapshot from the live API on **2026-07-23** (`/health`, `/stats`, `/public/pipeline`). Rates that need warehouse scans ship on `/pipeline/metrics` after this branch deploys.
+
+| Metric | Value | Source |
+|---|---|---|
+| Raw listings | **124,221** | `/health` |
+| Canonical listings (post-clean upsert) | **102,864** | `/health` |
+| Districts covered | **25** | `/stats` |
+| Listings first-seen last 7 days | **11,904** | `/stats` |
+| ikman cleaned rows | **59,099** | `/public/pipeline` |
+| LPW cleaned rows | **18,631** | `/public/pipeline` |
+| Last successful LPW scrape | **2026-07-22** | `/public/pipeline` |
+| Last successful ikman scrape (as recorded) | **2026-06-22** — **delayed** | `/public/pipeline` |
+| Cleaner last success | **2026-07-05** — delayed vs daily SLA | `/public/pipeline` |
+| Geocode / aggregates jobs | OK as of 2026-07-22 | `/public/pipeline` |
+| Duplicate rate / geocode success % | Computed live | `GET /pipeline/metrics` |
+
+These numbers are not marketing targets — when a source is delayed, the status endpoint says so.
+
+## Data sources
+
+| Source | `source` key | Method | Typical cadence | Fragility |
+|---|---|---|---|---|
+| ikman.lk | `ikman` | Public API (preferred) / Playwright fallback | Daily GHA / catchup | CAPTCHA on HTML; SERP page wall ~500; unofficial API |
+| LankaPropertyWeb | `lpw` | API token from site + HTML fallback | Daily | `secure_key` rotation; bot detection on browser path |
+| house.lk | `lamudi` | Playwright | Secondary / catchup | Cloudflare fingerprinting |
+| onlineproperty.lk | `onlineproperty` | HTML / WP REST probes | Secondary | WP endpoint permission drift |
+
+Ethics & rate limits: [docs/source-apis/ETHICS.md](docs/source-apis/ETHICS.md). PDPA sanitization tests: `tests/test_pdpa_sanitization.py`.
+
+## Pipeline stages → code
+
+| Stage | Code |
 |---|---|
-| Backend API | FastAPI + SQLAlchemy + PostgreSQL (Supabase) |
-| Frontend | React + Vite + Tailwind CSS |
-| Scraping | Playwright (ikman), httpx + BeautifulSoup (LPW, house.lk) |
-| Geocoding | Nominatim / OSM |
-| Deployment | AWS Lambda + Function URL (API) + Vercel (frontend) |
+| Scrape | `scraper/ikman_api.py`, `ikman.py`, `lpw_api.py`, `lpw.py`, `lamudi.py`, `onlineproperty.py` |
+| Orchestration | `run_all_scrapers.py`, `_*_catchup_runner.py`, `.github/workflows/*scrape*`, `clean.yml`, `geocode.yml`, `aggregate.yml` |
+| Normalize | `scraper/cleaner.py` · `run_clean.py` |
+| History | `listing_snapshots` + `scraper/utils.py` fingerprint |
+| Geocode | `scraper/geocoder.py` · `run_geocode.py` |
+| Quality | `scraper/quality.py` · `GET /pipeline/quality` |
+| Marts | `PriceAggregator` in `api/main.py` · views in `db/migrations/007_analytics_marts.sql` |
+| API / UI | `api/main.py` · `dashboard/` |
 
-## Project Structure
+## Data model (summary)
 
-```
-.
-├── api/                # FastAPI backend + aggregation logic
-├── dashboard/          # React frontend (Vite)
-│   └── public/         # Favicon + Ardeno logo assets
-├── db/                 # Models, migrations, connection
-│   └── migrations/     # SQL migration files (001–004)
-├── scraper/            # ikman, LPW, house.lk scrapers + cleaner + geocoder
-├── scheduler/          # APScheduler background jobs
-├── tests/              # Unit tests
-├── _ikman_catchup_runner.py
-├── _lpw_catchup_runner.py
-├── _houseLk_catchup_runner.py
-├── _process_runner.py  # Cleaner → geocoder → aggregates pipeline
-└── requirements-lambda.txt  # Slim dependency set for the Lambda deploy
-```
+- **Raw** `raw_listings` unique `(source, source_id)` — idempotent re-ingest.
+- **Canonical** `listings` same key; `first_seen_at` / `last_seen_at`; outlier + duplicate flags.
+- **History** `listing_snapshots` on content fingerprint change.
+- **Ops** `scrape_runs` (found/new/failed + optional `stats`), `job_runs`.
+- **Marts** `price_aggregates` (+ bedroom buckets); SQL views `mart_*`.
 
-## Local Setup
+Full field reference: [docs/DATA_MODEL.md](docs/DATA_MODEL.md). Platform map: [docs/DATA_PLATFORM.md](docs/DATA_PLATFORM.md).
 
-1. **Clone & install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Data quality & freshness
 
-2. **Environment variables**
-   ```bash
-   cp .env.example .env
-   # Fill in DATABASE_URL, GROQ_API_KEY, NOMINATIM_USER_AGENT
-   ```
+- Freshness SLA per source in `scraper/quality.py` (ikman/LPW 36h, secondary 72h).
+- Null rates on price / size / district; outlier guards; duplicate rate.
+- Geocode success = share of listings with lat/lng; confidence `high|medium|low`.
+- Surface: `/pipeline/status`, `/pipeline/metrics`, `/pipeline/quality`.
 
-3. **Run API locally**
-   ```bash
-   uvicorn api.main:app --reload --port 8080
-   ```
+Methodology for medians, comps, deal scores: [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
 
-4. **Run frontend locally**
-   ```bash
-   cd dashboard && npm install && npm run dev
-   ```
+## Failure handling & backfills
 
-## Running the Pipeline
+See [docs/RUNBOOK.md](docs/RUNBOOK.md): source schema change, Nominatim limits, partial scrapes, `reprocess_data.py` / `run_clean.py` / `run_geocode.py` / `run_aggregate.py`.
+
+## Tests & CI
 
 ```bash
-# Scrape all sources
-python _ikman_catchup_runner.py
-python _lpw_catchup_runner.py
-python _houseLk_catchup_runner.py
-
-# Clean → geocode → compute aggregates + deal scores
-python _process_runner.py
+pip install pytest sqlalchemy structlog httpx beautifulsoup4
+pytest tests/ -v
 ```
 
-## Deployment
+CI workflow [ci.yml](.github/workflows/ci.yml) runs Python tests + dashboard `tsc` on pull requests. Scrape workflows are intentionally separate.
 
-### API (AWS Lambda)
-Deploys automatically on push to `master` via [.github/workflows/aws-lambda-deploy.yml](.github/workflows/aws-lambda-deploy.yml), or manually with:
-```bash
-gh workflow run aws-lambda-deploy.yml --ref <branch>
-```
-The function is exposed via a Lambda Function URL (see AWS Console → Lambda → `property-price-api` → Configuration → Function URL).
-
-### Frontend (Vercel)
-Set `VITE_API_URL` to the Lambda Function URL in Vercel environment variables, then push to trigger a deploy.
-
-## Database Migrations
+## Local run
 
 ```bash
-# Apply migrations in order via Supabase SQL editor or psql
-db/migrations/001_initial.sql
-db/migrations/002_add_history_jobs_locations.sql
-db/migrations/003_deal_score_days_on_market.sql
-db/migrations/004_bedroom_bucket_aggregates.sql
+cp .env.example .env   # DATABASE_URL, NOMINATIM_USER_AGENT, ADMIN_API_KEY, …
+docker compose up -d db
+pip install -r requirements.txt
+# apply db/migrations/001–007
+uvicorn api.main:app --reload --port 8080
+cd dashboard && npm ci && npm run dev
 ```
 
-## API Endpoints
+Pipeline locally:
 
-| Endpoint | Description |
-|---|---|
-| `GET /health` | Health check |
-| `GET /stats` | Platform-wide stats |
-| `GET /listings` | Paginated listings with filters |
-| `GET /districts` | District list with metadata |
-| `GET /heatmap` | Lat/lng + price data for map |
-| `GET /trends/{district}/{type}` | Monthly price trend |
-| `POST /trigger/aggregate` | Re-run aggregates + deal scores |
-| `GET /pipeline/status` | Scraper + job run status |
+```bash
+python _ikman_catchup_runner.py   # or LPW / house.lk runners
+python run_clean.py && python run_geocode.py && python run_aggregate.py
+# or: python _process_runner.py
+```
 
----
+## Known limitations
 
-<div align="center">
-  <sub>Built by <a href="https://ardeno.studio">Ardeno Studio</a></sub>
-</div>
+- Cross-source dedupe is a soft heuristic, not address-level entity resolution.
+- Unofficial portal APIs can change without notice; house.lk remains Cloudflare-fragile.
+- ikman scrape freshness can lag when catchup jobs fail — status endpoint is the source of truth.
+- Deal score is relative to medians, not an appraisal model.
+- No Kafka/Spark/Iceberg — daily batch volume does not justify that stack.
+
+## Case study
+
+What broke, what we fixed, tradeoffs, and a sober 10× scale note: **[docs/CASE_STUDY.md](docs/CASE_STUDY.md)**.
