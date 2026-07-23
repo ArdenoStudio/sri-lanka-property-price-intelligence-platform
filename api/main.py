@@ -508,10 +508,15 @@ class PriceAggregator:
         Null when short-term, outlier, unknown listing_type, thin sample,
         missing peers, or price/median ratio is absurd (guards cross-market bugs).
         """
-        # Drop stale scores first so untrusted rows never keep a prior stamp.
+        # Aggregates + full-table stamp can exceed the pool's 60s default.
+        self.db.execute(text("SET LOCAL statement_timeout = '15min'"))
+
+        # Only touch rows that still carry a score (full-table NULL rewrite is huge).
         self.db.execute(text("""
             UPDATE listings
             SET deal_score = NULL, market_median_lkr = NULL
+            WHERE deal_score IS NOT NULL
+               OR market_median_lkr IS NOT NULL
         """))
 
         self.db.execute(text("""

@@ -1,2 +1,2 @@
 # Touch this file and push/merge to master to trigger Aggregate Prices.
-# Last triggered: 2026-07-23T06:16:00Z — rerun after deal-score sale/rent fix (migration 008)
+# Last triggered: 2026-07-23T06:25:00Z — retry after statement_timeout on deal_score clear
