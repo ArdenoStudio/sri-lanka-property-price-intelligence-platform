@@ -28,9 +28,6 @@ const DistrictTrends = lazy(() =>
 const ComparisonModal = lazy(() =>
   import('./components/ComparisonModal').then(m => ({ default: m.ComparisonModal }))
 );
-const ChatWidget = lazy(() =>
-  import('./components/ChatWidget').then(m => ({ default: m.ChatWidget }))
-);
 const ListingDetail = lazy(() =>
   import('./components/ListingDetail').then(m => ({ default: m.ListingDetail }))
 );
@@ -75,10 +72,6 @@ function TrendsSkeleton() {
 
 function ModalSkeleton() {
   return null; // Modal is hidden by default, no visual skeleton needed
-}
-
-function ChatSkeleton() {
-  return null; // Chat FAB appears on demand, no visual skeleton needed
 }
 
 function PageSkeleton() {
@@ -507,16 +500,6 @@ function Dashboard() {
         />
       </Suspense>
 
-      <Suspense fallback={<ChatSkeleton />}>
-        <ChatWidget onFilters={(f) => {
-          if (f.district) setSelectedDistrict(f.district);
-          if (f.property_type) setSelectedType(f.property_type);
-          if (f.listing_type) setListingType(f.listing_type);
-          if (f.bedrooms) setMinBeds(f.bedrooms);
-          if (f.min_price) setMinPrice(f.min_price);
-          if (f.max_price) setMaxPrice(f.max_price);
-        }} />
-      </Suspense>
       <MobileNav />
       <Footer />
     </div>

@@ -46,7 +46,6 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NOMINATIM_USER_AGENT: ${{ secrets.NOMINATIM_USER_AGENT }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           USE_IKMAN_SERP_API: "1"
           USE_IKMAN_DETAIL_API: "1"
           USE_LPW_API: "1"
