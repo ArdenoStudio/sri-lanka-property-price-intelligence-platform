@@ -18,25 +18,43 @@ from api.main import PriceAggregator
 
 
 def run():
-    db = SessionLocal()
-    try:
-        # percentile_cont + deal-score stamp over the full listings table
-        db.execute(text("SET statement_timeout = '15min'"))
-        print("Running aggregates...", flush=True)
-        start = datetime.utcnow()
-        aggregator = PriceAggregator(db)
-        trends = aggregator.aggregate()
-        print(f"Aggregates done. Trends updated: {trends}", flush=True)
-        db.add(JobRun(
-            job_name="compute_aggregates",
-            started_at=start,
-            finished_at=datetime.utcnow(),
-            status="success",
-            stats={"trends_updated": trends},
-        ))
-        db.commit()
-    finally:
-        db.close()
+    import time
+
+    last_err = None
+    for attempt in range(1, 6):
+        db = SessionLocal()
+        try:
+            # percentile_cont + deal-score stamp over the full listings table
+            db.execute(text("SET statement_timeout = '15min'"))
+            print(f"Running aggregates (attempt {attempt})...", flush=True)
+            start = datetime.utcnow()
+            aggregator = PriceAggregator(db)
+            trends = aggregator.aggregate()
+            print(f"Aggregates done. Trends updated: {trends}", flush=True)
+            db.add(JobRun(
+                job_name="compute_aggregates",
+                started_at=start,
+                finished_at=datetime.utcnow(),
+                status="success",
+                stats={"trends_updated": trends},
+            ))
+            db.commit()
+            return
+        except Exception as e:
+            last_err = e
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            wait = min(45, 5 * attempt)
+            print(f"Aggregate attempt {attempt} failed: {e}; retry in {wait}s", flush=True)
+            time.sleep(wait)
+        finally:
+            try:
+                db.close()
+            except Exception:
+                pass
+    raise last_err
 
 
 run()
