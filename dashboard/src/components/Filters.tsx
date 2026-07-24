@@ -103,18 +103,23 @@ function PriceDropdown({ minPrice, maxPrice, onMinPriceChange, onMaxPriceChange 
   }, []);
 
   const isActive = minPrice !== '' || maxPrice !== '';
-  const label = isActive
-    ? `${minPrice !== '' ? fmtPriceLabel(minPrice as number) : 'Any'} — ${maxPrice !== '' ? fmtPriceLabel(maxPrice as number) : 'Any'}`
-    : 'Price';
+  let label = 'Price';
+  if (minPrice !== '' && maxPrice !== '') {
+    label = `${fmtPriceLabel(minPrice as number)}–${fmtPriceLabel(maxPrice as number)}`;
+  } else if (minPrice !== '') {
+    label = `≥ ${fmtPriceLabel(minPrice as number)}`;
+  } else if (maxPrice !== '') {
+    label = `≤ ${fmtPriceLabel(maxPrice as number)}`;
+  }
 
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div ref={ref} className="relative shrink-0">
       <button type="button" onClick={() => setOpen(o => !o)}
-        className={`flex items-center gap-1 text-[13px] font-medium transition-colors cursor-pointer bg-transparent border-none p-0 ${
+        className={`flex items-center gap-1 text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer bg-transparent border-none p-0 ${
           isActive ? 'text-white' : 'text-[#525252] hover:text-[#a3a3a3]'
         }`}>
         {label}
-        <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (
@@ -234,22 +239,24 @@ function SizeDropdown({
   }, []);
 
   const isActive = minVal !== '' || maxVal !== '';
-  const parts = [
-    minVal !== '' ? fmt(minVal as number) : '',
-    maxVal !== '' ? fmt(maxVal as number) : '',
-  ].filter(Boolean);
-  const label = isActive
-    ? parts.join(' — ') + (useSqft ? ' sqft' : '')
-    : 'Size';
+  const withUnit = (value: string) => (useSqft ? `${value} ft²` : value);
+  let label = 'Size';
+  if (minVal !== '' && maxVal !== '') {
+    label = withUnit(`${fmt(minVal as number)}–${fmt(maxVal as number)}`);
+  } else if (minVal !== '') {
+    label = withUnit(`≥ ${fmt(minVal as number)}`);
+  } else if (maxVal !== '') {
+    label = withUnit(`≤ ${fmt(maxVal as number)}`);
+  }
 
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div ref={ref} className="relative shrink-0">
       <button type="button" onClick={() => setOpen(o => !o)}
-        className={`flex items-center gap-1 text-[13px] font-medium transition-colors cursor-pointer bg-transparent border-none p-0 ${
+        className={`flex items-center gap-1 text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer bg-transparent border-none p-0 ${
           isActive ? 'text-white' : 'text-[#525252] hover:text-[#a3a3a3]'
         }`}>
         {label}
-        <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (
@@ -292,8 +299,8 @@ function RoomsDropdown({ minBeds, onMinBedsChange, minBaths, onMinBathsChange }:
 
   const isActive = minBeds > 0 || minBaths > 0;
   const parts = [
-    minBeds  > 0 && `${minBeds}+ bd`,
-    minBaths > 0 && `${minBaths}+ ba`,
+    minBeds  > 0 && `${minBeds}+bd`,
+    minBaths > 0 && `${minBaths}+ba`,
   ].filter(Boolean) as string[];
   const label = parts.length > 0 ? parts.join(' · ') : 'Rooms';
 
@@ -305,13 +312,13 @@ function RoomsDropdown({ minBeds, onMinBedsChange, minBaths, onMinBathsChange }:
     }`;
 
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div ref={ref} className="relative shrink-0">
       <button type="button" onClick={() => setOpen(o => !o)}
-        className={`flex items-center gap-1 text-[13px] font-medium transition-colors cursor-pointer bg-transparent border-none p-0 ${
+        className={`flex items-center gap-1 text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer bg-transparent border-none p-0 ${
           isActive ? 'text-white' : 'text-[#525252] hover:text-[#a3a3a3]'
         }`}>
         {label}
-        <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (
@@ -354,9 +361,15 @@ const PROPERTY_TYPES = [
   { value: 'commercial', label: 'Commercial' },
 ];
 const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'price_asc', label: 'Price: Low → High' },
-  { value: 'price_desc', label: 'Price: High → Low' },
+  { value: 'newest', label: 'Newest', triggerLabel: 'Newest' },
+  { value: 'price_asc', label: 'Price: Low → High', triggerLabel: 'Price ↑' },
+  { value: 'price_desc', label: 'Price: High → Low', triggerLabel: 'Price ↓' },
+];
+const SOURCE_OPTIONS = [
+  { value: '',        label: 'All Sources', triggerLabel: 'All Sources' },
+  { value: 'ikman',  label: 'ikman.lk', triggerLabel: 'ikman' },
+  { value: 'lpw',    label: 'LPW', triggerLabel: 'LPW' },
+  { value: 'lamudi', label: 'house.lk', triggerLabel: 'house.lk' },
 ];
 const LISTING_TYPES = [
   { value: '', label: 'Any' },
@@ -400,13 +413,6 @@ interface Props {
   onOpenSavedSearches?: () => void;
 }
 
-const SOURCES = [
-  { value: '',        label: 'All Sources' },
-  { value: 'ikman',  label: 'ikman.lk' },
-  { value: 'lpw',    label: 'LPW' },
-  { value: 'lamudi', label: 'house.lk' },
-];
-
 export function Filters({
   districts, selectedDistrict, onDistrictChange,
   selectedType, onTypeChange, listingType, onListingTypeChange,
@@ -439,10 +445,10 @@ export function Filters({
   };
 
   return (
-    <div className="mb-8 flex flex-col gap-3 sm:gap-0 sm:flex-row sm:items-center sm:flex-wrap">
-      {/* ── Row 1: Property type + listing type pills (scrollable on mobile) ── */}
-      <div className="flex items-center gap-1 overflow-x-auto sm:overflow-visible no-scrollbar pb-3 sm:pb-0 -mx-2 px-2 sm:mx-0 sm:px-0">
-        <div className="flex items-center gap-1 flex-shrink-0">
+    <div className="mb-8 flex flex-col gap-3">
+      {/* ── Row 1: Property type + listing type pills ── */}
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-1 shrink-0">
           {PROPERTY_TYPES.map(opt => (
             <button key={opt.value} onClick={() => onTypeChange(opt.value)}
               className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap cursor-pointer border-none transition-colors ${
@@ -458,9 +464,9 @@ export function Filters({
           ))}
         </div>
 
-        <div className="w-px h-4 bg-white/[0.1] flex-shrink-0 mx-1" />
+        <div className="w-px h-4 bg-white/[0.1] shrink-0 mx-1" />
 
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {LISTING_TYPES.filter(t => t.value !== '').map(opt => (
             <button key={opt.value}
               onClick={() => onListingTypeChange(listingType === opt.value ? '' : opt.value)}
@@ -478,54 +484,58 @@ export function Filters({
         </div>
       </div>
 
-      <div className="hidden sm:block w-px h-4 bg-white/[0.1] mx-4 opacity-50" />
+      {/* ── Row 2: filter controls stay on one line; scroll when crowded ── */}
+      <div className="flex items-center gap-3 min-w-0" data-testid="filter-bar">
+        <div
+          className="flex items-center gap-3 flex-nowrap overflow-x-auto no-scrollbar min-w-0 flex-1 -mx-2 px-2 sm:mx-0 sm:px-0"
+          data-testid="filter-controls"
+        >
+          <MinimalSelect options={districtOptions} value={selectedDistrict}
+            onChange={onDistrictChange} prefix="District" />
 
-      {/* ── Row 2: Dropdowns + meta (scrollable on mobile) ── */}
-      <div className="flex items-center gap-3 overflow-x-auto sm:overflow-visible no-scrollbar pb-1 sm:pb-0 -mx-2 px-2 sm:mx-0 sm:px-0">
-        <MinimalSelect options={districtOptions} value={selectedDistrict}
-          onChange={onDistrictChange} prefix="District" />
+          <MinimalSelect options={SOURCE_OPTIONS} value={selectedSource}
+            onChange={onSourceChange} prefix="Source" />
 
-        <MinimalSelect options={SOURCES} value={selectedSource}
-          onChange={onSourceChange} prefix="Source" />
+          <PriceDropdown minPrice={minPrice} maxPrice={maxPrice}
+            onMinPriceChange={onMinPriceChange} onMaxPriceChange={onMaxPriceChange} />
 
-        <PriceDropdown minPrice={minPrice} maxPrice={maxPrice}
-          onMinPriceChange={onMinPriceChange} onMaxPriceChange={onMaxPriceChange} />
+          <SizeDropdown
+            selectedType={selectedType}
+            minSizePerches={minSizePerches} maxSizePerches={maxSizePerches}
+            onMinSizePerchesChange={onMinSizePerchesChange} onMaxSizePerchesChange={onMaxSizePerchesChange}
+            minSizeSqft={minSizeSqft} maxSizeSqft={maxSizeSqft}
+            onMinSizeSqftChange={onMinSizeSqftChange} onMaxSizeSqftChange={onMaxSizeSqftChange}
+          />
 
-        <SizeDropdown
-          selectedType={selectedType}
-          minSizePerches={minSizePerches} maxSizePerches={maxSizePerches}
-          onMinSizePerchesChange={onMinSizePerchesChange} onMaxSizePerchesChange={onMaxSizePerchesChange}
-          minSizeSqft={minSizeSqft} maxSizeSqft={maxSizeSqft}
-          onMinSizeSqftChange={onMinSizeSqftChange} onMaxSizeSqftChange={onMaxSizeSqftChange}
-        />
+          <RoomsDropdown
+            minBeds={minBeds}   onMinBedsChange={onMinBedsChange}
+            minBaths={minBaths} onMinBathsChange={onMinBathsChange}
+          />
 
-        <RoomsDropdown
-          minBeds={minBeds}   onMinBedsChange={onMinBedsChange}
-          minBaths={minBaths} onMinBathsChange={onMinBathsChange}
-        />
+          <MinimalSelect options={SORT_OPTIONS} value={sortBy} onChange={onSortChange} />
+        </div>
 
-        <MinimalSelect options={SORT_OPTIONS} value={sortBy} onChange={onSortChange} />
+        <div className="flex items-center gap-2.5 shrink-0 pl-1">
+          <span className="text-[11px] text-[#525252] whitespace-nowrap num">
+            {totalResults.toLocaleString()}
+            <span className="hidden sm:inline"> listings</span>
+          </span>
 
-        <div className="w-px h-4 bg-white/[0.1] flex-shrink-0 opacity-50 sm:mx-2" />
+          {hasFilters && (
+            <button onClick={clearAll}
+              className="flex items-center gap-1 text-[11px] text-[#a3a3a3] whitespace-nowrap cursor-pointer bg-transparent border-none p-0 hover:text-white transition-colors">
+              <X className="w-3 h-3" /> Clear
+            </button>
+          )}
 
-        <span className="text-[11px] text-[#525252] whitespace-nowrap flex-shrink-0 num">
-          {totalResults.toLocaleString()} listings
-        </span>
-
-        {hasFilters && (
-          <button onClick={clearAll}
-            className="flex items-center gap-1 text-[11px] text-[#a3a3a3] whitespace-nowrap flex-shrink-0 cursor-pointer bg-transparent border-none p-0 hover:text-white transition-colors ml-2">
-            <X className="w-3 h-3" /> Clear
-          </button>
-        )}
-
-        {onOpenSavedSearches && (
-          <button onClick={onOpenSavedSearches}
-            className="flex items-center gap-1 text-[11px] text-[#525252] whitespace-nowrap flex-shrink-0 cursor-pointer bg-transparent border-none p-0 hover:text-[#a3a3a3] transition-colors ml-1">
-            <Bookmark className="w-3 h-3" />
-            {hasFilters ? 'Save' : 'Saved'}
-          </button>
-        )}
+          {onOpenSavedSearches && (
+            <button onClick={onOpenSavedSearches}
+              className="flex items-center gap-1 text-[11px] text-[#525252] whitespace-nowrap cursor-pointer bg-transparent border-none p-0 hover:text-[#a3a3a3] transition-colors">
+              <Bookmark className="w-3 h-3" />
+              <span className="hidden sm:inline">{hasFilters ? 'Save' : 'Saved'}</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

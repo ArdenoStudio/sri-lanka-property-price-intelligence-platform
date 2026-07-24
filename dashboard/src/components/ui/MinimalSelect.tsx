@@ -19,20 +19,21 @@ export function MinimalSelect({ options, value, onChange, prefix }: {
   }, []);
 
   const selected = options.find(o => o.value === value);
-  const isActive = selected && selected.value !== '';
+  const isActive = !!(selected && selected.value !== '');
   const selectedTriggerLabel = selected?.triggerLabel ?? selected?.label;
-  const displayLabel = prefix
-    ? `${prefix}${isActive ? ` ${selectedTriggerLabel}` : ''}`
-    : (selectedTriggerLabel ?? options[0]?.triggerLabel ?? options[0]?.label);
+  // Idle: show prefix (or default). Active: show value only so the bar stays compact.
+  const displayLabel = isActive
+    ? (selectedTriggerLabel ?? options[0]?.triggerLabel ?? options[0]?.label)
+    : (prefix ?? selectedTriggerLabel ?? options[0]?.triggerLabel ?? options[0]?.label);
 
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div ref={ref} className="relative shrink-0">
       <button type="button" onClick={() => setOpen(o => !o)}
-        className={`flex items-center gap-1 text-[13px] font-medium transition-colors cursor-pointer bg-transparent border-none p-0 ${
+        className={`flex items-center gap-1 text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer bg-transparent border-none p-0 ${
           isActive ? 'text-white' : 'text-[#525252] hover:text-[#a3a3a3]'
         }`}>
         {displayLabel}
-        <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (
